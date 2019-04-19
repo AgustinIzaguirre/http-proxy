@@ -2,12 +2,22 @@
 
 # By donosonaumczuk
 
+echo "\e[1mAdd repositories for git and clang-format/clang-tidy\e[0m\n"
+sudo add-apt-repository ppa:git-core/ppa
+wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | sudo apt-key add -
+sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-6.0 main"
+
+echo "\n\n"
+echo "\e[1mRunning apt-get update\e[0m\n"
+sudo apt-get update
+
+echo "\n\n"
 echo "\e[1mInstalling clang-format\e[0m\n"
-sudo apt-get install clang-format-7
+sudo apt-get install clang-format-6.0
 
 echo "\n\n"
 echo "\e[1mInstalling clang-tidy\e[0m\n"
-sudo apt-get install clang-tidy-7
+sudo apt-get install clang-tidy-6.0
 
 echo "\n\n"
 echo "\e[1mInstalling cppcheck\e[0m\n"
@@ -15,10 +25,6 @@ sudo apt-get install cppcheck
 
 echo "\n\n"
 echo "\e[1mUpgrading/Installing git\e[0m\n"
-echo "\e[1mAdding git apt repository\e[0m\n"
-sudo add-apt-repository ppa:git-core/ppa
-echo "\e[1mRunning apt-get update\e[0m\n"
-sudo apt-get update
 echo "\e[1mInstalling git\e[0m\n"
 sudo apt-get install git
 

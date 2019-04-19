@@ -2,8 +2,8 @@
 
 # By donosonaumczuk
 
-command -v clang-tidy-7 >/dev/null 2>&1 || {
-	echo >&2 "\e[31m[CLANG-TIDY-HOOK] Rejects commit: clang-tidy-7 required but it isn't installed.\e[0m\n\n";
+command -v clang-tidy-6.0 >/dev/null 2>&1 || {
+	echo >&2 "\e[31m[CLANG-TIDY-HOOK] Rejects commit: clang-tidy-6.0 required but it isn't installed.\e[0m\n\n";
 	exit 1;
 }
 
@@ -20,7 +20,7 @@ changed_files=$(git diff-index --cached $against | \
 	grep -E '[MA]	.*\.(c|h)$' | cut -f 2)
 
 # Run clang-tidy
-clang-tidy-7 $changed_files --
+clang-tidy-6.0 $changed_files --
 
 if [ $? -ne 0 ]; then
     echo >&2 "\e[31m[CLANG-TIDY-HOOK] Rejects commit: fix things listed above.\e[0m\n\n"

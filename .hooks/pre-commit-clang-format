@@ -2,8 +2,8 @@
 
 # By donosonaumczuk
 
-command -v clang-format-7 >/dev/null 2>&1 || {
-	echo >&2 "\e[31m[CLANG-FORMAT-HOOK] Rejects commit: clang-format-7 required but it isn't installed.\e[0m\n\n";
+command -v clang-format-6.0 >/dev/null 2>&1 || {
+	echo >&2 "\e[31m[CLANG-FORMAT-HOOK] Rejects commit: clang-format-6.0 required but it isn't installed.\e[0m\n\n";
 	exit 1;
 }
 
@@ -20,12 +20,12 @@ changed_files=$(git diff-index --cached $against | \
 	grep -E '[MA]	.*\.(c|h)$' | cut -f 2)
 
 # Run clang-format, modifie files and output modifications in xml format
-clang-format-7 -style=file -output-replacements-xml $changed_files |
+clang-format-6.0 -style=file -output-replacements-xml $changed_files |
 grep "<replacement " >/dev/null
 
 if [ $? -ne 1 ]; then
 	# Modify files inplace
-	clang-format-7 -style=file -i $changed_files
+	clang-format-6.0 -style=file -i $changed_files
     echo >&2 "\e[31m[CLANG-FORMAT-HOOK] Rejects commit: files did not match clang-format defined style.\e[0m"
 	echo >&2 "\e[33m[CLANG-FORMAT-HOOK] Files reformated automatically to match the defined style.\e[0m\n\n"
     exit 1
