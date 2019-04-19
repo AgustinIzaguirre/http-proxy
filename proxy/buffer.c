@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "buffer.h"
+#include <buffer.h>
 
 inline void buffer_reset(buffer *b) {
 	b->read  = b->data;
