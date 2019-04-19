@@ -16,10 +16,6 @@ echo "\e[1mInstalling clang-format\e[0m\n"
 sudo apt-get install clang-format-6.0
 
 echo "\n\n"
-echo "\e[1mInstalling clang-tidy\e[0m\n"
-sudo apt-get install clang-tidy-6.0
-
-echo "\n\n"
 echo "\e[1mInstalling cppcheck\e[0m\n"
 sudo apt-get install cppcheck
 
