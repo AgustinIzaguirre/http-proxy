@@ -23,12 +23,16 @@ struct http {
 	// HTTP proxy state machine
 	struct state_machine stm;
 
-	// /** estados para el client_fd */
-	// union {
-	//     struct hello_st           hello;
-	//     struct request_st         request;
-	//     struct copy               copy;
-	// } client;
+	// Request method
+	unsigned requestMethod;
+
+	// Client States
+	union {
+		struct parseRequest parseRequest;
+		int other;
+		// struct request_st         request;
+		// struct copy               copy;
+	} clientState;
 	// /** estados para el origin_fd */
 	// union {
 	//     struct connecting         conn;
@@ -59,24 +63,36 @@ int getOriginFd(struct http *s) {
 	return s->originFd;
 }
 
-struct sockaddr_storage *getClientAddress(httpADT s) {
+struct parseRequest *getParseRequestState(httpADT_t s) {
+	return &((s->clientState).parseRequest);
+}
+
+struct sockaddr_storage *getClientAddress(httpADT_t s) {
 	return &(s->clientAddr);
 }
 
-socklen_t getClientAddressLength(httpADT s) {
+socklen_t getClientAddressLength(httpADT_t s) {
 	return s->clientAddrLen;
 }
 
-void setClientAddressLength(httpADT s, socklen_t addressLength) {
+void setClientAddressLength(httpADT_t s, socklen_t addressLength) {
 	s->clientAddrLen = addressLength;
 }
 
-buffer *getReadBuffer(httpADT s) {
+buffer *getReadBuffer(httpADT_t s) {
 	return &(s->readBuffer);
 }
 
-buffer *getWriteBuffer(httpADT s) {
+buffer *getWriteBuffer(httpADT_t s) {
 	return &(s->writeBuffer);
+}
+
+void setRequestMethod(httpADT_t s, unsigned method) {
+	s->requestMethod = method;
+}
+
+unsigned getRequestMethod(httpADT_t s) {
+	return s->requestMethod;
 }
 
 // Pool of struct http, to be reused.
@@ -91,6 +107,13 @@ static const struct state_definition clientStatbl[] = {
 	//     .on_departure     = hello_read_close,
 	//     .on_read_ready    = hello_read,
 	// }, {
+	{
+		.state		   = PARSE_REQUEST,
+		.on_arrival	= parseRequestInit,
+		.on_read_ready = printRead, // readFirstLine,
+		.on_departure  = parseRequestDestroy,
+		// .on_write_ready   = copy_w,
+	},
 	{
 		.state = COPY,
 		// .on_arrival       = copy_init,
@@ -132,7 +155,7 @@ struct http *httpNew(int clientFd) {
 	ret->clientAddrLen = sizeof(ret->clientAddr);
 
 	// setting state machine
-	ret->stm.initial   = COPY;
+	ret->stm.initial   = PARSE_REQUEST;
 	ret->stm.max_state = ERROR;
 	ret->stm.states	= httpDescribeStates();
 	stm_init(&ret->stm);

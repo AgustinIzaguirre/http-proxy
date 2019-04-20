@@ -8,14 +8,30 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <buffer.h>
+#include <methodParser.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
 #define BUFFER_SIZE 2048
 
-typedef struct http *httpADT;
+typedef struct http *httpADT_t;
 
 enum httpState {
+	/**
+	 * Reads first line of request message and ignores starting CRLF
+	 * for robustness.
+	 *
+	 * Interests:
+	 *   ClientFd
+	 *      - OP_READ       Until client sends first line.
+	 *
+	 * Transitions:
+	 *   - REQUEST_CONNECT  If is a valid method and host.
+	 *
+	 *   - ERROR            If method not supported.
+	 *
+	 */
+	PARSE_REQUEST,
 
 	/**
 	 * Copia bytes entre client_fd y origin_fd.
@@ -34,20 +50,28 @@ enum httpState {
 	ERROR,
 };
 
+// structure for parse request state
+struct parseRequest {
+	buffer *input;
+	struct methodParser methodParser;
+	//    struct hostParser   hostParser;
+	//    char                *host;
+};
+
 /*
  * Creates a new struct http
  */
-httpADT httpNew(int clientFd);
+httpADT_t httpNew(int clientFd);
 
 /*
  * Efectively destroys a struct http
  */
-void httpDestroyData(httpADT s);
+void httpDestroyData(httpADT_t s);
 
 /*
  * Destroys a struct http, takes into account references and the pool
  */
-void httpDestroy(httpADT s);
+void httpDestroy(httpADT_t s);
 
 /*
  * Cleans the pool
@@ -57,41 +81,56 @@ void httpPoolDestroy(void);
 /*
  * Returns state machine
  */
-struct state_machine *getStateMachine(httpADT s);
+struct state_machine *getStateMachine(httpADT_t s);
 
 /*
  * Returns client fd
  */
-int getClientFd(httpADT s);
+int getClientFd(httpADT_t s);
 
 /*
  * Returns origin server fd
  */
-int getOriginFd(httpADT s);
+int getOriginFd(httpADT_t s);
 
 /*
  * Returns client address
  */
-struct sockaddr_storage *getClientAddress(httpADT s);
+struct sockaddr_storage *getClientAddress(httpADT_t s);
 
 /*
  * Returns client address Length
  */
-socklen_t getClientAddressLength(httpADT s);
+socklen_t getClientAddressLength(httpADT_t s);
 
 /*
  * Sets client address Length
  */
-void setClientAddressLength(httpADT s, socklen_t addressLength);
+void setClientAddressLength(httpADT_t s, socklen_t addressLength);
 
 /*
  * Returns read buffer
  */
-buffer *getReadBuffer(httpADT s);
+buffer *getReadBuffer(httpADT_t s);
 
 /*
  * Returns write buffer
  */
-buffer *getWriteBuffer(httpADT s);
+buffer *getWriteBuffer(httpADT_t s);
+
+/*
+ * Returns http parse request structure
+ */
+struct parseRequest *getParseRequestState(httpADT_t s);
+
+/*
+ * Sets http request method
+ */
+void setRequestMethod(httpADT_t s, unsigned method);
+
+/*
+ * Returns http request method
+ */
+unsigned getRequestMethod(httpADT_t s);
 
 #endif

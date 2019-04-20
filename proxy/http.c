@@ -14,7 +14,7 @@
 
 #include <arpa/inet.h>
 
-#define GET_DATA(key) ((httpADT)(key)->data)
+#define GET_DATA(key) ((httpADT_t)(key)->data)
 
 static void httpRead(struct selector_key *key);
 static void httpWrite(struct selector_key *key);
@@ -119,6 +119,18 @@ static void httpDone(struct selector_key *key) {
 			close(fds[i]);
 		}
 	}
+}
+
+void parseRequestInit(const unsigned state, struct selector_key *key) {
+	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
+
+	parseRequest->input = getReadBuffer(GET_DATA(key));
+	parseInit(&(parseRequest->methodParser));
+}
+
+void parseRequestDestroy(const unsigned state, struct selector_key *key) {
+	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
+	setRequestMethod(GET_DATA(key), getMethod(&(parseRequest->methodParser)));
 }
 
 unsigned printRead(struct selector_key *key) {

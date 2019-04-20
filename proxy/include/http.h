@@ -15,4 +15,14 @@ void httpPassiveAccept(struct selector_key *key);
  */
 unsigned printRead(struct selector_key *key);
 
+/*
+ * Initialize parse request struct
+ */
+void parseRequestInit(const unsigned state, struct selector_key *key);
+
+/*
+ * Destroys parse request struct
+ */
+void parseRequestDestroy(const unsigned state, struct selector_key *key);
+
 #endif
