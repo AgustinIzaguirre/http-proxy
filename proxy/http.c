@@ -133,11 +133,9 @@ void parseRequestDestroy(const unsigned state, struct selector_key *key) {
 	setRequestMethod(GET_DATA(key), getMethod(&(parseRequest->methodParser)));
 }
 
-unsigned printRead(struct selector_key *key) {
-	printf("leyo\n");
-	// struct hello_st *d = &ATTACHMENT(key)->client.hello;
+unsigned parseMethodRead(struct selector_key *key) {
 	buffer *readBuffer = getReadBuffer(GET_DATA(key));
-	unsigned ret	   = COPY;
+	unsigned ret	   = PARSE_METHOD;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t n;
@@ -147,6 +145,50 @@ unsigned printRead(struct selector_key *key) {
 
 	if (n > 0) {
 		buffer_write_adv(readBuffer, n);
+		struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
+		if (parseMethod(&parseRequest->methodParser, readBuffer)) {
+			ret = PARSE_TARGET;
+		}
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
+}
+
+void parseTargetArrive(const unsigned state, struct selector_key *key) {
+	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
+
+	parseRequest->input = getReadBuffer(GET_DATA(key));
+	parseTargetInit(&(parseRequest->targetParser));
+}
+
+void parseTargetDeparture(const unsigned state, struct selector_key *key) {
+	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
+
+	printf("Host:%s\n",
+		   getHost(&(parseRequest->targetParser))); // TODO do init or something
+													// or destroy
+}
+
+unsigned parseTargetRead(
+	struct selector_key *key) { // TODO: modularizar con parse method
+	buffer *readBuffer = getReadBuffer(GET_DATA(key));
+	unsigned ret	   = PARSE_TARGET;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t n;
+
+	pointer = buffer_write_ptr(readBuffer, &count);
+	n		= recv(key->fd, pointer, count, 0);
+
+	if (n > 0) {
+		buffer_write_adv(readBuffer, n);
+		struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
+		if (parseTarget(&parseRequest->targetParser, readBuffer)) {
+			ret = PARSE_TARGET; // TODO: next state
+		}
 	}
 	else {
 		ret = ERROR;

@@ -49,7 +49,7 @@ void parseInit(struct methodParser *parser);
  * Parse the given input until there is nothing to read on
  * the input buffer or finds a space
  */
-int parse(struct methodParser *parser, buffer *input);
+int parseMethod(struct methodParser *parser, buffer *input);
 
 /*
  * Parse a single letter into method state machine

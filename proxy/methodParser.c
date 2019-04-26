@@ -8,7 +8,7 @@ void parseInit(struct methodParser *parser) {
 	parser->method		   = NO_METHOD;
 }
 
-int parse(struct methodParser *parser, buffer *input) {
+int parseMethod(struct methodParser *parser, buffer *input) {
 	uint8_t letter;
 	bool parsingMethod;
 	int ret;
@@ -47,7 +47,7 @@ int parseChar(struct methodParser *parser, char l) {
 			break;
 
 		case G:
-			if (l == 'e') {
+			if (l == 'E') {
 				parser->state = GE;
 			}
 			else {
@@ -57,7 +57,7 @@ int parseChar(struct methodParser *parser, char l) {
 			break;
 
 		case GE:
-			if (l == 't') {
+			if (l == 'T') {
 				parser->state = GET;
 			}
 			else {
@@ -70,6 +70,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = GET_METHOD;
 				parser->state  = DONE_METHOD_STATE;
+				total		   = parser->charactersRead;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -112,6 +113,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = POST_METHOD;
 				parser->state  = DONE_METHOD_STATE;
+				total		   = parser->charactersRead;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -133,6 +135,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = PUT_METHOD;
 				parser->state  = DONE_METHOD_STATE;
+				total		   = parser->charactersRead;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -194,6 +197,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = DELETE_METHOD;
 				parser->state  = DONE_METHOD_STATE;
+				total		   = parser->charactersRead;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -213,12 +217,15 @@ int parseChar(struct methodParser *parser, char l) {
 static void transitionStart(struct methodParser *parser, char l) {
 	if (l == 'G') {
 		parser->method = G;
+		parser->state  = G;
 	}
 	else if (l == 'D') {
 		parser->method = D;
+		parser->state  = D;
 	}
 	else if (l == 'P') {
 		parser->method = P;
+		parser->state  = P;
 	}
 	else if (l == '\r') {
 		parser->method = CR;

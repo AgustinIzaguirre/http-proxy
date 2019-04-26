@@ -101,23 +101,28 @@ static unsigned poolSize	  = 0; // current size
 static struct http *pool	  = 0;
 
 static const struct state_definition clientStatbl[] = {
-	// {
-	//     .state            = HELLO_READ,
-	//     .on_arrival       = hello_read_init,
-	//     .on_departure     = hello_read_close,
-	//     .on_read_ready    = hello_read,
-	// }, {
 	{
-		.state		   = PARSE_REQUEST,
+		.state		   = PARSE_METHOD,
 		.on_arrival	= parseRequestInit,
-		.on_read_ready = printRead, // readFirstLine,
+		.on_read_ready = parseMethodRead, // readFirstLine,
 		.on_departure  = parseRequestDestroy,
+	},
+	{
+		.state		   = PARSE_TARGET,
+		.on_arrival	= parseTargetArrive,
+		.on_read_ready = parseTargetRead,
+		.on_departure  = parseTargetDeparture,
+	},
+	{
+		.state = PARSE_HOST,
+		// .on_arrival       = copy_init,
+		.on_read_ready = parseMethodRead,
 		// .on_write_ready   = copy_w,
 	},
 	{
 		.state = COPY,
 		// .on_arrival       = copy_init,
-		.on_read_ready = printRead,
+		.on_read_ready = parseMethodRead,
 		// .on_write_ready   = copy_w,
 	},
 	{
@@ -155,7 +160,7 @@ struct http *httpNew(int clientFd) {
 	ret->clientAddrLen = sizeof(ret->clientAddr);
 
 	// setting state machine
-	ret->stm.initial   = PARSE_REQUEST;
+	ret->stm.initial   = PARSE_METHOD;
 	ret->stm.max_state = ERROR;
 	ret->stm.states	= httpDescribeStates();
 	stm_init(&ret->stm);

@@ -9,6 +9,7 @@
 #include <sys/types.h>
 #include <buffer.h>
 #include <methodParser.h>
+#include <targetParser.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
@@ -31,8 +32,9 @@ enum httpState {
 	 *   - ERROR            If method not supported.
 	 *
 	 */
-	PARSE_REQUEST,
-
+	PARSE_METHOD,
+	PARSE_TARGET, // TODO: comentarios
+	PARSE_HOST,
 	/**
 	 * Copia bytes entre client_fd y origin_fd.
 	 *
@@ -54,7 +56,8 @@ enum httpState {
 struct parseRequest {
 	buffer *input;
 	struct methodParser methodParser;
-	//    struct hostParser   hostParser;
+	struct targetParser targetParser;
+	// struct hostParser   hostParser;
 	//    char                *host;
 };
 

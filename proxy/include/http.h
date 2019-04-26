@@ -13,7 +13,7 @@ void httpPassiveAccept(struct selector_key *key);
  * Function that takes place when clientFd is avaliable
  * to read on copy state
  */
-unsigned printRead(struct selector_key *key);
+unsigned parseMethodRead(struct selector_key *key);
 
 /*
  * Initialize parse request struct
@@ -24,5 +24,10 @@ void parseRequestInit(const unsigned state, struct selector_key *key);
  * Destroys parse request struct
  */
 void parseRequestDestroy(const unsigned state, struct selector_key *key);
+
+unsigned parseTargetRead(struct selector_key *key);
+void parseTargetArrive(const unsigned state, struct selector_key *key);
+void parseTargetDeparture(const unsigned state,
+						  struct selector_key *key); // TODO
 
 #endif
