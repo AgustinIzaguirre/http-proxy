@@ -19,6 +19,8 @@
 #include <http.h>
 #include <httpProxyADT.h>
 #include <selector.h>
+#include <configuration.h>
+#include <commandInterpreter.h>
 
 #define BACKLOG_QTY 20
 #define ERROR -1
@@ -34,14 +36,18 @@ static void sigtermHandler(const int signal) {
 
 const char *errorMessage = NULL;
 
-int main() {
+int main(const int argc, const char **argv) {
+	// reads command line options and sets configurations
+	readOptions(argc, (char *const *) argv);
+	// setting signals
 	signal(SIGTERM, sigtermHandler); // handling SIGTERM
 	signal(SIGINT, sigtermHandler);  // handling SIGINT
-	close(0);						 // nothing to read from stdin
-	unsigned port		   = 1234;
+
+	close(0); // nothing to read from stdin
+	unsigned proxyPort	 = getHttpPort(getConfiguration());
 	selector_status ss	 = SELECTOR_SUCCESS;
 	fd_selector selector   = NULL;
-	const int serverSocket = prepareTCPSocket(port, NULL);
+	const int serverSocket = prepareTCPSocket(proxyPort, NULL);
 
 	if (serverSocket == ERROR) {
 		goto finally;
