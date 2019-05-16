@@ -16,7 +16,7 @@ int parseMethod(struct methodParser *parser, buffer *input) {
 	do {
 		letter = buffer_read(input);
 
-		if (letter) {
+		if (letter) { // buffer returns 0 if nothing to read
 			ret = parseChar(parser, letter);
 		}
 
@@ -78,6 +78,48 @@ int parseChar(struct methodParser *parser, char l) {
 
 			break;
 
+		case H:
+			if (l == 'E') {
+				parser->state = HE;
+			}
+			else {
+				parser->state = ERROR_METHOD_STATE;
+			}
+
+			break;
+
+		case HE:
+			if (l == 'A') {
+				parser->state = HEA;
+			}
+			else {
+				parser->state = ERROR_METHOD_STATE;
+			}
+
+			break;
+
+		case HEA:
+			if (l == 'D') {
+				parser->state = HEAD;
+			}
+			else {
+				parser->state = ERROR_METHOD_STATE;
+			}
+
+			break;
+
+		case HEAD:
+			if (l == ' ') {
+				parser->method = HEAD_METHOD;
+				parser->state  = DONE_METHOD_STATE;
+				total		   = parser->charactersRead;
+			}
+			else {
+				parser->state = ERROR_METHOD_STATE;
+			}
+
+			break;
+
 		case P:
 			if (l == 'O') {
 				parser->state = PO;
@@ -89,6 +131,7 @@ int parseChar(struct methodParser *parser, char l) {
 				parser->state = ERROR_METHOD_STATE;
 			}
 			break;
+
 		case PO:
 			if (l == 'S') {
 				parser->state = POS;
@@ -218,6 +261,10 @@ static void transitionStart(struct methodParser *parser, char l) {
 	if (l == 'G') {
 		parser->method = G;
 		parser->state  = G;
+	}
+	else if (l == 'H') {
+		parser->method = H;
+		parser->state  = H;
 	}
 	else if (l == 'D') {
 		parser->method = D;

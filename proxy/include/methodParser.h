@@ -1,6 +1,10 @@
 #ifndef METHOD_PARSER_H
 #define METHOD_PARSER_H
 
+/* Parser for request method, avaliable methods are GET, HEAD, POST,
+** DELETE and can be extended in the future
+*/
+
 #include <stdint.h>
 #include <buffer.h>
 
@@ -10,6 +14,10 @@ enum methodState {
 	G,
 	GE,
 	GET,
+	H,
+	HE,
+	HEA,
+	HEAD,
 	P,
 	PO,
 	POS,
@@ -28,6 +36,7 @@ enum methodState {
 
 enum methodType {
 	GET_METHOD,
+	HEAD_METHOD,
 	POST_METHOD,
 	PUT_METHOD,
 	DELETE_METHOD,

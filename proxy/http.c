@@ -36,6 +36,7 @@ void httpPassiveAccept(struct selector_key *key) {
 	struct http *state		= NULL;
 	const int client =
 		accept(key->fd, (struct sockaddr *) &clientAddr, &clientAddrLen);
+
 	if (client == -1) {
 		goto fail;
 	}
@@ -138,13 +139,13 @@ unsigned parseMethodRead(struct selector_key *key) {
 	unsigned ret	   = PARSE_METHOD;
 	uint8_t *pointer;
 	size_t count;
-	ssize_t n;
+	ssize_t bytesRead;
 
-	pointer = buffer_write_ptr(readBuffer, &count);
-	n		= recv(key->fd, pointer, count, 0);
+	pointer   = buffer_write_ptr(readBuffer, &count);
+	bytesRead = recv(key->fd, pointer, count, 0);
 
-	if (n > 0) {
-		buffer_write_adv(readBuffer, n);
+	if (bytesRead > 0) {
+		buffer_write_adv(readBuffer, bytesRead);
 		struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 		if (parseMethod(&parseRequest->methodParser, readBuffer)) {
 			ret = PARSE_TARGET;
