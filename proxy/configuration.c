@@ -5,6 +5,8 @@
 struct configuration {
 	unsigned short httpPort;
 	unsigned short managementPort;
+	char *httpInterfaces;
+	char *managementInterfaces;
 	char *mediaTypes;
 	char *command;
 	int isTransformationOn;
@@ -14,14 +16,16 @@ struct configuration {
 };
 
 static struct configuration config = {
-	.httpPort			= DEFAULT_PROXY_HTTP_PORT,
-	.managementPort		= DEFAULT_MANAGEMENT_PORT,
-	.mediaTypes			= NULL,
-	.command			= NULL,
-	.commandStderrFd	= INVALID_FD,
-	.isTransformationOn = FALSE,
-	.filterHttp			= NULL,
-	.filterAdmin		= NULL,
+	.httpPort			  = DEFAULT_PROXY_HTTP_PORT,
+	.managementPort		  = DEFAULT_MANAGEMENT_PORT,
+	.httpInterfaces		  = NULL,
+	.managementInterfaces = "127.0.0.1",
+	.mediaTypes			  = NULL,
+	.command			  = NULL,
+	.commandStderrFd	  = INVALID_FD,
+	.isTransformationOn   = FALSE,
+	.filterHttp			  = NULL,
+	.filterAdmin		  = NULL,
 };
 
 void initializeConfigBaseValues(configurationADT config) {
@@ -54,4 +58,21 @@ unsigned short getManagementPort(configurationADT config) {
 
 void setManagementPort(configurationADT config, unsigned short managementPort) {
 	config->managementPort = managementPort;
+}
+
+char *getHttpInterfaces(configurationADT config) {
+	return config->httpInterfaces;
+}
+
+char *setHttpInterfaces(configurationADT config, char *httpInterfaces) {
+	return config->httpInterfaces = httpInterfaces;
+}
+
+char *getManagementInterfaces(configurationADT config) {
+	return config->managementInterfaces;
+}
+
+char *setManagementInterfaces(configurationADT config,
+							  char *managementInterfaces) {
+	return config->managementInterfaces = managementInterfaces;
 }
