@@ -3,11 +3,7 @@
 
 #include <stdlib.h>
 
-enum boolean {
-    FALSE = 0,
-    TRUE
-};
-
+enum boolean { FALSE = 0, TRUE };
 
 #define BLOCK 10
 

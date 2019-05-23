@@ -6,21 +6,21 @@
 #include <utilities.h>
 
 enum headerState {
-    START_H,
-    H,
-    HO,
-    HOS,
-    HOST,
-    HOST_DDOTS,
-    IPSIX,
-    END_IPSIX,
-    IPFOUR_OR_HOST_NAME,
-    PORT,
-    FINISH,
-    NOT_HEADER_HOST,
-    CR,
-    OWS_H,
-    ERROR
+	START_H,
+	H,
+	HO,
+	HOS,
+	HOST,
+	HOST_DDOTS,
+	IPSIX,
+	END_IPSIX,
+	IPFOUR_OR_HOST_NAME,
+	PORT,
+	FINISH,
+	NOT_HEADER_HOST,
+	CR,
+	OWS_H,
+	ERROR
 };
 
 struct headerParser {
@@ -29,7 +29,7 @@ struct headerParser {
 	char *host;
 	unsigned int sizeHost;
 	int port;
-    int hasFoundHost;
+	int hasFoundHost;
 };
 
 #define BLOCK 10
