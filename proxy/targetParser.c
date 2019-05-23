@@ -3,7 +3,6 @@
 #define isDigit(a) ('0' <= a && a <= '9')
 
 int parseTargetChar(struct targetParser *parser, char l);
-char *addCharToString(char *string, unsigned int *sizeString, char c);
 enum targetState startTTransition(struct targetParser *parser, char l);
 enum targetState aAuthOrASchemaTransition(struct targetParser *parser, char l);
 enum targetState BarASchemaTransition(struct targetParser *parser, char l);
@@ -17,7 +16,7 @@ void parseTargetInit(struct targetParser *parser) {
 	parser->host		   = NULL;
 	parser->sizeHost	   = 0;
 	parser->target		   = NULL;
-	parser->sizeTarget	 = 0;
+	parser->sizeTarget	   = 0;
 	parser->port		   = 0;
 }
 
@@ -91,16 +90,6 @@ char *getHost(struct targetParser *parser) {
 
 char *getTarget(struct targetParser *parser) {
 	return parser->target;
-}
-
-char *addCharToString(char *string, unsigned int *sizeString, char c) {
-	char *ret = string;
-	if (*sizeString % BLOCK == 0) {
-		ret = realloc(string, *sizeString + BLOCK);
-	}
-	ret[*sizeString] = c;
-	(*sizeString)++;
-	return ret;
 }
 
 enum targetState startTTransition(struct targetParser *parser, char l) {

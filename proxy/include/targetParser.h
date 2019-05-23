@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <buffer.h>
 #include <stdlib.h>
+#include <utilities.h>
 
 enum targetState {
 	START_T,
@@ -26,7 +27,6 @@ struct targetParser {
 	int port;
 };
 
-#define BLOCK 10
 #define PORT_DEFAULT 80
 
 /*
