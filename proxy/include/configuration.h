@@ -38,4 +38,17 @@ unsigned short getManagementPort(configurationADT config);
 /* Returs http proxy management  port */
 void setManagementPort(configurationADT config, unsigned short managementPort);
 
+/* Returns proxy listening interfaces */
+char *getHttpInterfaces(configurationADT config);
+
+/* Sets proxy listening interfaces */
+char *setHttpInterfaces(configurationADT config, char *httpInterfaces);
+
+/* Returns management listening interfaces */
+char *getManagementInterfaces(configurationADT config);
+
+/* Sets management listening interfaces */
+char *setManagementInterfaces(configurationADT config,
+							  char *managementInterfaces);
+
 #endif
