@@ -39,6 +39,7 @@ enum httpState {
 	 * Resolves address and connects to origin
 	 */
 	CONNECT_TO_ORIGIN,
+
 	/**
 	 * Copia bytes entre client_fd y origin_fd.
 	 *
@@ -49,7 +50,7 @@ enum httpState {
 	 * Transicion:
 	 *   - DONE     cuando no queda nada mas por copiar.
 	 */
-	COPY,
+	HANDLE_REQUEST,
 
 	// final states
 	DONE,

@@ -141,7 +141,7 @@ static const struct state_definition clientStatbl[] = {
 	},
 
 	{
-		.state = COPY,
+		.state = HANDLE_REQUEST,
 		// .on_arrival       = copy_init,
 		.on_read_ready = parseMethodRead,
 		// .on_write_ready   = copy_w,
