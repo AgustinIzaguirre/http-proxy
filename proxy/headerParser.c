@@ -108,6 +108,9 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 			if (l == '\n') {
 				parser->hasFoundHost = TRUE;
 			}
+			else {
+				parser->state = ERROR;
+			}
 		case ERROR:
 			total = parser->charactersRead;
 			break;
