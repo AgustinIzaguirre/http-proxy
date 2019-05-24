@@ -1,5 +1,6 @@
 #include <http.h>
 #include <httpProxyADT.h>
+#include <connectToOrigin.h>
 
 static const struct state_definition *httpDescribeStates(void);
 
@@ -133,7 +134,7 @@ static const struct state_definition clientStatbl[] = {
 		// .on_write_ready   = copy_w,
 	},
 	{
-		.state = RESOLV_NAME,
+		.state = CONNECT_TO_ORIGIN,
 		// .on_arrival       = copy_init,
 		.on_block_ready = addressResolvNameDone,
 		// .on_write_ready   = copy_w,

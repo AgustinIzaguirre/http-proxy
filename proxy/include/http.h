@@ -8,6 +8,13 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 
+#define GET_DATA(key) ((httpADT_t)(key)->data)
+
+/*
+ * Returns the address of http handler structure
+ */
+const struct fd_handler *getHttpHandler();
+
 /*
  * Accepts a connection and creates a new struct http
  * associated with it.
@@ -34,14 +41,5 @@ unsigned parseTargetRead(struct selector_key *key);
 void parseTargetArrive(const unsigned state, struct selector_key *key);
 void parseTargetDeparture(const unsigned state,
 						  struct selector_key *key); // TODO
-
-/*
- * Connects to origin server
- */
-int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry);
-
-int blockingToResolvName(struct selector_key *key, int fdClient);
-void *addressResolvName(void **data);
-unsigned addressResolvNameDone(struct selector_key *key);
 
 #endif

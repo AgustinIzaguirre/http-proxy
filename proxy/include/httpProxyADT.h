@@ -35,7 +35,10 @@ enum httpState {
 	PARSE_METHOD,
 	PARSE_TARGET, // TODO: comentarios
 	PARSE_HOST,
-	RESOLV_NAME,
+	/*
+	 * Resolves address and connects to origin
+	 */
+	CONNECT_TO_ORIGIN,
 	/**
 	 * Copia bytes entre client_fd y origin_fd.
 	 *
