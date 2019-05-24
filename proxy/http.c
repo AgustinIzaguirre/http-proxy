@@ -149,9 +149,9 @@ unsigned parseMethodRead(struct selector_key *key) {
 		buffer_write_adv(readBuffer, bytesRead);
 		struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 		if (parseMethod(&parseRequest->methodParser, readBuffer)) {
-			// ret = PARSE_TARGET;  evans
-			ret = RESOLV_NAME;
-			blockingToResolvName(key, key->fd);
+			ret = PARSE_TARGET;
+			// ret = RESOLV_NAME;
+			// blockingToResolvName(key, key->fd); evans
 		}
 	}
 	else {
