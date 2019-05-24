@@ -1,5 +1,6 @@
 #include <http.h>
 #include <httpProxyADT.h>
+#include <connectToOrigin.h>
 
 static const struct state_definition *httpDescribeStates(void);
 
@@ -19,6 +20,7 @@ struct http {
 	socklen_t originAddrLen;
 	int originDomain;
 	int originFd;
+	unsigned short originPort;
 
 	// HTTP proxy state machine
 	struct state_machine stm;
@@ -61,6 +63,18 @@ int getClientFd(struct http *s) {
 
 int getOriginFd(struct http *s) {
 	return s->originFd;
+}
+
+void setOriginFd(struct http *s, int originFd) {
+	s->originFd = originFd;
+}
+
+unsigned short getOriginPort(struct http *s) {
+	return s->originPort;
+}
+
+void setOriginPort(struct http *s, unsigned short originPort) {
+	s->originPort = originPort;
 }
 
 struct parseRequest *getParseRequestState(httpADT_t s) {
@@ -120,10 +134,17 @@ static const struct state_definition clientStatbl[] = {
 		// .on_write_ready   = copy_w,
 	},
 	{
-		.state = COPY,
+		.state = CONNECT_TO_ORIGIN,
 		// .on_arrival       = copy_init,
-		.on_read_ready = parseMethodRead,
+		.on_block_ready = addressResolvNameDone,
 		// .on_write_ready   = copy_w,
+	},
+
+	{
+		.state = HANDLE_REQUEST,
+		// .on_arrival       = copy_init,
+		.on_read_ready  = requestRead,
+		.on_write_ready = requestWrite,
 	},
 	{
 		.state = DONE,

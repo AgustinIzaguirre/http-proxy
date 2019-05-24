@@ -35,6 +35,11 @@ enum httpState {
 	PARSE_METHOD,
 	PARSE_TARGET, // TODO: comentarios
 	PARSE_HOST,
+	/*
+	 * Resolves address and connects to origin
+	 */
+	CONNECT_TO_ORIGIN,
+
 	/**
 	 * Copia bytes entre client_fd y origin_fd.
 	 *
@@ -45,7 +50,7 @@ enum httpState {
 	 * Transicion:
 	 *   - DONE     cuando no queda nada mas por copiar.
 	 */
-	COPY,
+	HANDLE_REQUEST,
 
 	// final states
 	DONE,
@@ -97,6 +102,11 @@ int getClientFd(httpADT_t s);
 int getOriginFd(httpADT_t s);
 
 /*
+ * Sets origin server fd to originFd
+ */
+void setOriginFd(struct http *s, int originFd);
+
+/*
  * Returns client address
  */
 struct sockaddr_storage *getClientAddress(httpADT_t s);
@@ -135,5 +145,15 @@ void setRequestMethod(httpADT_t s, unsigned method);
  * Returns http request method
  */
 unsigned getRequestMethod(httpADT_t s);
+
+/*
+ * Returns origin server port
+ */
+unsigned short getOriginPort(struct http *s);
+
+/*
+ * Sets origin server port
+ */
+void setOriginPort(struct http *s, unsigned short originPort);
 
 #endif

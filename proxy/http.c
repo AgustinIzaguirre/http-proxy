@@ -2,6 +2,9 @@
 #include <httpProxyADT.h>
 #include <selector.h>
 #include <stm.h>
+#include <configuration.h>
+#include <connectToOrigin.h>
+#include <handleRequest.h>
 
 #include <assert.h> // assert
 #include <errno.h>
@@ -13,8 +16,6 @@
 #include <unistd.h> // close
 
 #include <arpa/inet.h>
-
-#define GET_DATA(key) ((httpADT_t)(key)->data)
 
 static void httpRead(struct selector_key *key);
 static void httpWrite(struct selector_key *key);
@@ -28,6 +29,10 @@ static const struct fd_handler httpHandler = {
 	.handle_close = httpClose,
 	.handle_block = httpBlock,
 };
+
+const struct fd_handler *getHttpHandler() {
+	return &httpHandler;
+}
 
 void httpPassiveAccept(struct selector_key *key) {
 	printf("conexion aceptada\n"); // evans
@@ -149,6 +154,8 @@ unsigned parseMethodRead(struct selector_key *key) {
 		struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 		if (parseMethod(&parseRequest->methodParser, readBuffer)) {
 			ret = PARSE_TARGET;
+			// ret = CONNECT_TO_ORIGIN; evans
+			// blockingToResolvName(key, key->fd);
 		}
 	}
 	else {

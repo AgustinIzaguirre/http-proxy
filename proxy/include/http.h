@@ -2,6 +2,18 @@
 #define HTTP_H
 
 #include <selector.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <netdb.h>
+
+#define GET_DATA(key) ((httpADT_t)(key)->data)
+
+/*
+ * Returns the address of http handler structure
+ */
+const struct fd_handler *getHttpHandler();
 
 /*
  * Accepts a connection and creates a new struct http
@@ -29,5 +41,8 @@ unsigned parseTargetRead(struct selector_key *key);
 void parseTargetArrive(const unsigned state, struct selector_key *key);
 void parseTargetDeparture(const unsigned state,
 						  struct selector_key *key); // TODO
+
+unsigned requestRead(struct selector_key *key);
+unsigned requestWrite(struct selector_key *key);
 
 #endif
