@@ -32,8 +32,7 @@ void *addressResolvName(void **data) {
 unsigned addressResolvNameDone(struct selector_key *key) {
 	struct addrinfo *res = NULL; // currentState->originResolution; evans
 
-	connectToOrigin(key, res);
-	return COPY;
+	return connectToOrigin(key, res);
 }
 
 int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
@@ -77,5 +76,5 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 		return ERROR;
 	}
 
-	return 0; // return new state now should abort
+	return HANDLE_REQUEST; // return new state now should abort
 }

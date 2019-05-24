@@ -3,6 +3,7 @@
 #include <selector.h>
 #include <stm.h>
 #include <configuration.h>
+#include <connectToOrigin.h>
 
 #include <assert.h> // assert
 #include <errno.h>
@@ -151,9 +152,9 @@ unsigned parseMethodRead(struct selector_key *key) {
 		buffer_write_adv(readBuffer, bytesRead);
 		struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 		if (parseMethod(&parseRequest->methodParser, readBuffer)) {
-			ret = PARSE_TARGET;
-			// ret = RESOLV_NAME;
-			// blockingToResolvName(key, key->fd); evans
+			// ret = PARSE_TARGET; evans
+			ret = CONNECT_TO_ORIGIN;
+			blockingToResolvName(key, key->fd);
 		}
 	}
 	else {
@@ -201,4 +202,14 @@ unsigned parseTargetRead(
 	}
 
 	return ret;
+}
+
+unsigned requestRead(struct selector_key *key) {
+	printf("can read request from client\n");
+	return 0;
+}
+
+unsigned requestWrite(struct selector_key *key) {
+	printf("can write request on origin\n");
+	return 0;
 }

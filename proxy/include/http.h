@@ -42,4 +42,7 @@ void parseTargetArrive(const unsigned state, struct selector_key *key);
 void parseTargetDeparture(const unsigned state,
 						  struct selector_key *key); // TODO
 
+unsigned requestRead(struct selector_key *key);
+unsigned requestWrite(struct selector_key *key);
+
 #endif
