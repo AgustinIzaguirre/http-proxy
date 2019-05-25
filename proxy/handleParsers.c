@@ -20,54 +20,58 @@ unsigned parseRead(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 
-	pointer   = buffer_write_ptr(readBuffer, &count);
-	bytesRead = recv(key->fd, pointer, count, 0);
+	if (buffer_can_write(readBuffer)) {
+		pointer   = buffer_write_ptr(readBuffer, &count);
+		bytesRead = recv(key->fd, pointer, count, 0);
 
-	if (bytesRead > 0) {
-		buffer_write_adv(readBuffer, bytesRead);
-		struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
-		switch (ret) {
-			case PARSE_METHOD:
-				if (parseMethod(&parseRequest->methodParser, readBuffer)) {
-					ret = PARSE_TARGET;
-				}
-				break;
-			case PARSE_TARGET:
-				if (parseTarget(&parseRequest->targetParser, readBuffer)) {
-					ret = PARSE_VERSION;
-				}
-				break;
-			case PARSE_VERSION:
-				if (parseVersion(&parseRequest->versionParser, readBuffer)) {
-					if (getVersionState(&parseRequest->versionParser) ==
-						ERROR_V) {
-						ret = ERROR; // TODO: check
+		if (bytesRead > 0) {
+			buffer_write_adv(readBuffer, bytesRead);
+			struct parseRequest *parseRequest =
+				getParseRequestState(GET_DATA(key));
+			switch (ret) {
+				case PARSE_METHOD:
+					if (parseMethod(&parseRequest->methodParser, readBuffer)) {
+						ret = PARSE_TARGET;
 					}
-					else if (getOriginHost(GET_DATA(key)) == NULL) {
-						ret = PARSE_HEADER;
+					break;
+				case PARSE_TARGET:
+					if (parseTarget(&parseRequest->targetParser, readBuffer)) {
+						ret = PARSE_VERSION;
 					}
-					else {
-						ret = DONE; // TODO: put connect and resolve state
+					break;
+				case PARSE_VERSION:
+					if (parseVersion(&parseRequest->versionParser,
+									 readBuffer)) {
+						if (getVersionState(&parseRequest->versionParser) ==
+							ERROR_V) {
+							ret = ERROR; // TODO: check
+						}
+						else if (getOriginHost(GET_DATA(key)) == NULL) {
+							ret = PARSE_HEADER;
+						}
+						else {
+							ret = DONE; // TODO: put connect and resolve state
+						}
 					}
-				}
-			case PARSE_HEADER:
-				if (parseHeader(&parseRequest->headerParser, readBuffer)) {
-					if (hasFoundHostHeaderParser(
-							&parseRequest->headerParser)) { // TODO: drop error
-															// if buffer is full
-						ret = DONE; // TODO: put connect and resolve state
+				case PARSE_HEADER:
+					if (parseHeader(&parseRequest->headerParser, readBuffer)) {
+						if (hasFoundHostHeaderParser(
+								&parseRequest
+									 ->headerParser)) { // TODO: drop error
+														// if buffer is full
+							ret = DONE; // TODO: put connect and resolve state
+						}
+						else {
+							ret = ERROR;
+						}
 					}
-					else {
-						ret = ERROR;
-					}
-				}
+			}
+		}
+		else {
+			printf("error\n"); // TODO:remove
+			ret = ERROR;
 		}
 	}
-	else {
-		printf("error\n"); // TODO:remove
-		ret = ERROR;
-	}
-
 	return ret;
 }
 
