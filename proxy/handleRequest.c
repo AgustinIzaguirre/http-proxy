@@ -92,7 +92,7 @@ unsigned requestWrite(struct selector_key *key) {
 	}
 
 	pointer = buffer_read_ptr(readBuffer, &count);
-	printf("count to read on buffer: %d\n\n", count); // evans
+	printf("count to read on buffer: %ld\n\n", count); // evans
 
 	bytesRead = send(key->fd, pointer, count, 0);
 

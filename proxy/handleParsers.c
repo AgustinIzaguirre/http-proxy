@@ -33,8 +33,7 @@ unsigned parseRead(struct selector_key *key) {
 				case PARSE_METHOD:
 					if (parseMethod(&parseRequest->methodParser, readBuffer)) {
 						ret = PARSE_TARGET;
-						evans
-						// ret = CONNECT_TO_ORIGIN;
+						// ret = CONNECT_TO_ORIGIN; evans
 						// blockingToResolvName(key, key->fd);
 					}
 					break;
