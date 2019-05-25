@@ -1,4 +1,5 @@
 #include <targetParser.h>
+#include <stdio.h> //TODO:remove
 
 #define isDigit(a) ('0' <= a && a <= '9')
 
@@ -16,7 +17,7 @@ void parseTargetInit(struct targetParser *parser) {
 	parser->host		   = NULL;
 	parser->sizeHost	   = 0;
 	parser->target		   = NULL;
-	parser->sizeTarget	   = 0;
+	parser->sizeTarget	 = 0;
 	parser->port		   = 0;
 }
 
@@ -30,7 +31,7 @@ int parseTarget(struct targetParser *parser, buffer *input) {
 		if (letter) {
 			ret = parseTargetChar(parser, letter);
 		}
-
+		printf("%c\n", letter); // TODO:remove
 	} while (((ret == 0) && letter));
 
 	return ret;
@@ -41,7 +42,7 @@ int parseTargetChar(struct targetParser *parser, char l) {
 	int total = 0;
 
 	if (l == ' ') {
-		parser->state = END;
+		parser->state = END_T;
 		parser->target =
 			addCharToString(parser->target, &parser->sizeTarget, '\0');
 		parser->host = addCharToString(parser->host, &parser->sizeHost, '\0');
@@ -66,13 +67,13 @@ int parseTargetChar(struct targetParser *parser, char l) {
 		case A_USERINFO:
 			parser->state = AUserinfoTransition(parser, l);
 			break;
-		case PORT:
+		case PORT_T:
 			parser->state = PortTransition(parser, l);
 			break;
 		case A_AUTH:
 			parser->state = A_AUTH;
 			break;
-		case END:
+		case END_T:
 			total = parser->charactersRead;
 			break;
 	}
@@ -90,6 +91,10 @@ char *getHost(struct targetParser *parser) {
 
 char *getTarget(struct targetParser *parser) {
 	return parser->target;
+}
+
+int getPortTarget(struct targetParser *parser) {
+	return parser->port;
 }
 
 enum targetState startTTransition(struct targetParser *parser, char l) {
@@ -113,7 +118,7 @@ enum targetState startTTransition(struct targetParser *parser, char l) {
 enum targetState aAuthOrASchemaTransition(struct targetParser *parser, char l) {
 	enum targetState state;
 	if (isDigit(l)) {
-		state		 = PORT;
+		state		 = PORT_T;
 		parser->port = l - '0';
 	}
 	else if (l == '/') {
@@ -145,7 +150,7 @@ enum targetState BarASchemaTransition(struct targetParser *parser, char l) {
 enum targetState DBarASchemaTransition(struct targetParser *parser, char l) {
 	enum targetState state;
 	if (l == ':') {
-		state = PORT;
+		state = PORT_T;
 	}
 	else if (l == '@') {
 		state = A_USERINFO;
@@ -166,7 +171,7 @@ enum targetState DBarASchemaTransition(struct targetParser *parser, char l) {
 enum targetState AUserinfoTransition(struct targetParser *parser, char l) {
 	enum targetState state;
 	if (l == ':') {
-		state = PORT;
+		state = PORT_T;
 	}
 	else if (l == '/') {
 		state = A_AUTH;
@@ -181,7 +186,7 @@ enum targetState AUserinfoTransition(struct targetParser *parser, char l) {
 enum targetState PortTransition(struct targetParser *parser, char l) {
 	enum targetState state;
 	if (isDigit(l)) {
-		state		 = PORT;
+		state		 = PORT_T;
 		parser->port = parser->port * 10 + l - '0';
 	}
 	else {

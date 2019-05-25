@@ -21,6 +21,7 @@ struct http {
 	int originDomain;
 	int originFd;
 	unsigned short originPort;
+	char *host; // TODO: check
 
 	// HTTP proxy state machine
 	struct state_machine stm;
@@ -109,6 +110,14 @@ unsigned getRequestMethod(httpADT_t s) {
 	return s->requestMethod;
 }
 
+char *getOriginHost(struct http *s) {
+	return s->host;
+}
+
+void setOriginHost(struct http *s, char *requestHost) {
+	s->host = requestHost;
+}
+
 // Pool of struct http, to be reused.
 static const unsigned maxPool = MAX_POOL_SIZE;
 static unsigned poolSize	  = 0; // current size
@@ -118,20 +127,26 @@ static const struct state_definition clientStatbl[] = {
 	{
 		.state		   = PARSE_METHOD,
 		.on_arrival	= parseRequestInit,
-		.on_read_ready = parseMethodRead, // readFirstLine,
+		.on_read_ready = parseRead, // readFirstLine,
 		.on_departure  = parseRequestDestroy,
 	},
 	{
 		.state		   = PARSE_TARGET,
 		.on_arrival	= parseTargetArrive,
-		.on_read_ready = parseTargetRead,
+		.on_read_ready = parseRead,
 		.on_departure  = parseTargetDeparture,
 	},
 	{
-		.state = PARSE_HOST,
-		// .on_arrival       = copy_init,
-		.on_read_ready = parseMethodRead,
-		// .on_write_ready   = copy_w,
+		.state		   = PARSE_VERSION,
+		.on_arrival	= parseVersionArrive,
+		.on_read_ready = parseRead,
+		.on_departure  = parseVersionDeparture,
+	},
+	{
+		.state		   = PARSE_HEADER,
+		.on_arrival	= parseHeaderArrive,
+		.on_read_ready = parseRead,
+		.on_departure  = parseHeaderDeparture,
 	},
 	{
 		.state = CONNECT_TO_ORIGIN,
@@ -176,6 +191,7 @@ struct http *httpNew(int clientFd) {
 
 	memset(ret, 0x00, sizeof(*ret));
 
+	ret->host		   = NULL;
 	ret->originFd	  = -1;
 	ret->clientFd	  = clientFd;
 	ret->clientAddrLen = sizeof(ret->clientAddr);
@@ -183,7 +199,8 @@ struct http *httpNew(int clientFd) {
 	// setting state machine
 	ret->stm.initial   = PARSE_METHOD;
 	ret->stm.max_state = ERROR;
-	ret->stm.states	= httpDescribeStates();
+
+	ret->stm.states = httpDescribeStates();
 	stm_init(&ret->stm);
 
 	buffer_init(&ret->readBuffer, SIZE_OF_ARRAY(ret->rawBuffA), ret->rawBuffA);

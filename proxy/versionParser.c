@@ -1,4 +1,5 @@
 #include <versionParser.h>
+#include <stdio.h> //TODO:remove
 
 #define isDigit(a) ('0' <= a && a <= '9')
 
@@ -23,6 +24,7 @@ void parseVersionInit(struct versionParser *parser) {
 int parseVersion(struct versionParser *parser, buffer *input) {
 	uint8_t letter;
 	int ret;
+	printf("LLEGUE PARSE VERSION"); // TODO:remove
 
 	do {
 		letter = buffer_read(input);
@@ -30,7 +32,7 @@ int parseVersion(struct versionParser *parser, buffer *input) {
 		if (letter) {
 			ret = parseVersionChar(parser, letter);
 		}
-
+		printf("V:%c\n", letter); // TODO:remove
 	} while (((ret == 0) && letter));
 
 	return ret;

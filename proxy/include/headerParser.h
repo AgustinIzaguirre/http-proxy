@@ -5,9 +5,9 @@
 #include <buffer.h>
 #include <utilities.h>
 
-enum headerState {
+enum headerState { // TODO: check ports
 	START_H,
-	H,
+	H_H,
 	HO,
 	HOS,
 	HOST,
@@ -18,9 +18,9 @@ enum headerState {
 	PORT,
 	FINISH,
 	NOT_HEADER_HOST,
-	CR,
+	CR_H,
 	OWS_H,
-	ERROR
+	ERROR_H
 };
 
 struct headerParser {

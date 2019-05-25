@@ -6,15 +6,15 @@
 #include <stdlib.h>
 #include <utilities.h>
 
-enum targetState {
+enum targetState { // TODO: check ports
 	START_T,
 	A_AUTH_OR_A_SCHEMA,
 	BAR_A_SCHEMA,
 	D_BAR_A_SCHEMA,
 	A_USERINFO,
-	PORT,
+	PORT_T,
 	A_AUTH,
-	END
+	END_T
 };
 
 struct targetParser {
@@ -54,5 +54,10 @@ char *getHost(struct targetParser *parser);
  * Returns the target found by the state machine
  */
 char *getTarget(struct targetParser *parser);
+
+/*
+ * Returns the port found by the parser
+ */
+int getPortTarget(struct targetParser *parser);
 
 #endif

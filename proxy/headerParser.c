@@ -68,7 +68,7 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 		case START_H:
 			parser->state = startTransition(parser, l);
 			break;
-		case H:
+		case H_H:
 			parser->state = hTransition(parser, l);
 			break;
 		case HO:
@@ -98,7 +98,7 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 		case NOT_HEADER_HOST:
 			parser->state = notHeaderHostTransition(parser, l);
 			break;
-		case CR:
+		case CR_H:
 			parser->state = crTransition(parser, l);
 			break;
 		case OWS_H:
@@ -109,9 +109,9 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 				parser->hasFoundHost = TRUE;
 			}
 			else {
-				parser->state = ERROR;
+				parser->state = ERROR_H;
 			}
-		case ERROR:
+		case ERROR_H:
 			total = parser->charactersRead;
 			break;
 	}
@@ -122,7 +122,7 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 enum headerState startTransition(struct headerParser *parser, char l) {
 	enum headerState state = NOT_HEADER_HOST;
 	if (l == 'H' || l == 'h') {
-		state = H;
+		state = H_H;
 	}
 	return state;
 }
@@ -182,7 +182,7 @@ enum headerState ipSixTransition(struct headerParser *parser, char l) {
 }
 
 enum headerState endIpSixTransition(struct headerParser *parser, char l) {
-	enum headerState state = ERROR;
+	enum headerState state = ERROR_H;
 	if (l == '\t') {
 		state = FINISH;
 	}
@@ -222,7 +222,7 @@ enum headerState portTransition(struct headerParser *parser, char l) {
 		state = FINISH;
 	}
 	else if (!isDigit(l)) {
-		state = ERROR;
+		state = ERROR_H;
 	}
 	else {
 		parser->port = parser->port * 10 + l - '0';
@@ -241,7 +241,7 @@ enum headerState crTransition(struct headerParser *parser, char l) {
 enum headerState notHeaderHostTransition(struct headerParser *parser, char l) {
 	enum headerState state = NOT_HEADER_HOST;
 	if (l == '\r') {
-		state = CR;
+		state = CR_H;
 	}
 	return state;
 }
@@ -252,7 +252,7 @@ enum headerState owsHTransition(struct headerParser *parser, char l) {
 		state = FINISH;
 	}
 	else if (!isOWS(l)) {
-		state = ERROR;
+		state = ERROR_H;
 	}
 	return state;
 }

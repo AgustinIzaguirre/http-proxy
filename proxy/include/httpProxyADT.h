@@ -10,6 +10,10 @@
 #include <buffer.h>
 #include <methodParser.h>
 #include <targetParser.h>
+#include <versionParser.h>
+#include <headerParser.h>
+#include <handleParsers.h>
+#include <handleRequest.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
@@ -33,8 +37,9 @@ enum httpState {
 	 *
 	 */
 	PARSE_METHOD,
-	PARSE_TARGET, // TODO: comentarios
-	PARSE_HOST,
+	PARSE_TARGET,  // TODO: comentarios
+	PARSE_VERSION, // TODO: comentarios
+	PARSE_HEADER,  // TODO: comentarios
 	/*
 	 * Resolves address and connects to origin
 	 */
@@ -62,8 +67,8 @@ struct parseRequest {
 	buffer *input;
 	struct methodParser methodParser;
 	struct targetParser targetParser;
-	// struct hostParser   hostParser;
-	//    char                *host;
+	struct versionParser versionParser;
+	struct headerParser headerParser;
 };
 
 /*
@@ -155,5 +160,15 @@ unsigned short getOriginPort(struct http *s);
  * Sets origin server port
  */
 void setOriginPort(struct http *s, unsigned short originPort);
+
+/*
+ * Return origin server host
+ */
+char *getOriginHost(struct http *s);
+
+/*
+ * Sets origin server host
+ */
+void setOriginHost(struct http *s, char *requestHost);
 
 #endif
