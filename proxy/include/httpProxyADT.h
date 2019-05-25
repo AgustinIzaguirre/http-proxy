@@ -17,7 +17,7 @@
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
-#define BUFFER_SIZE 2048
+#define BUFFER_SIZE 20
 
 typedef struct http *httpADT_t;
 
@@ -170,5 +170,10 @@ char *getOriginHost(struct http *s);
  * Sets origin server host
  */
 void setOriginHost(struct http *s, char *requestHost);
+
+/*
+ * Increments references to struct http in 1
+ */
+void incrementReferences(struct http *s);
 
 #endif

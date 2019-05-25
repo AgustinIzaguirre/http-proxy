@@ -75,6 +75,6 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 											  currentState)) {
 		return ERROR;
 	}
-
+	incrementReferences(currentState);
 	return HANDLE_REQUEST; // return new state now should abort
 }

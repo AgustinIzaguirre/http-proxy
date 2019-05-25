@@ -578,3 +578,7 @@ int selector_fd_set_nio(const int fd) {
 	}
 	return ret;
 }
+
+int IsFdSet(int fd, fd_selector s) {
+	return FD_ISSET(fd, &s->slave_r);
+}

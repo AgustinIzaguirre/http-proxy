@@ -1,4 +1,5 @@
 #include <handleParsers.h>
+#include <connectToOrigin.h>
 
 void parseRequestInit(const unsigned state, struct selector_key *key) {
 	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
@@ -32,6 +33,9 @@ unsigned parseRead(struct selector_key *key) {
 				case PARSE_METHOD:
 					if (parseMethod(&parseRequest->methodParser, readBuffer)) {
 						ret = PARSE_TARGET;
+						evans
+						// ret = CONNECT_TO_ORIGIN;
+						// blockingToResolvName(key, key->fd);
 					}
 					break;
 				case PARSE_TARGET:
