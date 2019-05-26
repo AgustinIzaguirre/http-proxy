@@ -1,9 +1,7 @@
 #include <targetParser.h>
-#include <stdio.h> //TODO:remove
 
 #define isDigit(a) ('0' <= a && a <= '9')
 
-int parseTargetChar(struct targetParser *parser, char l);
 enum targetState startTTransition(struct targetParser *parser, char l);
 enum targetState aAuthOrASchemaTransition(struct targetParser *parser, char l);
 enum targetState BarASchemaTransition(struct targetParser *parser, char l);
@@ -21,25 +19,9 @@ void parseTargetInit(struct targetParser *parser) {
 	parser->port		   = 0;
 }
 
-int parseTarget(struct targetParser *parser, buffer *input) {
-	uint8_t letter;
-	int ret;
-
-	do {
-		letter = buffer_read(input);
-
-		if (letter) {
-			ret = parseTargetChar(parser, letter);
-		}
-		printf("%c\n", letter); // TODO:remove
-	} while (((ret == 0) && letter));
-
-	return ret;
-}
-
 int parseTargetChar(struct targetParser *parser, char l) {
 	parser->charactersRead++;
-	int total = 0;
+	int flag = 1;
 
 	if (l == ' ') {
 		parser->state = END_T;
@@ -74,11 +56,11 @@ int parseTargetChar(struct targetParser *parser, char l) {
 			parser->state = A_AUTH;
 			break;
 		case END_T:
-			total = parser->charactersRead;
+			flag = 0;
 			break;
 	}
 
-	return total;
+	return flag;
 }
 
 unsigned getTargetState(struct targetParser *parser) {

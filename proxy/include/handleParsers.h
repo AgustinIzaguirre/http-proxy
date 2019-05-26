@@ -9,17 +9,7 @@
 
 unsigned parseRead(struct selector_key *key);
 
-void parseRequestInit(const unsigned state, struct selector_key *key);
-void parseRequestDestroy(const unsigned state, struct selector_key *key);
-
-void parseTargetArrive(const unsigned state, struct selector_key *key);
-void parseTargetDeparture(const unsigned state,
-						  struct selector_key *key); // TODO
-
-void parseVersionArrive(const unsigned state, struct selector_key *key);
-void parseVersionDeparture(const unsigned state, struct selector_key *key);
-
-void parseHeaderArrive(const unsigned state, struct selector_key *key);
-void parseHeaderDeparture(const unsigned state, struct selector_key *key);
+void parseInit(const unsigned state, struct selector_key *key);
+void parseDestroy(const unsigned state, struct selector_key *key);
 
 #endif

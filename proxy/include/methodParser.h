@@ -52,18 +52,12 @@ struct methodParser {
 /*
  * Initialize parser
  */
-void parseInit(struct methodParser *parser);
-
-/*
- * Parse the given input until there is nothing to read on
- * the input buffer or finds a space
- */
-int parseMethod(struct methodParser *parser, buffer *input);
+void parseMethodInit(struct methodParser *parser);
 
 /*
  * Parse a single letter into method state machine
  */
-int parseChar(struct methodParser *parser, char l);
+int parseMethodChar(struct methodParser *parser, char l);
 
 /*
  * Returns the current state of the method state machine

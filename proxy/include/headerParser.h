@@ -40,11 +40,7 @@ struct headerParser {
  */
 void parseHeaderInit(struct headerParser *parser);
 
-/*
- * Parse the given input until there is nothing to read on
- * the input buffer or finds a host
- */
-int parseHeader(struct headerParser *parser, buffer *input);
+int parseHeaderChar(struct headerParser *parser, char l);
 
 /*
  * Returns the current state of the header parser

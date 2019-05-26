@@ -36,10 +36,7 @@ enum httpState {
 	 *   - ERROR            If method not supported.
 	 *
 	 */
-	PARSE_METHOD,
-	PARSE_TARGET,  // TODO: comentarios
-	PARSE_VERSION, // TODO: comentarios
-	PARSE_HEADER,  // TODO: comentarios
+	PARSE, // TODO: check comentarios
 	/*
 	 * Resolves address and connects to origin
 	 */
@@ -62,9 +59,12 @@ enum httpState {
 	ERROR,
 };
 
+enum parserState { PARSE_METHOD, PARSE_TARGET, PARSE_VERSION, PARSE_HEADER };
+
 // structure for parse request state
 struct parseRequest {
 	buffer *input;
+	enum parserState state;
 	struct methodParser methodParser;
 	struct targetParser targetParser;
 	struct versionParser versionParser;

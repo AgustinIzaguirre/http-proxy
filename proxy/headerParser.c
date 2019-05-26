@@ -1,9 +1,9 @@
 #include <headerParser.h>
+#include <stdio.h>
 
 #define isDigit(a) ('0' <= a && a <= '9')
 #define isOWS(a) (a == '\t' || a == ' ')
 
-int parseHeaderChar(struct headerParser *parser, char l);
 enum headerState startTransition(struct headerParser *parser, char l);
 enum headerState hTransition(struct headerParser *parser, char l);
 enum headerState hoTransition(struct headerParser *parser, char l);
@@ -28,22 +28,6 @@ void parseHeaderInit(struct headerParser *parser) {
 	parser->hasFoundHost   = FALSE;
 }
 
-int parseHeader(struct headerParser *parser, buffer *input) {
-	uint8_t letter;
-	int ret;
-
-	do {
-		letter = buffer_read(input);
-
-		if (letter) {
-			ret = parseHeaderChar(parser, letter);
-		}
-
-	} while (((ret == 0) && letter));
-
-	return ret;
-}
-
 unsigned getHeaderState(struct headerParser *parser) {
 	return parser->state;
 }
@@ -62,7 +46,7 @@ int hasFoundHostHeaderParser(struct headerParser *parser) {
 
 int parseHeaderChar(struct headerParser *parser, char l) {
 	parser->charactersRead++;
-	int total = 0;
+	int flag = 1;
 
 	switch (parser->state) {
 		case START_H:
@@ -112,11 +96,11 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 				parser->state = ERROR_H;
 			}
 		case ERROR_H:
-			total = parser->charactersRead;
+			flag = 0;
 			break;
 	}
 
-	return total;
+	return flag;
 }
 
 enum headerState startTransition(struct headerParser *parser, char l) {
@@ -145,7 +129,7 @@ enum headerState hoTransition(struct headerParser *parser, char l) {
 
 enum headerState hosTransition(struct headerParser *parser, char l) {
 	enum headerState state = NOT_HEADER_HOST;
-	if (l == 'H' || l == 'h') {
+	if (l == 'T' || l == 't') {
 		state = HOST;
 	}
 	return state;
@@ -183,7 +167,7 @@ enum headerState ipSixTransition(struct headerParser *parser, char l) {
 
 enum headerState endIpSixTransition(struct headerParser *parser, char l) {
 	enum headerState state = ERROR_H;
-	if (l == '\t') {
+	if (l == '\r') {
 		state = FINISH;
 	}
 	else if (l == ':') {
@@ -199,7 +183,7 @@ enum headerState endIpSixTransition(struct headerParser *parser, char l) {
 enum headerState ipFourOrHostNameTransition(struct headerParser *parser,
 											char l) {
 	enum headerState state = IPFOUR_OR_HOST_NAME;
-	if (l == '\t') {
+	if (l == '\r') {
 		state = FINISH;
 		l	 = '\0';
 	}

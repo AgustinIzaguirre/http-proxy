@@ -2,34 +2,16 @@
 
 static void transitionStart(struct methodParser *parser, char l);
 
-void parseInit(struct methodParser *parser) {
+void parseMethodInit(struct methodParser *parser) {
 	parser->state		   = START;
 	parser->charactersRead = 0;
 	parser->method		   = NO_METHOD;
 }
 
-int parseMethod(struct methodParser *parser, buffer *input) {
-	uint8_t letter;
-	bool parsingMethod;
-	int ret;
-
-	do {
-		letter = buffer_read(input);
-
-		if (letter) { // buffer returns 0 if nothing to read
-			ret = parseChar(parser, letter);
-		}
-
-		parsingMethod = ((ret == 0) && letter);
-	} while (parsingMethod);
-
-	return ret;
-}
-
-int parseChar(struct methodParser *parser, char l) {
+int parseMethodChar(struct methodParser *parser, char l) {
 	unsigned state = parser->state;
 	parser->charactersRead++;
-	int total = 0;
+	int flag = 1;
 
 	switch (state) {
 		case START:
@@ -70,7 +52,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = GET_METHOD;
 				parser->state  = DONE_METHOD_STATE;
-				total		   = parser->charactersRead;
+				flag		   = 0;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -112,7 +94,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = HEAD_METHOD;
 				parser->state  = DONE_METHOD_STATE;
-				total		   = parser->charactersRead;
+				flag		   = 0;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -156,7 +138,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = POST_METHOD;
 				parser->state  = DONE_METHOD_STATE;
-				total		   = parser->charactersRead;
+				flag		   = 0;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -178,7 +160,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = PUT_METHOD;
 				parser->state  = DONE_METHOD_STATE;
-				total		   = parser->charactersRead;
+				flag		   = 0;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -240,7 +222,7 @@ int parseChar(struct methodParser *parser, char l) {
 			if (l == ' ') {
 				parser->method = DELETE_METHOD;
 				parser->state  = DONE_METHOD_STATE;
-				total		   = parser->charactersRead;
+				flag		   = 0;
 			}
 			else {
 				parser->state = ERROR_METHOD_STATE;
@@ -250,11 +232,11 @@ int parseChar(struct methodParser *parser, char l) {
 
 		case DONE_METHOD_STATE:
 		case ERROR_METHOD_STATE:
-			total = parser->charactersRead;
+			flag = 0;
 			break;
 	}
 
-	return total;
+	return flag;
 }
 
 static void transitionStart(struct methodParser *parser, char l) {

@@ -125,28 +125,10 @@ static struct http *pool	  = 0;
 
 static const struct state_definition clientStatbl[] = {
 	{
-		.state		   = PARSE_METHOD,
-		.on_arrival	= parseRequestInit,
-		.on_read_ready = parseRead, // readFirstLine,
-		.on_departure  = parseRequestDestroy,
-	},
-	{
-		.state		   = PARSE_TARGET,
-		.on_arrival	= parseTargetArrive,
+		.state		   = PARSE,
+		.on_arrival	= parseInit,
 		.on_read_ready = parseRead,
-		.on_departure  = parseTargetDeparture,
-	},
-	{
-		.state		   = PARSE_VERSION,
-		.on_arrival	= parseVersionArrive,
-		.on_read_ready = parseRead,
-		.on_departure  = parseVersionDeparture,
-	},
-	{
-		.state		   = PARSE_HEADER,
-		.on_arrival	= parseHeaderArrive,
-		.on_read_ready = parseRead,
-		.on_departure  = parseHeaderDeparture,
+		.on_departure  = parseDestroy,
 	},
 	{
 		.state = CONNECT_TO_ORIGIN,

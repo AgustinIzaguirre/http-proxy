@@ -1,9 +1,8 @@
 #include <versionParser.h>
-#include <stdio.h> //TODO:remove
+#include <stdio.h>
 
 #define isDigit(a) ('0' <= a && a <= '9')
 
-int parseVersionChar(struct versionParser *parser, char l);
 enum versionState startVTransition(struct versionParser *parser, char l);
 enum versionState hVTransition(struct versionParser *parser, char l);
 enum versionState htTransition(struct versionParser *parser, char l);
@@ -13,29 +12,11 @@ enum versionState httpBarTransition(struct versionParser *parser, char l);
 enum versionState versionOneransition(struct versionParser *parser, char l);
 enum versionState dotTransition(struct versionParser *parser, char l);
 enum versionState versionTwoTransition(struct versionParser *parser, char l);
-enum versionState cRVTransition(struct versionParser *parser, char l);
 
 void parseVersionInit(struct versionParser *parser) {
 	parser->state		   = START_V;
 	parser->charactersRead = 0;
 	parser->version		   = calloc(2, sizeof(int));
-}
-
-int parseVersion(struct versionParser *parser, buffer *input) {
-	uint8_t letter;
-	int ret;
-	printf("LLEGUE PARSE VERSION"); // TODO:remove
-
-	do {
-		letter = buffer_read(input);
-
-		if (letter) {
-			ret = parseVersionChar(parser, letter);
-		}
-		printf("V:%c\n", letter); // TODO:remove
-	} while (((ret == 0) && letter));
-
-	return ret;
 }
 
 unsigned getVersionState(struct versionParser *parser) {
@@ -48,7 +29,7 @@ int *getVersionVersionParser(struct versionParser *parser) {
 
 int parseVersionChar(struct versionParser *parser, char l) {
 	parser->charactersRead++;
-	int total = 0;
+	int flag = 1;
 
 	switch (parser->state) {
 		case START_V:
@@ -78,22 +59,18 @@ int parseVersionChar(struct versionParser *parser, char l) {
 		case VERSION_TWO:
 			parser->state = versionTwoTransition(parser, l);
 			break;
-		case CR_V:
-			parser->state = cRVTransition(parser, l);
-			break;
 		case FINISH_V:
 			if (l == '\n') {
-				total = parser->charactersRead;
+				flag = 0;
 				break;
 			}
 			parser->state = ERROR_V;
 		case ERROR_V:
-			free(parser->version);
-			total = parser->charactersRead;
+			flag = 0;
 			break;
 	}
 
-	return total;
+	return flag;
 }
 
 enum versionState startVTransition(struct versionParser *parser, char l) {
@@ -139,8 +116,8 @@ enum versionState httpTransition(struct versionParser *parser, char l) {
 enum versionState httpBarTransition(struct versionParser *parser, char l) {
 	enum versionState state = ERROR_V;
 	if (isDigit(l)) {
-		state			   = VERSION_ONE;
-		parser->version[0] = l - '0';
+		state				 = VERSION_ONE;
+		(parser->version)[0] = l - '0';
 	}
 	return state;
 }
@@ -148,8 +125,8 @@ enum versionState httpBarTransition(struct versionParser *parser, char l) {
 enum versionState dotTransition(struct versionParser *parser, char l) {
 	enum versionState state = ERROR_V;
 	if (isDigit(l)) {
-		state			   = VERSION_TWO;
-		parser->version[1] = l - '0';
+		state				 = VERSION_TWO;
+		(parser->version)[1] = l - '0';
 	}
 	return state;
 }
@@ -157,8 +134,11 @@ enum versionState dotTransition(struct versionParser *parser, char l) {
 enum versionState versionOneransition(struct versionParser *parser, char l) {
 	enum versionState state = ERROR_V;
 	if (isDigit(l)) {
-		state			   = VERSION_ONE;
-		parser->version[0] = 10 * parser->version[0] + l - '0';
+		state				 = VERSION_ONE;
+		(parser->version)[0] = 10 * (parser->version)[0] + l - '0';
+	}
+	else if (l == '.') {
+		state = DOT;
 	}
 	return state;
 }
@@ -166,16 +146,12 @@ enum versionState versionOneransition(struct versionParser *parser, char l) {
 enum versionState versionTwoTransition(struct versionParser *parser, char l) {
 	enum versionState state = ERROR_V;
 	if (isDigit(l)) {
-		state			   = VERSION_TWO;
-		parser->version[1] = 10 * parser->version[1] + l - '0';
+		state				 = VERSION_TWO;
+		(parser->version)[1] = 10 * (parser->version[1]) + l - '0';
 	}
-	return state;
-}
+	else if (l == '\r') {
+		state = FINISH_V;
+	}
 
-enum versionState cRVTransition(struct versionParser *parser, char l) {
-	enum versionState state = ERROR_V;
-	if (l == '\r') {
-		state = CR_V;
-	}
 	return state;
 }

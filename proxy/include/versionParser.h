@@ -15,7 +15,6 @@ enum versionState { // Put _V so it does not collide with others
 	VERSION_ONE,
 	DOT,
 	VERSION_TWO,
-	CR_V,
 	FINISH_V,
 	ERROR_V
 };
@@ -31,11 +30,7 @@ struct versionParser {
  */
 void parseVersionInit(struct versionParser *parser);
 
-/*
- * Parse the given input until there is nothing to read on
- * the input buffer or finds a CRCL
- */
-int parseVersion(struct versionParser *parser, buffer *input);
+int parseVersionChar(struct versionParser *parser, char l);
 
 /*
  * Returns the current state of the version parser

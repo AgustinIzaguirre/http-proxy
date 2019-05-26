@@ -34,11 +34,7 @@ struct targetParser {
  */
 void parseTargetInit(struct targetParser *parser);
 
-/*
- * Parse the given input until there is nothing to read on
- * the input buffer or finds a space
- */
-int parseTarget(struct targetParser *parser, buffer *input);
+int parseTargetChar(struct targetParser *parser, char l);
 
 /*
  * Returns the current state of the target state machine
