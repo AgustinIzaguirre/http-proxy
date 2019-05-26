@@ -1,4 +1,5 @@
 #include <handleParsers.h>
+#include <connectToOrigin.h>
 
 int parse(struct parseRequest *parseRequest, buffer *input, int *flag,
 		  int (*parseChar)(struct parseRequest *, char));

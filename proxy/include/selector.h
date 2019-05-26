@@ -196,6 +196,12 @@ selector_status selector_select(fd_selector s);
  */
 int selector_fd_set_nio(const int fd);
 
+/*
+ * Recive un filedescriptor y un fd_selector y retorna si
+ * el fd esta en el selector o no
+ */
+int IsFdSet(int fd, fd_selector s);
+
 /** notifica que un trabajo bloqueante terminó */
 selector_status selector_notify_block(fd_selector s, const int fd);
 

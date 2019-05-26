@@ -118,6 +118,10 @@ void setOriginHost(struct http *s, char *requestHost) {
 	s->host = requestHost;
 }
 
+void incrementReferences(struct http *s) {
+	s->references = s->references + 1;
+}
+
 // Pool of struct http, to be reused.
 static const unsigned maxPool = MAX_POOL_SIZE;
 static unsigned poolSize	  = 0; // current size
