@@ -90,8 +90,7 @@ static void httpRead(struct selector_key *key) {
 
 static void httpWrite(struct selector_key *key) {
 	struct state_machine *stm = getStateMachine(GET_DATA(key));
-	printf("Se desperto para escribir, porque no llama?\n"); // evans
-	const enum httpState st = stm_handler_write(stm, key);
+	const enum httpState st   = stm_handler_write(stm, key);
 
 	if (ERROR == st || DONE == st) {
 		httpDone(key);

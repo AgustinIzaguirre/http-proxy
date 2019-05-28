@@ -68,6 +68,8 @@ unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 		switch (parseRequest->state) {
 			case PARSE_METHOD:
 				bytesFromAParser = handleMethod(parseRequest, readBuffer, &ret);
+				ret				 = CONNECT_TO_ORIGIN; // evans
+				blockingToResolvName(key, key->fd);   // evans
 				break;
 			case PARSE_TARGET:
 				bytesFromAParser =
