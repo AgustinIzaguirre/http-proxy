@@ -2,7 +2,6 @@
 #include <http.h>
 #include <httpProxyADT.h>
 #include <stdio.h>
-
 #include <selector.h>
 
 unsigned requestRead(struct selector_key *key) {
