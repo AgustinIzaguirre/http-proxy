@@ -75,6 +75,8 @@ unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 		switch (parseRequest->state) {
 			case PARSE_METHOD:
 				bytesFromAParser = handleMethod(parseRequest, readBuffer, &ret);
+				ret				 = CONNECT_TO_ORIGIN; // evans TODO
+				blockingToResolvName(key, key->fd);   // evans TODO
 				break;
 			case PARSE_TARGET:
 				bytesFromAParser =
@@ -178,7 +180,7 @@ int parse(struct parseRequest *parseRequest, buffer *input, int *flag,
 		letter = buffer_read(input);
 
 		if (letter) {
-			*flag = (*parseChar)(parseRequest, letter);
+			*flag = parseChar(parseRequest, letter);
 			ret++;
 		}
 	} while ((*flag) && letter);
