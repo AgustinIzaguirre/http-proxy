@@ -14,6 +14,7 @@
 #include <headerParser.h>
 #include <handleParsers.h>
 #include <handleRequest.h>
+#include <handleResponse.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
@@ -53,6 +54,7 @@ enum httpState {
 	 *   - DONE     cuando no queda nada mas por copiar.
 	 */
 	HANDLE_REQUEST,
+	HANDLE_RESPONSE,
 
 	// final states
 	DONE,
