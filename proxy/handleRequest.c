@@ -11,6 +11,10 @@ unsigned requestRead(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 
+	if (key->fd == getOriginFd(GET_DATA(key))) {
+		return RESPONSE_HANDLER;
+	}
+
 	// if there is no space to read should write what i already read
 	if (!buffer_can_write(readBuffer)) {
 		// set interest no op on fd an write on origin fd
@@ -61,14 +65,19 @@ unsigned requestWrite(struct selector_key *key) {
 }
 
 unsigned setAdecuateFdInterests(struct selector_key *key) {
-	httpADT_t state	= GET_DATA(key);
-	buffer *readBuffer = getReadBuffer(GET_DATA(key));
-	unsigned ret	   = HANDLE_REQUEST;
-	int clientInterest = OP_NOOP;
-	int originInterest = OP_NOOP;
+	httpADT_t state		= GET_DATA(key);
+	buffer *readBuffer  = getReadBuffer(GET_DATA(key));
+	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
+	unsigned ret		= HANDLE_REQUEST;
+	int clientInterest  = OP_NOOP;
+	int originInterest  = OP_NOOP;
 
 	if (buffer_can_write(readBuffer)) {
 		clientInterest |= OP_READ;
+	}
+
+	if (buffer_can_write(writeBuffer)) {
+		originInterest |= OP_READ;
 	}
 
 	if (buffer_can_read(readBuffer)) {
