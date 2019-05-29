@@ -24,6 +24,9 @@ unsigned responseRead(struct selector_key *key) {
 		buffer_write_adv(writeBuffer, bytesRead);
 		ret = setResponseFdInterests(key);
 	}
+	else if (bytesRead == 0) {
+		ret = DONE; // should send what is left on buffer TODO
+	}
 	else {
 		ret = ERROR;
 	}
