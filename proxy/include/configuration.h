@@ -50,5 +50,7 @@ char *getManagementInterfaces(configurationADT config);
 /* Sets management listening interfaces */
 char *setManagementInterfaces(configurationADT config,
 							  char *managementInterfaces);
+/* Returns TRUE if transformations are enabled or FALSE otherwise */
+int getIsTransformationOn(configurationADT config);
 
 #endif

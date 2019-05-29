@@ -76,3 +76,7 @@ char *setManagementInterfaces(configurationADT config,
 							  char *managementInterfaces) {
 	return config->managementInterfaces = managementInterfaces;
 }
+
+int getIsTransformationOn(configurationADT config) {
+	return config->isTransformationOn;
+}

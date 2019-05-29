@@ -3,6 +3,7 @@
 #include <httpProxyADT.h>
 #include <stdio.h>
 #include <selector.h>
+#include <configuration.h>
 
 unsigned requestRead(struct selector_key *key) {
 	buffer *readBuffer = getReadBuffer(GET_DATA(key));
@@ -12,7 +13,7 @@ unsigned requestRead(struct selector_key *key) {
 	ssize_t bytesRead;
 
 	if (key->fd == getOriginFd(GET_DATA(key))) {
-		return HANDLE_RESPONSE;
+		return getAdecuateResponseState(key);
 	}
 
 	// if there is no space to read should write what i already read
@@ -89,6 +90,19 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 		SELECTOR_SUCCESS !=
 			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
 		return ERROR;
+	}
+
+	return ret;
+}
+
+unsigned getAdecuateResponseState(struct selector_key *key) {
+	configurationADT config = getConfiguration();
+	unsigned ret;
+	if (getIsTransformationOn(config)) {
+		ret = HANDLE_RESPONSE_WITH_TRANSFORMATION;
+	}
+	else {
+		ret = HANDLE_RESPONSE;
 	}
 
 	return ret;

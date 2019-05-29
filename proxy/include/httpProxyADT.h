@@ -55,6 +55,7 @@ enum httpState {
 	 */
 	HANDLE_REQUEST,
 	HANDLE_RESPONSE,
+	HANDLE_RESPONSE_WITH_TRANSFORMATION,
 
 	// final states
 	DONE,

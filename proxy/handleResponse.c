@@ -22,7 +22,6 @@ unsigned responseRead(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_write_adv(writeBuffer, bytesRead);
-		// check if request finished TODO
 		ret = setResponseFdInterests(key);
 	}
 	else {
@@ -50,7 +49,6 @@ unsigned responseWrite(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
-		// check if request finished TODO
 		ret = setResponseFdInterests(key);
 	}
 	else {
