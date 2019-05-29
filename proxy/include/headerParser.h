@@ -5,7 +5,7 @@
 #include <buffer.h>
 #include <utilities.h>
 
-enum headerState { // TODO: check ports
+enum headerState {
 	START_H,
 	H_H,
 	HO,
@@ -15,6 +15,7 @@ enum headerState { // TODO: check ports
 	IPSIX,
 	END_IPSIX,
 	IPFOUR_OR_HOST_NAME,
+	START_PORT,
 	PORT,
 	FINISH,
 	NOT_HEADER_HOST,
@@ -40,6 +41,10 @@ struct headerParser {
  */
 void parseHeaderInit(struct headerParser *parser);
 
+/*
+ * Parse a char
+ * Returns true if the parse has finish and false otherwise
+ */
 int parseHeaderChar(struct headerParser *parser, char l);
 
 /*

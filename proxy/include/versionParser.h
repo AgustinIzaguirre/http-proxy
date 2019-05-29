@@ -30,6 +30,10 @@ struct versionParser {
  */
 void parseVersionInit(struct versionParser *parser);
 
+/*
+ * Parse a char
+ * Returns true if the parse has finish and false otherwise
+ */
 int parseVersionChar(struct versionParser *parser, char l);
 
 /*
