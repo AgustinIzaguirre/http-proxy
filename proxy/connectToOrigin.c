@@ -22,7 +22,7 @@ int blockingToResolvName(struct selector_key *key, int fdClient) {
 
 void *addressResolvName(void **data) {
 	pthread_detach(pthread_self());
-	httpADT_t currentState   = data[0];
+	// httpADT_t currentState   = data[0];
 	struct selector_key *key = data[1];
 	// resolv address evans todo
 	selector_notify_block(key->s, key->fd);

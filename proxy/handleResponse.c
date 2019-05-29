@@ -34,7 +34,7 @@ unsigned responseRead(struct selector_key *key) {
 
 unsigned responseWrite(struct selector_key *key) {
 	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
-	unsigned ret		= HANDLE_REQUEST;
+	unsigned ret		= HANDLE_RESPONSE;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
@@ -63,15 +63,17 @@ unsigned responseWrite(struct selector_key *key) {
 unsigned setResponseFdInterests(struct selector_key *key) {
 	httpADT_t state		= GET_DATA(key);
 	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
-	unsigned ret		= HANDLE_REQUEST;
+	unsigned ret		= HANDLE_RESPONSE;
 	int clientInterest  = OP_NOOP;
 	int originInterest  = OP_NOOP;
 
 	if (buffer_can_read(writeBuffer)) {
+		printf("interes para escribir cliente\n"); // evans
 		clientInterest |= OP_WRITE;
 	}
 
 	if (buffer_can_write(writeBuffer)) {
+		printf("interes para leer origin\n"); // evans
 		originInterest |= OP_READ;
 	}
 
