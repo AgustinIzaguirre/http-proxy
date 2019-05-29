@@ -24,12 +24,12 @@ typedef struct http *httpADT_t;
 
 enum httpState {
 	/**
-	 * Reads first line of request message and ignores starting CRLF
-	 * for robustness.
+	 * Reads first line of request message and finds host if it is there
+	 * If the host is not in the first line it continue to analyse the headers
 	 *
 	 * Interests:
 	 *   ClientFd
-	 *      - OP_READ       Until client sends first line.
+	 *      - OP_READ       Until client sends end of line and has found host.
 	 *
 	 * Transitions:
 	 *   - REQUEST_CONNECT  If is a valid method and host.
@@ -37,7 +37,7 @@ enum httpState {
 	 *   - ERROR            If method not supported.
 	 *
 	 */
-	PARSE, // TODO: check comentarios
+	PARSE,
 	/*
 	 * Resolves address and connects to origin
 	 */

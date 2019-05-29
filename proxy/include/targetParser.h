@@ -6,12 +6,13 @@
 #include <stdlib.h>
 #include <utilities.h>
 
-enum targetState { // TODO: check ports
+enum targetState {
 	START_T,
 	A_AUTH_OR_A_SCHEMA,
 	BAR_A_SCHEMA,
 	D_BAR_A_SCHEMA,
 	A_USERINFO,
+	START_PORT_T,
 	PORT_T,
 	A_AUTH,
 	END_T
@@ -34,6 +35,10 @@ struct targetParser {
  */
 void parseTargetInit(struct targetParser *parser);
 
+/*
+ * Parse a char
+ * Returns true if the parse has finish and false otherwise
+ */
 int parseTargetChar(struct targetParser *parser, char l);
 
 /*

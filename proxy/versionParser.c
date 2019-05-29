@@ -3,15 +3,18 @@
 
 #define isDigit(a) ('0' <= a && a <= '9')
 
-enum versionState startVTransition(struct versionParser *parser, char l);
-enum versionState hVTransition(struct versionParser *parser, char l);
-enum versionState htTransition(struct versionParser *parser, char l);
-enum versionState httTransition(struct versionParser *parser, char l);
-enum versionState httpTransition(struct versionParser *parser, char l);
-enum versionState httpBarTransition(struct versionParser *parser, char l);
-enum versionState versionOneransition(struct versionParser *parser, char l);
-enum versionState dotTransition(struct versionParser *parser, char l);
-enum versionState versionTwoTransition(struct versionParser *parser, char l);
+static enum versionState startVTransition(struct versionParser *parser, char l);
+static enum versionState hVTransition(struct versionParser *parser, char l);
+static enum versionState htTransition(struct versionParser *parser, char l);
+static enum versionState httTransition(struct versionParser *parser, char l);
+static enum versionState httpTransition(struct versionParser *parser, char l);
+static enum versionState httpBarTransition(struct versionParser *parser,
+										   char l);
+static enum versionState versionOneransition(struct versionParser *parser,
+											 char l);
+static enum versionState dotTransition(struct versionParser *parser, char l);
+static enum versionState versionTwoTransition(struct versionParser *parser,
+											  char l);
 
 void parseVersionInit(struct versionParser *parser) {
 	parser->state		   = START_V;

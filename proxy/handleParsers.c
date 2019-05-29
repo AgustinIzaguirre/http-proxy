@@ -1,22 +1,29 @@
 #include <handleParsers.h>
 #include <connectToOrigin.h>
 
-int parse(struct parseRequest *parseRequest, buffer *input, int *flag,
-		  int (*parseChar)(struct parseRequest *, char));
-int handleMethod(struct parseRequest *parseRequest, buffer *readBuffer,
-				 unsigned *ret);
-int handleTarget(struct selector_key *key, struct parseRequest *parseRequest,
-				 buffer *readBuffer, unsigned *ret);
-int handleVersion(struct selector_key *key, struct parseRequest *parseRequest,
-				  buffer *readBuffer, unsigned *ret);
-int handleHeader(struct selector_key *key, struct parseRequest *parseRequest,
-				 buffer *readBuffer, unsigned *ret);
-int parseMethodCharWrapper(struct parseRequest *parseRequest, char letter);
-int parseTargetCharWrapper(struct parseRequest *parseRequest, char letter);
-int parseVersionCharWrapper(struct parseRequest *parseRequest, char letter);
-int parseHeaderCharWrapper(struct parseRequest *parseRequest, char letter);
-unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
-					  size_t bytesRead);
+static int parse(struct parseRequest *parseRequest, buffer *input, int *flag,
+				 int (*parseChar)(struct parseRequest *, char));
+static int handleMethod(struct parseRequest *parseRequest, buffer *readBuffer,
+						unsigned *ret);
+static int handleTarget(struct selector_key *key,
+						struct parseRequest *parseRequest, buffer *readBuffer,
+						unsigned *ret);
+static int handleVersion(struct selector_key *key,
+						 struct parseRequest *parseRequest, buffer *readBuffer,
+						 unsigned *ret);
+static int handleHeader(struct selector_key *key,
+						struct parseRequest *parseRequest, buffer *readBuffer,
+						unsigned *ret);
+static int parseMethodCharWrapper(struct parseRequest *parseRequest,
+								  char letter);
+static int parseTargetCharWrapper(struct parseRequest *parseRequest,
+								  char letter);
+static int parseVersionCharWrapper(struct parseRequest *parseRequest,
+								   char letter);
+static int parseHeaderCharWrapper(struct parseRequest *parseRequest,
+								  char letter);
+static unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
+							 size_t bytesRead);
 
 void parseInit(const unsigned state, struct selector_key *key) {
 	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
@@ -32,7 +39,7 @@ void parseInit(const unsigned state, struct selector_key *key) {
 void parseDestroy(const unsigned state, struct selector_key *key) {
 	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 	setRequestMethod(GET_DATA(key), getMethod(&(parseRequest->methodParser)));
-	// TODO:maybe more things
+	// static :maybe more things
 }
 
 unsigned parseRead(struct selector_key *key) {

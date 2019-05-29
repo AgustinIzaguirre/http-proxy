@@ -4,27 +4,31 @@
 #define isDigit(a) ('0' <= a && a <= '9')
 #define isOWS(a) (a == '\t' || a == ' ')
 
-enum headerState startTransition(struct headerParser *parser, char l);
-enum headerState hTransition(struct headerParser *parser, char l);
-enum headerState hoTransition(struct headerParser *parser, char l);
-enum headerState hosTransition(struct headerParser *parser, char l);
-enum headerState hostTransition(struct headerParser *parser, char l);
-enum headerState hostDDotsTransition(struct headerParser *parser, char l);
-enum headerState ipSixTransition(struct headerParser *parser, char l);
-enum headerState endIpSixTransition(struct headerParser *parser, char l);
-enum headerState ipFourOrHostNameTransition(struct headerParser *parser,
+static enum headerState startTransition(struct headerParser *parser, char l);
+static enum headerState hTransition(struct headerParser *parser, char l);
+static enum headerState hoTransition(struct headerParser *parser, char l);
+static enum headerState hosTransition(struct headerParser *parser, char l);
+static enum headerState hostTransition(struct headerParser *parser, char l);
+static enum headerState hostDDotsTransition(struct headerParser *parser,
 											char l);
-enum headerState portTransition(struct headerParser *parser, char l);
-enum headerState crTransition(struct headerParser *parser, char l);
-enum headerState notHeaderHostTransition(struct headerParser *parser, char l);
-enum headerState owsHTransition(struct headerParser *parser, char l);
+static enum headerState ipSixTransition(struct headerParser *parser, char l);
+static enum headerState endIpSixTransition(struct headerParser *parser, char l);
+static enum headerState ipFourOrHostNameTransition(struct headerParser *parser,
+												   char l);
+static enum headerState portTransition(struct headerParser *parser, char l);
+static enum headerState startPortTransition(struct headerParser *parser,
+											char l);
+static enum headerState crTransition(struct headerParser *parser, char l);
+static enum headerState notHeaderHostTransition(struct headerParser *parser,
+												char l);
+static enum headerState owsHTransition(struct headerParser *parser, char l);
 
 void parseHeaderInit(struct headerParser *parser) {
 	parser->state		   = START_H;
 	parser->charactersRead = 0;
 	parser->host		   = NULL;
 	parser->sizeHost	   = 0;
-	parser->port		   = PORT_DEFAULT;
+	parser->port		   = -1; // not found
 	parser->hasFoundHost   = FALSE;
 }
 
@@ -78,6 +82,9 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 			break;
 		case PORT:
 			parser->state = portTransition(parser, l);
+			break;
+		case START_PORT:
+			parser->state = startPortTransition(parser, l);
 			break;
 		case NOT_HEADER_HOST:
 			parser->state = notHeaderHostTransition(parser, l);
@@ -171,7 +178,7 @@ enum headerState endIpSixTransition(struct headerParser *parser, char l) {
 		state = FINISH;
 	}
 	else if (l == ':') {
-		state		 = PORT;
+		state		 = START_PORT;
 		parser->port = 0;
 	}
 	else if (isOWS(l)) {
@@ -188,7 +195,7 @@ enum headerState ipFourOrHostNameTransition(struct headerParser *parser,
 		l	 = '\0';
 	}
 	else if (l == ':') {
-		state		 = PORT;
+		state		 = START_PORT;
 		l			 = '\0';
 		parser->port = 0;
 	}
@@ -209,6 +216,15 @@ enum headerState portTransition(struct headerParser *parser, char l) {
 		state = ERROR_H;
 	}
 	else {
+		parser->port = parser->port * 10 + l - '0';
+	}
+	return state;
+}
+
+enum headerState startPortTransition(struct headerParser *parser, char l) {
+	enum headerState state = ERROR_H;
+	if (isDigit(l)) {
+		state		 = PORT;
 		parser->port = parser->port * 10 + l - '0';
 	}
 	return state;
