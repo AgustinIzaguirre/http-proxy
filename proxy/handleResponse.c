@@ -68,12 +68,10 @@ unsigned setResponseFdInterests(struct selector_key *key) {
 	int originInterest  = OP_NOOP;
 
 	if (buffer_can_read(writeBuffer)) {
-		printf("interes para escribir cliente\n"); // evans
 		clientInterest |= OP_WRITE;
 	}
 
 	if (buffer_can_write(writeBuffer)) {
-		printf("interes para leer origin\n"); // evans
 		originInterest |= OP_READ;
 	}
 
