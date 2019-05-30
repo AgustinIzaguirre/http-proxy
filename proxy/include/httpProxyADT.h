@@ -11,7 +11,7 @@
 #include <methodParser.h>
 #include <targetParser.h>
 #include <versionParser.h>
-#include <headerParser.h>
+#include <hostHeaderParser.h>
 #include <handleParsers.h>
 #include <handleRequest.h>
 #include <handleResponse.h>

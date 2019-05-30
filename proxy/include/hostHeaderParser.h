@@ -1,5 +1,5 @@
-#ifndef HEADER_PARSER_H
-#define HEADER_PARSER_H
+#ifndef HOST_HEADER_PARSER_H
+#define HOST_HEADER_PARSER_H
 
 #include <stdint.h>
 #include <buffer.h>
