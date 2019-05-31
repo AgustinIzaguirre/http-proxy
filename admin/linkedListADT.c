@@ -1,9 +1,8 @@
-TODO : check later #include<stdio.h>
+#include <stdio.h>
 #include <string.h>
 #include <linkedListADT.h>
 
-	   static struct Node *
-	   createNode(const void *data, size_t size);
+static struct Node *createNode(const void *data, size_t size);
 static void freeNode(struct Node *node);
 
 struct Node {
