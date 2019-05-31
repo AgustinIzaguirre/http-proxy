@@ -1,12 +1,18 @@
 #include <handleResponse.h>
 #include <http.h>
 #include <httpProxyADT.h>
+#include <headersParser.h>
 #include <stdio.h>
 #include <selector.h>
+void responseInit(const unsigned state, struct selector_key *key) {
+	struct headersParser *parseheaders = getHeadersParser(GET_DATA(key));
+	initializeHeaderParser(&parseheaders);
+}
 
 unsigned responseRead(struct selector_key *key) {
-	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
-	unsigned ret		= HANDLE_RESPONSE;
+	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
+	struct headersParser *headersParser = getHeadersParser(GET_DATA(key));
+	unsigned ret						= HANDLE_RESPONSE;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
@@ -21,10 +27,14 @@ unsigned responseRead(struct selector_key *key) {
 	bytesRead = recv(key->fd, pointer, count, 0);
 
 	if (bytesRead > 0) {
+		int begining = pointer - writeBuffer->data;
+		parseHeaders(headersParser, writeBuffer, begining,
+					 begining + bytesRead);
 		buffer_write_adv(writeBuffer, bytesRead);
 		ret = setResponseFdInterests(key);
 	}
 	else if (bytesRead == 0) {
+		// if response is not chunked or is last chunk
 		ret = DONE; // should send what is left on buffer TODO
 	}
 	else {

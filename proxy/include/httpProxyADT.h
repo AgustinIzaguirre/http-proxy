@@ -13,8 +13,6 @@
 #include <versionParser.h>
 #include <hostHeaderParser.h>
 #include <handleParsers.h>
-#include <handleRequest.h>
-#include <handleResponse.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
@@ -143,6 +141,11 @@ buffer *getWriteBuffer(httpADT_t s);
  * Returns http parse request structure
  */
 struct parseRequest *getParseRequestState(httpADT_t s);
+
+/*
+ * Returns http headers parser structure
+ */
+struct headersParser *getHeadersParser(httpADT_t s);
 
 /*
  * Sets http request method

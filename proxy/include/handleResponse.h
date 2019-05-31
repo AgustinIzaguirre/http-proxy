@@ -2,6 +2,10 @@
 #define HANDLE_RESPONSE_H
 
 #include <selector.h>
+/*
+ * Initialize headers parser struct
+ */
+void responseInit(const unsigned state, struct selector_key *key);
 
 /*
  * Reads response from origin fd into writeBuffer

@@ -23,10 +23,9 @@ enum headersState {
 };
 
 /*
- * Returns a new headers parser structure
+ * Initialize headers parser structure
  */
-struct headersParser *initializeHeaderParser();
-
+void initializeHeaderParser(struct headersParser **header);
 /*
  * Parse a char into the headers parser statemachine
  */

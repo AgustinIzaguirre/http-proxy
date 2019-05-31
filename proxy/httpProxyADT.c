@@ -1,6 +1,9 @@
 #include <http.h>
 #include <httpProxyADT.h>
 #include <connectToOrigin.h>
+#include <handleRequest.h>
+#include <handleResponse.h>
+#include <headersParser.h>
 
 static const struct state_definition *httpDescribeStates(void);
 
@@ -32,6 +35,7 @@ struct http {
 	// Client States
 	union {
 		struct parseRequest parseRequest;
+		struct headersParser parseHeaders;
 		int other;
 		// struct request_st         request;
 		// struct copy               copy;
@@ -80,6 +84,10 @@ void setOriginPort(struct http *s, unsigned short originPort) {
 
 struct parseRequest *getParseRequestState(httpADT_t s) {
 	return &((s->clientState).parseRequest);
+}
+
+struct headersParser *getHeadersParser(httpADT_t s) {
+	return &((s->clientState).parseHeaders);
 }
 
 struct sockaddr_storage *getClientAddress(httpADT_t s) {
@@ -147,8 +155,8 @@ static const struct state_definition clientStatbl[] = {
 		.on_write_ready = requestWrite,
 	},
 	{
-		.state = HANDLE_RESPONSE,
-		// .on_arrival       = copy_init,
+		.state			= HANDLE_RESPONSE,
+		.on_arrival		= responseInit,
 		.on_read_ready  = responseRead,
 		.on_write_ready = responseWrite,
 	},

@@ -4,7 +4,7 @@
 
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
-	while (begining <= end) {
+	while (begining < end) {
 		parseHeadersByChar(input->data[begining], header);
 		begining++;
 
@@ -18,12 +18,11 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 	}
 }
 
-struct headersParser *initializeHeaderParser() {
-	struct headersParser *header = malloc(sizeof(struct headersParser));
+void initializeHeaderParser(struct headersParser **header) {
+	*header = malloc(sizeof(struct headersParser));
 	// validate malloc
-	header->state		= HEADERS_START;
-	header->headerIndex = 0;
-	return header;
+	(*header)->state	   = HEADERS_START;
+	(*header)->headerIndex = 0;
 }
 
 void parseHeadersByChar(char l, struct headersParser *header) {
