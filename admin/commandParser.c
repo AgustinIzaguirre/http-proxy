@@ -1,37 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <administrator.h>
+#include <admin.h>
 #include <commandParser.h>
-
-#define EXPECTS(expectedChar, expectedState)                                   \
-	{                                                                          \
-		switch (currentChar) {                                                 \
-			case 't':                                                          \
-				currentState = expectedState;                                  \
-				break;                                                         \
-			default:                                                           \
-				returnCode = INVALID;                                          \
-		}                                                                      \
-	}
-
-#define EXPECTS_SPACE(expectedState)                                           \
-	{                                                                          \
-		switch (currentChar) {                                                 \
-			case '\t':                                                         \
-			case ' ': /* space */                                              \
-				currentState = expectedState;                                  \
-				break;                                                         \
-			default:                                                           \
-				returnCode = INVALID;                                          \
-		}                                                                      \
-	}
 
 int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				 size_t *dataLength) {
-	int returnCode   = IGNORE; /* IGNORE, INVALID, NEW, SEND */
-	int currentState = NOTHING;
-	char currentChar = getchar();
+	enum returnCode_t returnCode = IGNORE;
+	enum state_t currentState	= NOTHING;
+	char currentChar			 = getchar();
 	do {
 		switch (currentState) {
 			case NOTHING:
@@ -44,6 +21,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case 'b':
 						currentState = B;
+						break;
+					case '.':
+						currentState = DOT;
 						break;
 					case '\n':
 					case '\t':
@@ -85,8 +65,21 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						/* Keeps current state */
 						break;
 					case '\n':
-						*operation = BYE;
+						/* TODO: set command information to *bye* */
 						returnCode = NEW;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case DOT:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					case '\n':
+						returnCode = SEND;
+						break;
 					default:
 						returnCode = INVALID;
 				}
@@ -135,10 +128,96 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						returnCode = INVALID;
 				}
 				break;
+			case GET_M:
+				EXPECTS('t', GET_MT);
+				break;
+			case GET_MT:
+				EXPECTS('r', GET_MTR);
+				break;
+			case GET_MTR:
+				EXPECTS_SPACE(GET_MTR_);
+				break;
+			case GET_MTR_:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					case 'c':
+						currentState = GET_MTR_C;
+						break;
+					case 'h':
+						currentState = GET_MTR_H;
+						break;
+					case 'b':
+						currentState = GET_MTR_B;
+						break;
+					case '\n':
+						/* TODO: set command information to *get mtr* */
+						returnCode = NEW;
+						break;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case GET_MTR_C:
+				EXPECTS('n', GET_MTR_CN);
+				break;
+			case GET_MTR_H:
+				EXPECTS('s', GET_MTR_HS);
+				break;
+			case GET_MTR_B:
+				EXPECTS('t', GET_MTR_BT);
+				break;
+			case GET_MTR_CN:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					case '\n':
+						/* TODO: set command information to *get mtr cn* */
+						returnCode = NEW;
+						break;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case GET_MTR_HS:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					case '\n':
+						/* TODO: set command information to *get mtr hs* */
+						returnCode = NEW;
+						break;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case GET_MTR_BT:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					case '\n':
+						/* TODO: set command information to *get mtr bt* */
+						returnCode = NEW;
+						break;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case GET_B:
+				EXPECTS('f', GET_BF);
+				break;
 		}
 	} while (returnCode == IGNORE);
 
-	if (currentState == INVALID && currentChar != '\n') {
+	if (returnCode == INVALID && currentChar != '\n') {
 		while (currentChar != '\n') {
 			currentChar = getchar();
 		}
