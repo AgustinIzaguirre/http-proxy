@@ -1,10 +1,14 @@
 #ifndef COMMANDPARSER_H
 #define COMMANDPARSER_H
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <admin.h>
 
 #define EXPECTS(expectedChar, expectedState)                                   \
 	{                                                                          \
 		switch (currentChar) {                                                 \
-			case 't':                                                          \
+			case expectedChar:                                                 \
 				currentState = expectedState;                                  \
 				break;                                                         \
 			default:                                                           \

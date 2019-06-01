@@ -1,15 +1,14 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <admin.h>
 #include <commandParser.h>
 
 int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				 size_t *dataLength) {
 	enum returnCode_t returnCode = IGNORE;
 	enum state_t currentState	= NOTHING;
-	char currentChar			 = getchar();
+	char currentChar;
+
 	do {
+		currentChar = getchar();
+
 		switch (currentState) {
 			case NOTHING:
 				switch (currentChar) {
@@ -59,30 +58,13 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				EXPECTS_SPACE(SET_);
 				break;
 			case BYE:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
-					case '\n':
-						/* TODO: set command information to *bye* */
-						returnCode = NEW;
-					default:
-						returnCode = INVALID;
-				}
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *bye* */
+					returnCode = NEW;
+				});
 				break;
 			case DOT:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
-					case '\n':
-						returnCode = SEND;
-						break;
-					default:
-						returnCode = INVALID;
-				}
+				EXPECTS_ENTER_ALLOWING_SPACES({ returnCode = SEND; });
 				break;
 			case GET_:
 				switch (currentChar) {
@@ -154,6 +136,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* TODO: set command information to *get mtr* */
+						/* TODO: this is wrong here */
 						returnCode = NEW;
 						break;
 					default:
@@ -170,49 +153,31 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				EXPECTS('t', GET_MTR_BT);
 				break;
 			case GET_MTR_CN:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
-					case '\n':
-						/* TODO: set command information to *get mtr cn* */
-						returnCode = NEW;
-						break;
-					default:
-						returnCode = INVALID;
-				}
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get mtr cn* */
+					returnCode = NEW;
+				});
 				break;
 			case GET_MTR_HS:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
-					case '\n':
-						/* TODO: set command information to *get mtr hs* */
-						returnCode = NEW;
-						break;
-					default:
-						returnCode = INVALID;
-				}
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get mtr hs* */
+					returnCode = NEW;
+				});
 				break;
 			case GET_MTR_BT:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
-					case '\n':
-						/* TODO: set command information to *get mtr bt* */
-						returnCode = NEW;
-						break;
-					default:
-						returnCode = INVALID;
-				}
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get mtr bt* */
+					returnCode = NEW;
+				});
 				break;
 			case GET_B:
 				EXPECTS('f', GET_BF);
+				break;
+			case GET_BF:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get bf* */
+					returnCode = NEW;
+				});
 				break;
 		}
 	} while (returnCode == IGNORE);
