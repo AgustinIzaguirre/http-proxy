@@ -111,13 +111,33 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				}
 				break;
 			case GET_M:
-				EXPECTS('t', GET_MT);
+				switch (currentChar) {
+					case 't':
+						currentState = GET_MT;
+						break;
+					case 'i':
+						currentState = GET_MI;
+						break;
+					default:
+						returnCode = INVALID;
+				}
 				break;
 			case GET_MT:
 				EXPECTS('r', GET_MTR);
 				break;
 			case GET_MTR:
-				EXPECTS_SPACE(GET_MTR_);
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						currentState = GET_MTR_;
+						break;
+					case '\n':
+						/* TODO: set command information to *get mtr* */
+						returnCode = NEW;
+						break;
+					default:
+						returnCode = INVALID;
+				}
 				break;
 			case GET_MTR_:
 				switch (currentChar) {
@@ -136,7 +156,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* TODO: set command information to *get mtr* */
-						/* TODO: this is wrong here */
+						/* TODO: repeted above in GET_MTR */
 						returnCode = NEW;
 						break;
 					default:
@@ -176,6 +196,39 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_BF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* TODO: set command information to *get bf* */
+					returnCode = NEW;
+				});
+				break;
+			case GET_C:
+				EXPECTS('m', GET_CM);
+				break;
+			case GET_CM:
+				EXPECTS('d', GET_CMD);
+				break;
+			case GET_CMD:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get cmd* */
+					returnCode = NEW;
+				});
+				break;
+			case GET_MI:
+				EXPECTS('m', GET_MIM);
+				break;
+			case GET_MIM:
+				EXPECTS('e', GET_MIME);
+				break;
+			case GET_MIME:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get mime* */
+					returnCode = NEW;
+				});
+				break;
+			case GET_T:
+				EXPECTS('f', GET_TF);
+				break;
+			case GET_TF:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get tf* */
 					returnCode = NEW;
 				});
 				break;

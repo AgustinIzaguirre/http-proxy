@@ -57,24 +57,24 @@ enum state_t {
 	GET_,
 	GET_M,
 	GET_MT,
-	GET_MTR,
+	GET_MTR, /* command */
 	GET_MTR_,
 	GET_MTR_B,
-	GET_MTR_BT,
+	GET_MTR_BT, /* command */
 	GET_MTR_C,
-	GET_MTR_CN,
+	GET_MTR_CN, /* command */
 	GET_MTR_H,
-	GET_MTR_HS,
+	GET_MTR_HS, /* command */
 	GET_B,
-	GET_BF,
+	GET_BF, /* command */
 	GET_C,
 	GET_CM,
-	GET_CMD,
+	GET_CMD, /* command */
 	GET_MI,
 	GET_MIM,
-	GET_MIME,
+	GET_MIME, /* command */
 	GET_T,
-	GET_TF,
+	GET_TF, /* command */
 	S,
 	SE,
 	SET,
