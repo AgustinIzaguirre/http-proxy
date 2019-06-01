@@ -44,6 +44,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 enum state_t {
 	NOTHING,
 	DOT,
+	B,
+	BY,
+	BYE,
 	G,
 	GE,
 	GET,
@@ -58,9 +61,6 @@ enum state_t {
 	GET_MTR_CN,
 	GET_MTR_H,
 	GET_MTR_HS,
-	B,
-	BY,
-	BYE,
 	GET_B,
 	GET_BF,
 	GET_C,
@@ -76,9 +76,16 @@ enum state_t {
 	SET,
 	SET_,
 	SET_M,
+	SET_MI,
+	SET_MIM,
+	SET_MIME,
 	SET_T,
+	SET_TF,
 	SET_B,
-	SET_C
+	SET_BF,
+	SET_C,
+	SET_CM,
+	SET_CMD
 };
 
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
