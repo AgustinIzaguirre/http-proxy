@@ -5,6 +5,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 	enum returnCode_t returnCode = IGNORE;
 	enum state_t currentState	= NOTHING;
 	char currentChar;
+	*data = NULL;
 
 	do {
 		currentChar = getchar();
@@ -286,6 +287,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 					case '\n':
 						/* TODO: set command information to *get bf int* */
 						returnCode = NEW;
+						break;
 					default:
 						returnCode = INVALID;
 				}
@@ -353,7 +355,18 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				EXPECTS('e', SET_MIME);
 				break;
 			case SET_MIME:
-				EXPECTS_SPACE(SET_MIME_);
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						currentState = SET_MIME_;
+						break;
+					case '\n':
+						/* TODO: *set mime* to clean mime list */
+						returnCode = NEW;
+						break;
+					default:
+						returnCode = INVALID;
+				}
 				break;
 			case SET_MIME_:
 				switch (currentChar) {
@@ -361,9 +374,86 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 					case ' ': /* space */
 						/* Keeps current state */
 						break;
-						// default:
-						// if(isprint(currentChar))
+					case '\n':
+						/* TODO: *set mime* to clean mime list */
+						returnCode = NEW;
+						break;
+					default:
+						if (isprint(currentChar)) {
+							/* TODO: start to allocate/generate data */
+							currentState = SET_MIME_DATA;
+						}
+						else {
+							returnCode = INVALID;
+						}
 				}
+				break;
+			case SET_MIME_DATA:
+				switch (currentChar) {
+					case '\n':
+						/* TODO: set command info *set mime media-type* */
+						returnCode = NEW;
+						break;
+					default:
+						if (isprint(currentChar)) {
+							/* TODO: continuing allocating/generating data */
+							/* Keeps current state */
+						}
+						else {
+							returnCode = INVALID;
+						}
+				}
+				break;
+			case SET_C:
+				EXPECTS('m', SET_CM);
+				break;
+			case SET_CM:
+				EXPECTS('d', SET_CMD);
+				break;
+			case SET_CMD:
+				EXPECTS_SPACE(SET_CMD_);
+				break;
+			case SET_CMD_:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					default:
+						if (isprint(currentChar)) {
+							/* TODO: start to allocate/generate data */
+							currentState = SET_CMD_DATA;
+						}
+						else {
+							returnCode = INVALID;
+						}
+				}
+				break;
+			case SET_CMD_DATA:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						currentState = SET_CMD_DATA_;
+						break;
+					case '\n':
+						/* TODO: set command info *set cmd command* */
+						returnCode = NEW;
+						break;
+					default:
+						if (isprint(currentChar)) {
+							/* TODO: continuing allocating/generating data */
+							/* Keeps current state */
+						}
+						else {
+							returnCode = INVALID;
+						}
+				}
+				break;
+			case SET_CMD_DATA_:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command info *set mime media-type* */
+					returnCode = NEW;
+				});
 				break;
 		}
 	} while (returnCode == IGNORE);

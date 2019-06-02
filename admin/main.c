@@ -8,6 +8,8 @@ int main(int argc, char const *argv[]) {
 
 	/* TODO: receive from argv IP and PORT for the server to administrate */
 
+	data = malloc(sizeof(void *));
+
 	enum returnCode_t returnCode = IGNORE;
 	do {
 		returnCode = parseCommand(&operation, &id, &data, &dataLength);
