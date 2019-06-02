@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <admin.h>
+#include <ctype.h>
 
 #define EXPECTS(expectedChar, expectedState)                                   \
 	{                                                                          \
@@ -50,7 +51,7 @@ enum state_t {
 	DOT,
 	B,
 	BY,
-	BYE,
+	BYE, /* command */
 	G,
 	GE,
 	GET,
@@ -83,13 +84,22 @@ enum state_t {
 	SET_MI,
 	SET_MIM,
 	SET_MIME,
+	SET_MIME_,
 	SET_T,
 	SET_TF,
+	SET_TF_,
+	SET_TF_O,
+	SET_TF_ON, /* command */
+	SET_TF_OF,
+	SET_TF_OFF, /* command */
 	SET_B,
 	SET_BF,
+	SET_BF_,
+	SET_BF_DATA, /* command */
+	SET_BF_DATA_,
 	SET_C,
 	SET_CM,
-	SET_CMD
+	SET_CMD,
 };
 
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };

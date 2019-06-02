@@ -232,12 +232,151 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 					returnCode = NEW;
 				});
 				break;
+			case SET_B:
+				EXPECTS('f', SET_BF);
+				break;
+			case SET_BF:
+				*data = calloc(1, sizeof(int));
+				EXPECTS_SPACE(SET_BF_);
+				break;
+			case SET_BF_:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+						**((int **) data) =
+							**((int **) data) * 10 + currentChar - '0';
+						currentState = SET_BF_DATA;
+						break;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case SET_BF_DATA:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						currentState = SET_BF_DATA_;
+						break;
+					case '0':
+					case '1':
+					case '2':
+					case '3':
+					case '4':
+					case '5':
+					case '6':
+					case '7':
+					case '8':
+					case '9':
+						**((int **) data) =
+							**((int **) data) * 10 + currentChar - '0';
+						currentState = SET_BF_DATA;
+						break;
+					case '\n':
+						/* TODO: set command information to *get bf int* */
+						returnCode = NEW;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case SET_BF_DATA_:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *get bf int* */
+					/* TODO: repeated above at SET_BF_DATA */
+					returnCode = NEW;
+				});
+				break;
+			case SET_T:
+				EXPECTS('f', SET_TF);
+				break;
+			case SET_TF:
+				EXPECTS_SPACE(SET_TF_);
+				break;
+			case SET_TF_:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+					case 'o':
+						currentState = SET_TF_O;
+						break;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case SET_TF_O:
+				switch (currentChar) {
+					case 'n':
+						currentState = SET_TF_ON;
+						break;
+					case 'f':
+						currentState = SET_TF_OF;
+						break;
+					default:
+						returnCode = INVALID;
+				}
+				break;
+			case SET_TF_ON:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *set tf on* */
+					returnCode = NEW;
+				});
+				break;
+			case SET_TF_OF:
+				EXPECTS('f', SET_TF_OFF);
+				break;
+			case SET_TF_OFF:
+				EXPECTS_ENTER_ALLOWING_SPACES({
+					/* TODO: set command information to *set tf off* */
+					returnCode = NEW;
+				});
+				break;
+			case SET_M:
+				EXPECTS('i', SET_MI);
+				break;
+			case SET_MI:
+				EXPECTS('m', SET_MIM);
+				break;
+			case SET_MIM:
+				EXPECTS('e', SET_MIME);
+				break;
+			case SET_MIME:
+				EXPECTS_SPACE(SET_MIME_);
+				break;
+			case SET_MIME_:
+				switch (currentChar) {
+					case '\t':
+					case ' ': /* space */
+						/* Keeps current state */
+						break;
+						// default:
+						// if(isprint(currentChar))
+				}
+				break;
 		}
 	} while (returnCode == IGNORE);
 
-	if (returnCode == INVALID && currentChar != '\n') {
-		while (currentChar != '\n') {
-			currentChar = getchar();
+	if (returnCode == INVALID) {
+		if (currentChar != '\n') {
+			while (currentChar != '\n') {
+				currentChar = getchar();
+			}
+		}
+
+		if (*data != NULL) {
+			free(*data);
 		}
 	}
 

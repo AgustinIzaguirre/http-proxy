@@ -6,6 +6,8 @@ int main(int argc, char const *argv[]) {
 	void *data;
 	size_t dataLength;
 
+	/* TODO: receive from argv IP and PORT for the server to administrate */
+
 	enum returnCode_t returnCode = IGNORE;
 	do {
 		returnCode = parseCommand(&operation, &id, &data, &dataLength);
