@@ -40,6 +40,9 @@ unsigned responseWithTransformRead(struct selector_key *key) {
 			parseHeaders(&handleResponseWithTransform->parseHeaders,
 						 writeBuffer, begining, begining + bytesRead);
 		}
+		else {
+			// TODO here is where we should call the transformer
+		}
 		ret = setResponseWithTransformFdInterests(key);
 	}
 	else if (bytesRead == 0) {
