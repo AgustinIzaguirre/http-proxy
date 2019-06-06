@@ -121,6 +121,10 @@ void resetHeaderParser(struct headersParser *header) {
 static void isCensureHeader(struct headersParser *header) {
 	if (header->headerIndex > MAX_HOP_BY_HOP_HEADER_LENGTH ||
 		header->headerIndex == 0) {
+		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
+		header->headerBuf[header->headerIndex] = ':';
+		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
+		// TODO add string ":" when header is :
 		header->censure = FALSE;
 	}
 
