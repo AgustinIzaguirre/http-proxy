@@ -8,6 +8,7 @@
 #include <utilities.h>
 
 static int isNotCensured(httpADT_t state);
+static buffer *getCurrentBuffer(httpADT_t state);
 
 void requestInit(const unsigned state, struct selector_key *key) {
 	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
@@ -40,6 +41,7 @@ unsigned requestRead(struct selector_key *key) {
 		parseHeaders(&handleRequest->parseHeaders, readBuffer, begining,
 					 begining + bytesRead);
 		buffer_write_adv(readBuffer, bytesRead);
+
 		// check if request finished TODO
 		ret = setAdecuateFdInterests(key);
 	}
@@ -51,7 +53,7 @@ unsigned requestRead(struct selector_key *key) {
 }
 
 unsigned requestWrite(struct selector_key *key) {
-	buffer *readBuffer = getReadBuffer(GET_DATA(key));
+	buffer *readBuffer = getCurrentBuffer(GET_DATA(key));
 	unsigned ret	   = HANDLE_REQUEST;
 	uint8_t *pointer;
 	size_t count;
@@ -82,12 +84,13 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 	httpADT_t state						= GET_DATA(key);
 	struct handleRequest *handleRequest = getHandleRequestState(state);
 	buffer *readBuffer					= getReadBuffer(state);
+	buffer *parsedBuffer				= getCurrentBuffer(state);
 	buffer *writeBuffer					= getWriteBuffer(state);
 	unsigned ret						= HANDLE_REQUEST;
 	int clientInterest					= OP_NOOP;
 	int originInterest					= OP_NOOP;
 
-	if (buffer_can_write(readBuffer)) {
+	if (buffer_can_write(readBuffer) && !buffer_can_read(parsedBuffer)) {
 		clientInterest |= OP_READ;
 	}
 
@@ -95,7 +98,7 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 		originInterest |= OP_READ;
 	}
 
-	if (buffer_can_read(readBuffer) && isNotCensured(state)) {
+	if (buffer_can_read(parsedBuffer)) {
 		originInterest |= OP_WRITE;
 	}
 
@@ -125,4 +128,14 @@ unsigned getAdecuateResponseState(struct selector_key *key) {
 static int isNotCensured(httpADT_t state) {
 	buffer buf = getHandleRequestState(state)->parseHeaders.headerBuffer;
 	return buffer_can_read(&buf);
+}
+
+static buffer *getCurrentBuffer(httpADT_t state) {
+	buffer *buf = &(getHandleRequestState(state)->parseHeaders.headerBuffer);
+	if (buffer_can_read(buf)) {
+		return buf;
+	}
+	else {
+		return getReadBuffer(state);
+	}
 }

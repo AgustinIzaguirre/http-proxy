@@ -129,6 +129,7 @@ static void isCensureHeader(struct headersParser *header) {
 	else {
 		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
 		buffer_write_adv(&header->headerBuffer, header->headerIndex);
+		// buffer_read_adv(readBuffer, header->headerIndex);
 		header->censure = FALSE;
 	}
 }

@@ -42,7 +42,8 @@ void parseHeadersByChar(char l, struct headersParser *header);
 void resetHeaderParser(struct headersParser *header);
 
 /*
- * Parse the chars in buffer from begining to end inclusive
+ * Parse the chars in buffer from begining to end inclusive and returns
+ * how many chars has parsed
  */
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
