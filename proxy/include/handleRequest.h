@@ -6,7 +6,6 @@
 
 struct handleRequest {
 	struct headersParser parseHeaders;
-	uint8_t censure;
 	// other info
 };
 

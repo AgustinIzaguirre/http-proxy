@@ -9,13 +9,13 @@
 
 void requestInit(const unsigned state, struct selector_key *key) {
 	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
-	handleRequest->censure				= TRUE;
 	headersParserInit(&(handleRequest->parseHeaders));
 }
 
 unsigned requestRead(struct selector_key *key) {
-	buffer *readBuffer = getReadBuffer(GET_DATA(key));
-	unsigned ret	   = HANDLE_REQUEST;
+	buffer *readBuffer					= getReadBuffer(GET_DATA(key));
+	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
+	unsigned ret						= HANDLE_REQUEST;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
@@ -34,6 +34,9 @@ unsigned requestRead(struct selector_key *key) {
 	bytesRead = recv(key->fd, pointer, count, 0);
 
 	if (bytesRead > 0) {
+		int begining = pointer - readBuffer->data;
+		parseHeaders(&handleRequest->parseHeaders, readBuffer, begining,
+					 begining + bytesRead);
 		buffer_write_adv(readBuffer, bytesRead);
 		// check if request finished TODO
 		ret = setAdecuateFdInterests(key);
@@ -51,8 +54,6 @@ unsigned requestWrite(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
-	printf("censure = %d\n\n",
-		   getHeadersParser(GET_DATA(key))->censure); // evans
 
 	// if everything is read on buffer
 	if (!buffer_can_read(readBuffer)) {

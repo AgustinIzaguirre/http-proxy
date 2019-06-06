@@ -11,7 +11,6 @@ static void isCensureHeader(struct headersParser *header);
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	while (begining < end) {
-		header->censure = TRUE; // evans
 		parseHeadersByChar(input->data[begining], header);
 		begining++;
 

@@ -4,6 +4,7 @@
 #include <headersParser.h>
 #include <stdio.h>
 #include <selector.h>
+
 void responseInit(const unsigned state, struct selector_key *key) {
 	struct headersParser *parseheaders = getHeadersParser(GET_DATA(key));
 	initializeHeaderParser(&parseheaders);
