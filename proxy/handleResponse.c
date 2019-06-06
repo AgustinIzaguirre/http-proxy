@@ -34,11 +34,10 @@ unsigned responseRead(struct selector_key *key) {
 	if (bytesRead > 0) {
 		int begining = pointer - writeBuffer->data;
 		buffer_write_adv(writeBuffer, bytesRead);
-		//        if (handleResponse->parseHeaders.state != BODY_START) {
-		//            parseHeaders(&handleResponse->parseHeaders, writeBuffer,
-		//            begining,
-		//                         begining + bytesRead);
-		//        }
+		if (handleResponse->parseHeaders.state != BODY_START) {
+			parseHeaders(&handleResponse->parseHeaders, writeBuffer, begining,
+						 begining + bytesRead);
+		}
 		ret = setResponseFdInterests(key);
 	}
 	else if (bytesRead == 0) {
@@ -53,7 +52,7 @@ unsigned responseRead(struct selector_key *key) {
 }
 
 unsigned responseWrite(struct selector_key *key) {
-	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
+	buffer *writeBuffer = getCurrentResponseBuffer(GET_DATA(key));
 	unsigned ret		= HANDLE_RESPONSE;
 	uint8_t *pointer;
 	size_t count;
