@@ -42,14 +42,21 @@ void setManagementPort(configurationADT config, unsigned short managementPort);
 char *getHttpInterfaces(configurationADT config);
 
 /* Sets proxy listening interfaces */
-char *setHttpInterfaces(configurationADT config, char *httpInterfaces);
+void setHttpInterfaces(configurationADT config, char *httpInterfaces);
 
 /* Returns management listening interfaces */
 char *getManagementInterfaces(configurationADT config);
 
 /* Sets management listening interfaces */
-char *setManagementInterfaces(configurationADT config,
-							  char *managementInterfaces);
+void setManagementInterfaces(configurationADT config,
+							 char *managementInterfaces);
+
+/* Sets transform command */
+void setCommand(configurationADT config, char *command);
+
+/* returns transform command */
+char *getCommand(configurationADT config);
+
 /* Returns TRUE if transformations are enabled or FALSE otherwise */
 int getIsTransformationOn(configurationADT config);
 

@@ -1,6 +1,7 @@
 #include <configuration.h>
 #include <stdlib.h> //NULL
 #include <netinet/in.h>
+#include <utilities.h>
 
 struct configuration {
 	unsigned short httpPort;
@@ -64,17 +65,26 @@ char *getHttpInterfaces(configurationADT config) {
 	return config->httpInterfaces;
 }
 
-char *setHttpInterfaces(configurationADT config, char *httpInterfaces) {
-	return config->httpInterfaces = httpInterfaces;
+void setHttpInterfaces(configurationADT config, char *httpInterfaces) {
+	config->httpInterfaces = httpInterfaces;
 }
 
 char *getManagementInterfaces(configurationADT config) {
 	return config->managementInterfaces;
 }
 
-char *setManagementInterfaces(configurationADT config,
-							  char *managementInterfaces) {
-	return config->managementInterfaces = managementInterfaces;
+void setManagementInterfaces(configurationADT config,
+							 char *managementInterfaces) {
+	config->managementInterfaces = managementInterfaces;
+}
+
+void setCommand(configurationADT config, char *command) {
+	config->command			   = command;
+	config->isTransformationOn = TRUE;
+}
+
+char *getCommand(configurationADT config) {
+	return config->command;
 }
 
 int getIsTransformationOn(configurationADT config) {

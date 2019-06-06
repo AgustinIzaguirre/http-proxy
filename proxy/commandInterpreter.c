@@ -56,7 +56,7 @@ int readOptions(const int argc, char *const *argv) {
 				break;
 
 			case 't':
-				printfDefaultMessage(option, optarg);
+				setCommand(getConfiguration(), optarg);
 				params++;
 				break;
 
