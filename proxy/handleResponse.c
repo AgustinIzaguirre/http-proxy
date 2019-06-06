@@ -50,7 +50,7 @@ unsigned responseWrite(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
-
+	printf("censure: %d\n", getHeadersParser(GET_DATA(key))->censure); // evans
 	// if everything is read on buffer
 	if (!buffer_can_read(writeBuffer)) {
 		// set interest no op on fd an read on client fd

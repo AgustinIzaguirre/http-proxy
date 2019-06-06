@@ -4,6 +4,14 @@
 #include <stdio.h>
 #include <selector.h>
 #include <configuration.h>
+#include <headersParser.h>
+#include <utilities.h>
+
+void requestInit(const unsigned state, struct selector_key *key) {
+	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
+	handleRequest->censure				= TRUE;
+	headersParserInit(&(handleRequest->parseHeaders));
+}
 
 unsigned requestRead(struct selector_key *key) {
 	buffer *readBuffer = getReadBuffer(GET_DATA(key));
@@ -43,6 +51,8 @@ unsigned requestWrite(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
+	printf("censure = %d\n\n",
+		   getHeadersParser(GET_DATA(key))->censure); // evans
 
 	// if everything is read on buffer
 	if (!buffer_can_read(readBuffer)) {
@@ -54,8 +64,8 @@ unsigned requestWrite(struct selector_key *key) {
 	bytesRead = send(key->fd, pointer, count, 0);
 
 	if (bytesRead > 0) {
+		// parseRead
 		buffer_read_adv(readBuffer, bytesRead);
-		// check if request finished TODO
 		ret = setAdecuateFdInterests(key);
 	}
 	else {
@@ -66,12 +76,13 @@ unsigned requestWrite(struct selector_key *key) {
 }
 
 unsigned setAdecuateFdInterests(struct selector_key *key) {
-	httpADT_t state		= GET_DATA(key);
-	buffer *readBuffer  = getReadBuffer(GET_DATA(key));
-	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
-	unsigned ret		= HANDLE_REQUEST;
-	int clientInterest  = OP_NOOP;
-	int originInterest  = OP_NOOP;
+	httpADT_t state					   = GET_DATA(key);
+	struct headersParser *parseheaders = getHeadersParser(state);
+	buffer *readBuffer				   = getReadBuffer(state);
+	buffer *writeBuffer				   = getWriteBuffer(state);
+	unsigned ret					   = HANDLE_REQUEST;
+	int clientInterest				   = OP_NOOP;
+	int originInterest				   = OP_NOOP;
 
 	if (buffer_can_write(readBuffer)) {
 		clientInterest |= OP_READ;
@@ -81,7 +92,7 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 		originInterest |= OP_READ;
 	}
 
-	if (buffer_can_read(readBuffer)) {
+	if (buffer_can_read(readBuffer) && parseheaders->censure == FALSE) {
 		originInterest |= OP_WRITE;
 	}
 

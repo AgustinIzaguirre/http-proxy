@@ -35,6 +35,7 @@ struct http {
 	// Client States
 	union {
 		struct parseRequest parseRequest;
+		// struct handleRequest handleResponse;
 		struct headersParser parseHeaders;
 		int other;
 		// struct request_st         request;
@@ -83,6 +84,10 @@ void setOriginPort(struct http *s, unsigned short originPort) {
 }
 
 struct parseRequest *getParseRequestState(httpADT_t s) {
+	return &((s->clientState).parseRequest);
+}
+
+struct handleRequest *getHandleRequestState(httpADT_t s) {
 	return &((s->clientState).parseRequest);
 }
 
@@ -151,6 +156,7 @@ static const struct state_definition clientStatbl[] = {
 
 	{
 		.state			= HANDLE_REQUEST,
+		.on_arrival		= requestInit,
 		.on_read_ready  = requestRead,
 		.on_write_ready = requestWrite,
 	},

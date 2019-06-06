@@ -5,12 +5,17 @@
 #include <stdint.h>
 #include <buffer.h>
 
-#define MAX_HEADER_LENGTH 128
+#define MAX_HOP_BY_HOP_HEADER_LENGTH 20
+#define MAX_HEADER_LENGTH MAX_HOP_BY_HOP_HEADER_LENGTH + 128
+#define MAX_TOTAL_HEADER_LENGTH MAX_HEADER_LENGTH + 1024
 
 struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
+	uint8_t headerBuf[MAX_TOTAL_HEADER_LENGTH];
+	buffer headerBuffer;
 	int headerIndex;
 	int state;
+	uint8_t censure;
 };
 
 enum headersState {
@@ -41,5 +46,7 @@ void resetHeaderParser(struct headersParser *header);
  */
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
+
+void headersParserInit(struct headersParser *header); // TODO
 
 #endif

@@ -1,10 +1,17 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <headersParser.h>
+#include <configuration.h>
+#include <utilities.h>
+#include <string.h>
+#include <ctype.h>
+
+static void isCensureHeader(struct headersParser *header);
 
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	while (begining < end) {
+		header->censure = TRUE; // evans
 		parseHeadersByChar(input->data[begining], header);
 		begining++;
 
@@ -18,11 +25,22 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 	}
 }
 
+void headersParserInit(struct headersParser *header) {
+	header->state		= HEADERS_START;
+	header->headerIndex = 0;
+	header->censure		= TRUE;
+	buffer_init(&(header->headerBuffer), MAX_TOTAL_HEADER_LENGTH,
+				header->headerBuf);
+}
+
 void initializeHeaderParser(struct headersParser **header) {
 	*header = malloc(sizeof(struct headersParser));
-	// validate malloc
+	// validate malloc TODO
 	(*header)->state	   = HEADERS_START;
 	(*header)->headerIndex = 0;
+	(*header)->censure	 = TRUE;
+	buffer_init(&((*header)->headerBuffer), MAX_TOTAL_HEADER_LENGTH,
+				(*header)->headerBuf);
 }
 
 void parseHeadersByChar(char l, struct headersParser *header) {
@@ -36,11 +54,12 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 				header->state = HEADER_END;
 			}
 			else if (l != ':') {
-				header->currHeader[header->headerIndex++] = l;
+				header->currHeader[header->headerIndex++] = tolower(l);
 				header->state							  = HEADER_NAME;
 			}
 			else {
-				header->state = HEADER_VALUE;
+				header->censure = FALSE;
+				header->state   = HEADER_VALUE;
 			}
 
 			break;
@@ -48,10 +67,11 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 		case HEADER_NAME:
 			if (l == ':') {
 				header->currHeader[header->headerIndex++] = 0;
-				header->state							  = HEADER_VALUE;
+				isCensureHeader(header);
+				header->state = HEADER_VALUE;
 			}
 			else {
-				header->currHeader[header->headerIndex++] = l;
+				header->currHeader[header->headerIndex++] = tolower(l);
 			}
 
 			break;
@@ -68,7 +88,7 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 				header->state = BODY_START;
 			}
 			else if (l != ':') {
-				header->currHeader[header->headerIndex++] = l;
+				header->currHeader[header->headerIndex++] = tolower(l);
 				header->state							  = HEADER_NAME;
 			}
 			else {
@@ -82,9 +102,33 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 
 			break;
 	}
+
+	if (header->headerIndex > MAX_HOP_BY_HOP_HEADER_LENGTH &&
+		header->state != HEADER_VALUE) {
+		header->censure = FALSE;
+	}
 }
 
 void resetHeaderParser(struct headersParser *header) {
 	header->headerIndex = 0;
 	header->state		= HEADERS_START;
+	header->censure		= TRUE;
+}
+
+static void isCensureHeader(struct headersParser *header) {
+	if (header->headerIndex > MAX_HOP_BY_HOP_HEADER_LENGTH ||
+		header->headerIndex == 0) {
+		header->censure = FALSE;
+	}
+	else if (strcmp(header->currHeader, "connection") == 0 ||
+			 strcmp(header->currHeader, "keep-alive") == 0 ||
+			 // strcmp(header->currHeader, "trailer") == 0 || only for transform
+			 // TODO
+			 strcmp(header->currHeader, "upgrade") == 0 ||
+			 strcmp(header->currHeader, "Transfer-Encoding") == 0) {
+		header->censure = TRUE;
+	}
+	else {
+		header->censure = FALSE;
+	}
 }

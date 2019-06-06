@@ -4,12 +4,12 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <utilities.h>
 
 #define DEFAULT_PROXY_HTTP_PORT 8080
 #define DEFAULT_MANAGEMENT_PORT 9090
 #define STDERR_REDIRECT_DEFAULT "/dev/null"
-#define FALSE 0
-#define TRUE 1
+
 #define INVALID_FD -1
 
 typedef struct configuration *configurationADT;

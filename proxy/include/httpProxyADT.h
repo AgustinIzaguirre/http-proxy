@@ -143,6 +143,11 @@ buffer *getWriteBuffer(httpADT_t s);
 struct parseRequest *getParseRequestState(httpADT_t s);
 
 /*
+ * Returns http handle request structure
+ */
+struct handleRequest *getHandleRequestState(httpADT_t s);
+
+/*
  * Returns http headers parser structure
  */
 struct headersParser *getHeadersParser(httpADT_t s);

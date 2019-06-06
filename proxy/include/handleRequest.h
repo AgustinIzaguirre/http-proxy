@@ -2,6 +2,19 @@
 #define HANDLE_REQUEST_H
 
 #include <selector.h>
+#include <headersParser.h>
+
+struct handleRequest {
+	struct headersParser parseHeaders;
+	uint8_t censure;
+	// other info
+};
+
+/*
+ * Initialize headers parser struct
+ */
+void requestInit(const unsigned state, struct selector_key *key);
+
 /*
  * Reads request from client fd into readBuffer
  */
