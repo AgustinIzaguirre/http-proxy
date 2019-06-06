@@ -51,4 +51,9 @@ void headersParserInit(struct headersParser *header); // TODO
  */
 void addConnectionClose(struct headersParser *header);
 
+/*
+ * Copies current headerBuf into headerBuffer
+ */
+void copyBuffer(struct headersParser *header);
+
 #endif

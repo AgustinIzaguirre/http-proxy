@@ -18,7 +18,9 @@ void headersParserInit(struct headersParser *header) {
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	while (begining < end) {
-		if (header->state != HEADER_VALUE || header->censure) {
+		if ((header->state != HEADER_VALUE &&
+			 header->headerIndex < MAX_HOP_BY_HOP_HEADER_LENGTH) ||
+			header->censure) {
 			buffer_read_adv(input, 1);
 		}
 
@@ -67,6 +69,10 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 				header->currHeader[header->headerIndex++] = tolower(l);
 			}
 
+			if (header->headerIndex == MAX_HOP_BY_HOP_HEADER_LENGTH) {
+				copyBuffer(header);
+			}
+
 			break;
 
 		case HEADER_VALUE:
@@ -109,12 +115,8 @@ void resetHeaderParser(struct headersParser *header) {
 }
 
 static void isCensureHeader(struct headersParser *header) {
-	if (header->headerIndex > MAX_HOP_BY_HOP_HEADER_LENGTH ||
+	if (header->headerIndex >= MAX_HOP_BY_HOP_HEADER_LENGTH ||
 		header->headerIndex == 0) {
-		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
-		header->headerBuf[header->headerIndex] = ':';
-		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
-		// TODO add string ":" when header is :
 		header->censure = FALSE;
 	}
 
@@ -146,4 +148,9 @@ void addConnectionClose(struct headersParser *header) {
 	char *newHeader = "connection: close\r\n\r\n";
 	memcpy(header->headerBuf, newHeader, strlen(newHeader));
 	buffer_write_adv(&header->headerBuffer, strlen(newHeader));
+}
+
+void copyBuffer(struct headersParser *header) {
+	memcpy(header->headerBuf, header->currHeader, header->headerIndex);
+	buffer_write_adv(&header->headerBuffer, header->headerIndex);
 }
