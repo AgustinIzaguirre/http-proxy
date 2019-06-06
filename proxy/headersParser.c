@@ -11,7 +11,7 @@ static void isCensureHeader(struct headersParser *header);
 void headersParserInit(struct headersParser *header) {
 	header->state		= HEADERS_START;
 	header->headerIndex = 0;
-	header->censure		= TRUE;
+	header->censure		= FALSE;
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 }
 
@@ -28,7 +28,7 @@ void initializeHeaderParser(struct headersParser **header) {
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	while (begining < end) {
-		if (header->state != HEADER_VALUE) {
+		if (header->state != HEADER_VALUE || header->censure) {
 			buffer_read_adv(input, 1);
 		}
 
@@ -114,7 +114,7 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 void resetHeaderParser(struct headersParser *header) {
 	header->headerIndex = 0;
 	header->state		= HEADERS_START;
-	header->censure		= TRUE;
+	header->censure		= FALSE;
 }
 
 static void isCensureHeader(struct headersParser *header) {
