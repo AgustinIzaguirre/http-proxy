@@ -50,4 +50,9 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 
 void headersParserInit(struct headersParser *header); // TODO
 
+/*
+ * Adds header connection: close to either request or response
+ */
+void addConnectionClose(struct headersParser *header);
+
 #endif

@@ -40,6 +40,7 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 			resetHeaderParser(header);
 		}
 		else if (header->state == BODY_START) {
+			addConnectionClose(header);
 			printf("body start\n");
 		}
 	}
@@ -122,18 +123,26 @@ static void isCensureHeader(struct headersParser *header) {
 		header->headerIndex == 0) {
 		header->censure = FALSE;
 	}
-	else if (strcmp(header->currHeader, "connection") == 0 ||
-			 strcmp(header->currHeader, "keep-alive") == 0 ||
+
+	else if (strcmp(header->currHeader, "keep-alive") == 0 ||
+			 strcmp(header->currHeader, "connection") == 0 ||
 			 // strcmp(header->currHeader, "trailer") == 0 || only for transform
-			 // TODO
-			 strcmp(header->currHeader, "upgrade") == 0 ||
-			 strcmp(header->currHeader, "Transfer-Encoding") == 0) {
+			 // TODO only for transform
+			 // strcmp(header->currHeader, "transfer-encoding") == 0 ||
+			 strcmp(header->currHeader, "upgrade") == 0) {
 		header->censure = TRUE;
 	}
 	else {
 		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
-		buffer_write_adv(&header->headerBuffer, header->headerIndex);
+		header->headerBuf[header->headerIndex] = ':';
+		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
 		// buffer_read_adv(readBuffer, header->headerIndex);
 		header->censure = FALSE;
 	}
+}
+
+void addConnectionClose(struct headersParser *header) {
+	char *newHeader = "connection: close\r\n\r\n";
+	memcpy(header->headerBuf, newHeader, strlen(newHeader));
+	buffer_write_adv(&header->headerBuffer, strlen(newHeader));
 }
