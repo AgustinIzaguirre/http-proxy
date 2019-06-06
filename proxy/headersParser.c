@@ -15,16 +15,6 @@ void headersParserInit(struct headersParser *header) {
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 }
 
-void initializeHeaderParser(struct headersParser **header) {
-	*header = malloc(sizeof(struct headersParser));
-	// validate malloc TODO
-	(*header)->state	   = HEADERS_START;
-	(*header)->headerIndex = 0;
-	(*header)->censure	 = TRUE;
-	buffer_init(&((*header)->headerBuffer), MAX_TOTAL_HEADER_LENGTH,
-				(*header)->headerBuf);
-}
-
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	while (begining < end) {
@@ -130,9 +120,6 @@ static void isCensureHeader(struct headersParser *header) {
 
 	else if (strcmp(header->currHeader, "keep-alive") == 0 ||
 			 strcmp(header->currHeader, "connection") == 0 ||
-			 // strcmp(header->currHeader, "trailer") == 0 || only for transform
-			 // TODO only for transform
-			 // strcmp(header->currHeader, "transfer-encoding") == 0 ||
 			 strcmp(header->currHeader, "upgrade") == 0) {
 		header->censure = TRUE;
 	}
@@ -151,7 +138,6 @@ static void isCensureHeader(struct headersParser *header) {
 		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
 		header->headerBuf[header->headerIndex] = ':';
 		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
-		// buffer_read_adv(readBuffer, header->headerIndex);
 		header->censure = FALSE;
 	}
 }

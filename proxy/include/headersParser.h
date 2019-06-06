@@ -28,10 +28,6 @@ enum headersState {
 };
 
 /*
- * Initialize headers parser structure
- */
-void initializeHeaderParser(struct headersParser **header);
-/*
  * Parse a char into the headers parser statemachine
  */
 void parseHeadersByChar(char l, struct headersParser *header);
