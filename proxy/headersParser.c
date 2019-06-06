@@ -136,6 +136,17 @@ static void isCensureHeader(struct headersParser *header) {
 			 strcmp(header->currHeader, "upgrade") == 0) {
 		header->censure = TRUE;
 	}
+	else if (getIsTransformationOn(getConfiguration()) &&
+			 strcmp(header->currHeader, "trailer") == 0) {
+		header->censure = TRUE;
+	}
+	else if (getIsTransformationOn(getConfiguration()) &&
+			 strcmp(header->currHeader, "transfer-encoding") == 0) {
+		char *newHeader = "transfer-encoding: chunked\r\n";
+		memcpy(header->headerBuf, newHeader, strlen(newHeader));
+		buffer_write_adv(&header->headerBuffer, strlen(newHeader));
+		header->censure = TRUE;
+	}
 	else {
 		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
 		header->headerBuf[header->headerIndex] = ':';
