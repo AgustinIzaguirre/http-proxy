@@ -14,7 +14,6 @@ void responseWithTransformInit(const unsigned state, struct selector_key *key) {
 }
 
 unsigned responseWithTransformRead(struct selector_key *key) {
-	printf("in transform\n");
 	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
 	struct handleResponseWithTransform *handleResponseWithTransform =
 		getHandleResponseWithTransformState(GET_DATA(key));
@@ -22,6 +21,7 @@ unsigned responseWithTransformRead(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
+	printf("In transformation\n");
 
 	// if there is no space to read should write what i already read
 	if (!buffer_can_write(writeBuffer)) {
@@ -54,7 +54,7 @@ unsigned responseWithTransformRead(struct selector_key *key) {
 
 unsigned responseWithTransformWrite(struct selector_key *key) {
 	buffer *writeBuffer = getCurrentResponseBuffer(GET_DATA(key));
-	unsigned ret		= HANDLE_RESPONSE;
+	unsigned ret		= HANDLE_RESPONSE_WITH_TRANSFORMATION;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
@@ -83,7 +83,7 @@ unsigned setResponseWithTransformFdInterests(struct selector_key *key) {
 	struct handleResponse *handleResponse = getHandleResponseState(state);
 	buffer *writeBuffer					  = getWriteBuffer(GET_DATA(key));
 	buffer *parsedBuffer				  = getCurrentResponseBuffer(state);
-	unsigned ret						  = HANDLE_RESPONSE;
+	unsigned ret						  = HANDLE_RESPONSE_WITH_TRANSFORMATION;
 	int clientInterest					  = OP_NOOP;
 	int originInterest					  = OP_NOOP;
 
