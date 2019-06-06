@@ -3,6 +3,7 @@
 #include <connectToOrigin.h>
 #include <handleRequest.h>
 #include <handleResponse.h>
+#include <handleResponseWithTransform.h>
 #include <headersParser.h>
 
 static const struct state_definition *httpDescribeStates(void);
@@ -37,7 +38,7 @@ struct http {
 		struct parseRequest parseRequest;
 		struct handleRequest handleRequest;
 		struct handleResponse handleResponse;
-		struct headersParser parseHeaders;
+		struct handleResponseWithTransform handleResponseWithTransform;
 		int other;
 		// struct request_st         request;
 		// struct copy               copy;
@@ -96,8 +97,9 @@ struct handleResponse *getHandleResponseState(httpADT_t s) {
 	return &((s->clientState).handleResponse);
 }
 
-struct headersParser *getHeadersParser(httpADT_t s) {
-	return &((s->clientState).parseHeaders);
+struct handleResponseWithTransform *
+getHandleResponseWithTransformState(httpADT_t s) {
+	return &((s->clientState).handleResponseWithTransform);
 }
 
 struct sockaddr_storage *getClientAddress(httpADT_t s) {
@@ -172,10 +174,10 @@ static const struct state_definition clientStatbl[] = {
 		.on_write_ready = responseWrite,
 	},
 	{
-		.state = HANDLE_RESPONSE_WITH_TRANSFORMATION,
-		// .on_arrival       = copy_init,
-		//.on_read_ready  = responseRead,
-		//.on_write_ready = responseWrite,
+		.state			= HANDLE_RESPONSE_WITH_TRANSFORMATION,
+		.on_arrival		= responseWithTransformInit,
+		.on_read_ready  = responseWithTransformRead,
+		.on_write_ready = responseWithTransformWrite,
 	},
 	{
 		.state = DONE,
