@@ -38,9 +38,10 @@ unsigned requestRead(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		int begining = pointer - readBuffer->data;
+		buffer_write_adv(readBuffer, bytesRead);
+
 		parseHeaders(&handleRequest->parseHeaders, readBuffer, begining,
 					 begining + bytesRead);
-		buffer_write_adv(readBuffer, bytesRead);
 
 		// check if request finished TODO
 		ret = setAdecuateFdInterests(key);

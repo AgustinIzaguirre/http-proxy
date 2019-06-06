@@ -28,6 +28,10 @@ void initializeHeaderParser(struct headersParser **header) {
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	while (begining < end) {
+		if (header->state != HEADER_VALUE) {
+			buffer_read_adv(input, 1);
+		}
+
 		parseHeadersByChar(input->data[begining], header);
 		begining++;
 
