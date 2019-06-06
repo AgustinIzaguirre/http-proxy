@@ -7,6 +7,8 @@
 #include <headersParser.h>
 #include <utilities.h>
 
+static int isNotCensured(httpADT_t state);
+
 void requestInit(const unsigned state, struct selector_key *key) {
 	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
 	headersParserInit(&(handleRequest->parseHeaders));
@@ -77,13 +79,13 @@ unsigned requestWrite(struct selector_key *key) {
 }
 
 unsigned setAdecuateFdInterests(struct selector_key *key) {
-	httpADT_t state					   = GET_DATA(key);
-	struct headersParser *parseheaders = getHeadersParser(state);
-	buffer *readBuffer				   = getReadBuffer(state);
-	buffer *writeBuffer				   = getWriteBuffer(state);
-	unsigned ret					   = HANDLE_REQUEST;
-	int clientInterest				   = OP_NOOP;
-	int originInterest				   = OP_NOOP;
+	httpADT_t state						= GET_DATA(key);
+	struct handleRequest *handleRequest = getHandleRequestState(state);
+	buffer *readBuffer					= getReadBuffer(state);
+	buffer *writeBuffer					= getWriteBuffer(state);
+	unsigned ret						= HANDLE_REQUEST;
+	int clientInterest					= OP_NOOP;
+	int originInterest					= OP_NOOP;
 
 	if (buffer_can_write(readBuffer)) {
 		clientInterest |= OP_READ;
@@ -93,7 +95,7 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 		originInterest |= OP_READ;
 	}
 
-	if (buffer_can_read(readBuffer) && parseheaders->censure == FALSE) {
+	if (buffer_can_read(readBuffer) && isNotCensured(state)) {
 		originInterest |= OP_WRITE;
 	}
 
@@ -118,4 +120,9 @@ unsigned getAdecuateResponseState(struct selector_key *key) {
 	}
 
 	return ret;
+}
+
+static int isNotCensured(httpADT_t state) {
+	buffer buf = getHandleRequestState(state)->parseHeaders.headerBuffer;
+	return buffer_can_read(&buf);
 }

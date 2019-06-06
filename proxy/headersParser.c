@@ -8,6 +8,23 @@
 
 static void isCensureHeader(struct headersParser *header);
 
+void headersParserInit(struct headersParser *header) {
+	header->state		= HEADERS_START;
+	header->headerIndex = 0;
+	header->censure		= TRUE;
+	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
+}
+
+void initializeHeaderParser(struct headersParser **header) {
+	*header = malloc(sizeof(struct headersParser));
+	// validate malloc TODO
+	(*header)->state	   = HEADERS_START;
+	(*header)->headerIndex = 0;
+	(*header)->censure	 = TRUE;
+	buffer_init(&((*header)->headerBuffer), MAX_TOTAL_HEADER_LENGTH,
+				(*header)->headerBuf);
+}
+
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	while (begining < end) {
@@ -22,24 +39,6 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 			printf("body start\n");
 		}
 	}
-}
-
-void headersParserInit(struct headersParser *header) {
-	header->state		= HEADERS_START;
-	header->headerIndex = 0;
-	header->censure		= TRUE;
-	buffer_init(&(header->headerBuffer), MAX_TOTAL_HEADER_LENGTH,
-				header->headerBuf);
-}
-
-void initializeHeaderParser(struct headersParser **header) {
-	*header = malloc(sizeof(struct headersParser));
-	// validate malloc TODO
-	(*header)->state	   = HEADERS_START;
-	(*header)->headerIndex = 0;
-	(*header)->censure	 = TRUE;
-	buffer_init(&((*header)->headerBuffer), MAX_TOTAL_HEADER_LENGTH,
-				(*header)->headerBuf);
 }
 
 void parseHeadersByChar(char l, struct headersParser *header) {
@@ -128,6 +127,8 @@ static void isCensureHeader(struct headersParser *header) {
 		header->censure = TRUE;
 	}
 	else {
+		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
+		buffer_write_adv(&header->headerBuffer, header->headerIndex);
 		header->censure = FALSE;
 	}
 }

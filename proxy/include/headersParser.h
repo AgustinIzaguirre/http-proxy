@@ -11,7 +11,7 @@
 
 struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
-	uint8_t headerBuf[MAX_TOTAL_HEADER_LENGTH];
+	uint8_t headerBuf[MAX_HEADER_LENGTH];
 	buffer headerBuffer;
 	int headerIndex;
 	int state;
