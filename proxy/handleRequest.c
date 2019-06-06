@@ -7,7 +7,6 @@
 #include <headersParser.h>
 #include <utilities.h>
 
-static int isNotCensured(httpADT_t state);
 static buffer *getCurrentBuffer(httpADT_t state);
 
 void requestInit(const unsigned state, struct selector_key *key) {
@@ -127,13 +126,9 @@ unsigned getAdecuateResponseState(struct selector_key *key) {
 	return ret;
 }
 
-static int isNotCensured(httpADT_t state) {
-	buffer buf = getHandleRequestState(state)->parseHeaders.headerBuffer;
-	return buffer_can_read(&buf);
-}
-
 static buffer *getCurrentBuffer(httpADT_t state) {
 	buffer *buf = &(getHandleRequestState(state)->parseHeaders.headerBuffer);
+	// if(buffer_can_read(originalBuffer))TODO
 	if (buffer_can_read(buf)) {
 		return buf;
 	}

@@ -36,7 +36,7 @@ struct http {
 	union {
 		struct parseRequest parseRequest;
 		struct handleRequest handleRequest;
-		// struct handleRequest handleResponse;
+		struct handleResponse handleResponse;
 		struct headersParser parseHeaders;
 		int other;
 		// struct request_st         request;
@@ -90,6 +90,10 @@ struct parseRequest *getParseRequestState(httpADT_t s) {
 
 struct handleRequest *getHandleRequestState(httpADT_t s) {
 	return &((s->clientState).handleRequest);
+}
+
+struct handleResponse *getHandleResponseState(httpADT_t s) {
+	return &((s->clientState).handleResponse);
 }
 
 struct headersParser *getHeadersParser(httpADT_t s) {

@@ -2,6 +2,13 @@
 #define HANDLE_RESPONSE_H
 
 #include <selector.h>
+#include <headersParser.h>
+
+struct handleResponse {
+	struct headersParser parseHeaders;
+	// other info
+};
+
 /*
  * Initialize headers parser struct
  */

@@ -6,7 +6,6 @@
 
 struct handleRequest {
 	struct headersParser parseHeaders;
-	// other info
 };
 
 /*

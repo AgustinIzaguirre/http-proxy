@@ -148,6 +148,11 @@ struct parseRequest *getParseRequestState(httpADT_t s);
 struct handleRequest *getHandleRequestState(httpADT_t s);
 
 /*
+ * Returns http handle response structure
+ */
+struct handleResponse *getHandleResponseState(httpADT_t s);
+
+/*
  * Returns http headers parser structure
  */
 struct headersParser *getHeadersParser(httpADT_t s);
