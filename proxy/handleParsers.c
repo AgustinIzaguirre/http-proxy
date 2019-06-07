@@ -28,7 +28,8 @@ static unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 void parseInit(const unsigned state, struct selector_key *key) {
 	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 
-	parseRequest->input = getReadBuffer(GET_DATA(key));
+	parseRequest->input				 = getReadBuffer(GET_DATA(key));
+	parseRequest->finishParserBuffer = getFinishParserBuffer(GET_DATA(key));
 
 	parseMethodInit(&(parseRequest->methodParser));
 	parseTargetInit(&(parseRequest->targetParser));
@@ -98,40 +99,46 @@ unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 
 int handleMethod(struct parseRequest *parseRequest, buffer *readBuffer,
 				 unsigned *ret) {
-	int hasToContinue	= 0;
-	int bytesFromAParser = parse(parseRequest, readBuffer, &hasToContinue,
-								 &parseMethodCharWrapper);
-	if (!hasToContinue) {
+	int state = 0;
+	int bytesFromAParser =
+		parse(parseRequest, readBuffer, &state, &parseMethodCharWrapper);
+	if (state == 1) {
 		parseRequest->state = PARSE_TARGET;
+	}
+	else if (state == 2) {
+		*ret = ERROR;
 	}
 	return bytesFromAParser;
 }
 
 int handleTarget(struct selector_key *key, struct parseRequest *parseRequest,
 				 buffer *readBuffer, unsigned *ret) {
-	int hasToContinue	= 0;
-	int bytesFromAParser = parse(parseRequest, readBuffer, &hasToContinue,
-								 &parseTargetCharWrapper);
-	if (!hasToContinue) {
+	int state = 0;
+	int bytesFromAParser =
+		parse(parseRequest, readBuffer, &state, &parseTargetCharWrapper);
+	if (state == 1) {
 		parseRequest->state = PARSE_VERSION;
 		char *host			= getHost(&(parseRequest->targetParser));
 		if (host != NULL && host[0] != 0) {
 			printf("TARGET Host:%s\n", host);   // TODO: remove
 			setOriginHost(GET_DATA(key), host); // set host
 			int port = getPortTarget(&(parseRequest->targetParser));
-			// TODO:set port
 			printf("TARGET Port:%d\n", port); // TODO: remove
+			setOriginPort(GET_DATA(key), port);
 		}
+	}
+	else if (state == 2) {
+		*ret = ERROR;
 	}
 	return bytesFromAParser;
 }
 
 int handleVersion(struct selector_key *key, struct parseRequest *parseRequest,
 				  buffer *readBuffer, unsigned *ret) {
-	int hasToContinue	= 0;
-	int bytesFromAParser = parse(parseRequest, readBuffer, &hasToContinue,
-								 &parseVersionCharWrapper);
-	if (!hasToContinue) {
+	int state = 0;
+	int bytesFromAParser =
+		parse(parseRequest, readBuffer, &state, &parseVersionCharWrapper);
+	if (state == 1) {
 		if (getVersionState(&parseRequest->versionParser) == ERROR_V) {
 			*ret = ERROR; // TODO: check
 		}
@@ -148,24 +155,31 @@ int handleVersion(struct selector_key *key, struct parseRequest *parseRequest,
 			*ret = DONE; // TODO: put connect and resolve state
 		}
 	}
+	else if (state == 2) {
+		*ret = ERROR;
+	}
 	return bytesFromAParser;
 }
 
 int handleHeader(struct selector_key *key, struct parseRequest *parseRequest,
 				 buffer *readBuffer, unsigned *ret) {
-	int hasToContinue	= 0;
-	int bytesFromAParser = parse(parseRequest, readBuffer, &hasToContinue,
-								 &parseHeaderCharWrapper);
-	if (!hasToContinue) {
+	int state = 0;
+	int bytesFromAParser =
+		parse(parseRequest, readBuffer, &state, &parseHeaderCharWrapper);
+	if (state == 1) {
 		if (hasFoundHostHeaderParser(
 				&parseRequest->headerParser)) { // TODO: drop error
 			*ret	   = DONE; // TODO: put connect and resolve state
 			char *host = getHostHeaderParser(&(parseRequest->headerParser));
 			printf("Header Host:%s\n", host); // TODO: remove
+			setOriginHost(GET_DATA(key), host);
 		}
 		else {
 			*ret = ERROR;
 		}
+	}
+	else if (state == 2) {
+		*ret = ERROR;
 	}
 	return bytesFromAParser;
 }
@@ -180,10 +194,21 @@ int parse(struct parseRequest *parseRequest, buffer *input, int *flag,
 		letter = buffer_read(input);
 
 		if (letter) {
-			*flag = parseChar(parseRequest, letter);
-			ret++;
+			if (buffer_can_write(parseRequest->finishParserBuffer)) {
+				if (parseChar(parseRequest, letter)) {
+					*flag = 0;
+				}
+				else {
+					*flag = 1;
+				}
+				buffer_write(parseRequest->finishParserBuffer, letter);
+				ret++;
+			}
+			else {
+				*flag = 2;
+			}
 		}
-	} while ((*flag) && letter);
+	} while (!(*flag) && letter);
 
 	return ret;
 }

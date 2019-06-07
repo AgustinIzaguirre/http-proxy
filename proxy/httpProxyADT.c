@@ -54,6 +54,9 @@ struct http {
 	uint8_t rawBuffA[BUFFER_SIZE], rawBuffB[BUFFER_SIZE];
 	buffer readBuffer, writeBuffer;
 
+	uint8_t finishParserData[MAX_PARSER];
+	buffer finishParserBuffer;
+
 	// Number of references to this object, if one destroy
 	unsigned references;
 
@@ -120,6 +123,10 @@ buffer *getReadBuffer(httpADT_t s) {
 
 buffer *getWriteBuffer(httpADT_t s) {
 	return &(s->writeBuffer);
+}
+
+buffer *getFinishParserBuffer(httpADT_t s) {
+	return &(s->finishParserBuffer);
 }
 
 void setRequestMethod(httpADT_t s, unsigned method) {
@@ -223,6 +230,8 @@ struct http *httpNew(int clientFd) {
 
 	buffer_init(&ret->readBuffer, SIZE_OF_ARRAY(ret->rawBuffA), ret->rawBuffA);
 	buffer_init(&ret->writeBuffer, SIZE_OF_ARRAY(ret->rawBuffB), ret->rawBuffB);
+	buffer_init(&ret->finishParserBuffer, SIZE_OF_ARRAY(ret->finishParserData),
+				ret->finishParserData);
 
 	ret->references = 1;
 finally:

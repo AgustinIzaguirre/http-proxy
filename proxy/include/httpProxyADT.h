@@ -17,6 +17,7 @@
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
 #define BUFFER_SIZE 20
+#define MAX_PARSER 1000 // TODO: chech that number
 
 typedef struct http *httpADT_t;
 
@@ -65,6 +66,7 @@ enum parserState { PARSE_METHOD, PARSE_TARGET, PARSE_VERSION, PARSE_HEADER };
 // structure for parse request state
 struct parseRequest {
 	buffer *input;
+	buffer *finishParserBuffer;
 	enum parserState state;
 	struct methodParser methodParser;
 	struct targetParser targetParser;
@@ -136,6 +138,11 @@ buffer *getReadBuffer(httpADT_t s);
  * Returns write buffer
  */
 buffer *getWriteBuffer(httpADT_t s);
+
+/*
+ * Returns finish parser buffer
+ */
+buffer *getFinishParserBuffer(httpADT_t s);
 
 /*
  * Returns http parse request structure
