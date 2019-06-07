@@ -7,15 +7,19 @@
 
 #define MAX_HOP_BY_HOP_HEADER_LENGTH 20
 #define MAX_HEADER_LENGTH MAX_HOP_BY_HOP_HEADER_LENGTH + 128
+#define MAX_MIME_HEADER 128
 #define MAX_TOTAL_HEADER_LENGTH MAX_HEADER_LENGTH + 1024
 
 struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
 	uint8_t headerBuf[MAX_HEADER_LENGTH];
+	uint8_t mimeValue[MAX_MIME_HEADER];
 	buffer headerBuffer;
 	int headerIndex;
+	int mimeIndex;
 	int state;
 	uint8_t censure;
+	uint8_t isMime;
 };
 
 enum headersState {

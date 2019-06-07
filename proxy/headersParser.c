@@ -11,7 +11,9 @@ static void isCensureHeader(struct headersParser *header);
 void headersParserInit(struct headersParser *header) {
 	header->state		= HEADERS_START;
 	header->headerIndex = 0;
+	header->mimeIndex   = 0;
 	header->censure		= FALSE;
+	header->isMime		= FALSE;
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 }
 
@@ -77,7 +79,13 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 
 		case HEADER_VALUE:
 			if (l == '\n') {
+				if (header->isMime) {
+					header->mimeValue[header->mimeIndex++] = 0;
+				}
 				header->state = HEADER_DONE;
+			}
+			else if (header->isMime) {
+				header->mimeValue[header->mimeIndex++] = l;
 			}
 
 			break;
@@ -110,8 +118,10 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 
 void resetHeaderParser(struct headersParser *header) {
 	header->headerIndex = 0;
+	header->mimeIndex   = 0;
 	header->state		= HEADERS_START;
 	header->censure		= FALSE;
+	header->isMime		= FALSE;
 }
 
 static void isCensureHeader(struct headersParser *header) {
@@ -137,6 +147,11 @@ static void isCensureHeader(struct headersParser *header) {
 		header->censure = TRUE;
 	}
 	else {
+		if (strcmp(header->headerBuf, "content-type") == 0) {
+			printf("matcheo con content-type\n");
+			header->isMime = TRUE;
+		}
+		printf("no matcheo %s\n", header->headerBuf);
 		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
 		header->headerBuf[header->headerIndex] = ':';
 		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
