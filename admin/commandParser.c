@@ -443,11 +443,8 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						if (isprint(currentChar)) {
 							/* Continuing allocating data */
 							if (*dataLength % PARSER_MALLOC_BLOCK == 0) {
-								*data = realloc(
-									*data,
-									PARSER_MALLOC_BLOCK *
-										(*dataLength / PARSER_MALLOC_BLOCK +
-										 1));
+								*data = realloc(*data, *dataLength +
+														   PARSER_MALLOC_BLOCK);
 							}
 							*(*((char **) data) + *dataLength) = currentChar;
 							(*dataLength)++;
@@ -502,11 +499,8 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						if (isprint(currentChar)) {
 							/* Continuing allocating/generating data */
 							if (*dataLength % PARSER_MALLOC_BLOCK == 0) {
-								*data = realloc(
-									*data,
-									PARSER_MALLOC_BLOCK *
-										(*dataLength / PARSER_MALLOC_BLOCK +
-										 1));
+								*data = realloc(*data, *dataLength +
+														   PARSER_MALLOC_BLOCK);
 							}
 							*(*((char **) data) + *dataLength) = currentChar;
 							(*dataLength)++;
@@ -544,4 +538,54 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 	}
 
 	return returnCode;
+}
+
+size_t readLine(char **buffer) {
+	char c;
+	size_t length = 0;
+	*buffer		  = NULL;
+
+	while ((c = getchar()) != '\n') {
+		if ((length % PARSER_MALLOC_BLOCK) == 0) {
+			*buffer = realloc(*buffer, (length + PARSER_MALLOC_BLOCK) *
+										   sizeof(**buffer));
+		}
+
+		(*buffer)[length++] = c;
+	}
+
+	if ((length % PARSER_MALLOC_BLOCK) == 0) {
+		*buffer = realloc(*buffer, (length + 1) * sizeof(**buffer));
+	}
+
+	(*buffer)[length] = 0;
+
+	return length;
+}
+
+void parseAuthenticationData(char **username, size_t *usernameLength,
+							 char **password, size_t *passwordLength) {
+	*usernameLength = 0;
+
+	do {
+		printf("Username: ");
+
+		*usernameLength = readLine(username);
+
+		if (*usernameLength <= 0) {
+			printf("Invalid username length. Please try again.\n\n");
+		}
+	} while (*usernameLength <= 0);
+
+	*passwordLength = 0;
+
+	do {
+		printf("Password: ");
+
+		*passwordLength = readLine(password);
+
+		if (*passwordLength <= 0) {
+			printf("Invalid password length. Please try again.\n\n");
+		}
+	} while (*passwordLength <= 0);
 }

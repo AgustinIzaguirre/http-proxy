@@ -112,5 +112,8 @@ typedef enum operation_t operation_t;
 
 int parseCommand(operation_t *operation, id_t *id, void **data,
 				 size_t *dataLength);
+static size_t readLine(char **buffer);
+void parseAuthenticationData(char **username, size_t *usernameLength,
+							 char **password, size_t *passwordLength);
 
 #endif

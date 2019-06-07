@@ -2,6 +2,8 @@
 #define PROTOCOL_H
 #include <stdlib.h>
 
-void sendSCTPMsg(int server, void *msg, size_t msgLength, int streamNumber);
+#define AUTHENTICATION_STREAM 0
+
+int establishConnection(char *serverIP, unsigned int serverPort);
 
 #endif
