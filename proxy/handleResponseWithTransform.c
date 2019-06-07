@@ -21,8 +21,8 @@ unsigned responseWithTransformRead(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
-	printf("In transformation\n"); // TODO REMOVE WHEN Transformation is
-								   // completed and tested
+	// rarprintf("In transformation\n"); // TODO REMOVE WHEN Transformation is
+	// completed and tested
 
 	// if there is no space to read should write what i already read
 	if (!buffer_can_write(writeBuffer)) {
