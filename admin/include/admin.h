@@ -10,6 +10,7 @@
 #define MTR_HS_ID 0x05
 #define MTR_BT_ID 0x06
 #define MTR_ID 0x07
+#define TF_ID 0x08
 
 #define ON 0x01
 #define OFF 0x00

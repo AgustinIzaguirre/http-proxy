@@ -110,6 +110,6 @@ enum state_t {
 
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
 
-enum operation_t { BYE, GET, SET };
+enum operation_t { BYE_OP, GET_OP, SET_OP };
 
 #endif

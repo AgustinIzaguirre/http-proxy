@@ -65,7 +65,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case BYE:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *bye* */
-					*operation = BYE;
+					*operation = BYE_OP;
 					returnCode = NEW;
 				});
 				break;
@@ -139,7 +139,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *get mtr* */
-						*operation = GET;
+						*operation = GET_OP;
 						*id		   = MTR_ID;
 						returnCode = NEW;
 						break;
@@ -164,7 +164,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *get mtr* */
-						*operation = GET;
+						*operation = GET_OP;
 						*id		   = MTR_ID;
 						returnCode = NEW;
 						break;
@@ -184,7 +184,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_MTR_CN:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get mtr cn* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = MTR_CN_ID;
 					returnCode = NEW;
 				});
@@ -192,7 +192,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_MTR_HS:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get mtr hs* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = MTR_HS_ID;
 					returnCode = NEW;
 				});
@@ -200,7 +200,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_MTR_BT:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get mtr bt* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = MTR_BT_ID;
 					returnCode = NEW;
 				});
@@ -211,7 +211,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_BF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get bf* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = BF_ID;
 					returnCode = NEW;
 				});
@@ -225,7 +225,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_CMD:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get cmd* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = CMD_ID;
 					returnCode = NEW;
 				});
@@ -239,7 +239,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_MIME:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get mime* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = MIME_ID;
 					returnCode = NEW;
 				});
@@ -250,7 +250,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case GET_TF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get tf* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = TF_ID;
 					returnCode = NEW;
 				});
@@ -309,7 +309,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *get bf int* */
-						*operation = GET;
+						*operation = GET_OP;
 						*id		   = BF_ID;
 						returnCode = NEW;
 						break;
@@ -320,7 +320,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case SET_BF_DATA_:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *get bf int* */
-					*operation = GET;
+					*operation = GET_OP;
 					*id		   = BF_ID;
 					returnCode = NEW;
 				});
@@ -398,7 +398,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *set mime* */
-						*operation = SET;
+						*operation = SET_OP;
 						*id		   = MIME_ID;
 						returnCode = NEW;
 						break;
@@ -414,7 +414,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *set mime* */
-						*operation = SET;
+						*operation = SET_OP;
 						*id		   = MIME_ID;
 						returnCode = NEW;
 						break;
@@ -435,7 +435,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				switch (currentChar) {
 					case '\n':
 						/* Set command info *set mime media-type* */
-						*operation = SET;
+						*operation = SET_OP;
 						*id		   = MIME_ID;
 						returnCode = NEW;
 						break;
@@ -445,7 +445,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 							if (*dataLength % PARSER_MALLOC_BLOCK == 0) {
 								*data = realloc(
 									*data,
-									*dataLength / PARSER_MALLOC_BLOCK + 1);
+									PARSER_MALLOC_BLOCK *
+										(*dataLength / PARSER_MALLOC_BLOCK +
+										 1));
 							}
 							*(*((char **) data) + *dataLength) = currentChar;
 							(*dataLength)++;
@@ -492,7 +494,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command info *set cmd command* */
-						*operation = SET;
+						*operation = SET_OP;
 						*id		   = CMD_ID;
 						returnCode = NEW;
 						break;
@@ -502,7 +504,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 							if (*dataLength % PARSER_MALLOC_BLOCK == 0) {
 								*data = realloc(
 									*data,
-									*dataLength / PARSER_MALLOC_BLOCK + 1);
+									PARSER_MALLOC_BLOCK *
+										(*dataLength / PARSER_MALLOC_BLOCK +
+										 1));
 							}
 							*(*((char **) data) + *dataLength) = currentChar;
 							(*dataLength)++;
@@ -516,7 +520,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case SET_CMD_DATA_:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command info *set mime media-type* */
-					*operation = SET;
+					*operation = SET_OP;
 					*id		   = MIME_ID;
 					returnCode = NEW;
 				});

@@ -1,4 +1,5 @@
 #include <admin.h>
+#include <commandParser.h>
 
 int main(int argc, char const *argv[]) {
 	uint8_t operation;
@@ -24,11 +25,25 @@ int main(int argc, char const *argv[]) {
 				break;
 			case NEW:
 				printf("NEW\n");
+				switch (operation) {
+					case BYE_OP:
+						printf("BYE\n");
+						break;
+					case SET_OP:
+						printf("SET\n");
+						break;
+					case GET_OP:
+						printf("GET\n");
+						break;
+				}
+				printf("dataLength = %ld\n", dataLength);
 				break;
 			case SEND:
 				printf("SEND\n");
 				break;
 		}
+
+		free(data);
 	} while (returnCode != SEND);
 
 	return 0;
