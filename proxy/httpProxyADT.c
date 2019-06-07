@@ -57,6 +57,9 @@ struct http {
 	uint8_t finishParserData[MAX_PARSER];
 	buffer finishParserBuffer;
 
+	buffer errorBuffer;
+	enum errorType errorTypeFound;
+
 	// Number of references to this object, if one destroy
 	unsigned references;
 
@@ -129,6 +132,14 @@ buffer *getFinishParserBuffer(httpADT_t s) {
 	return &(s->finishParserBuffer);
 }
 
+buffer *getErrorBuffer(httpADT_t s) {
+	return &(s->errorBuffer);
+}
+
+void setErrorBuffer(httpADT_t s, uint8_t *data, int length) {
+	buffer_init(&s->errorBuffer, length, data);
+}
+
 void setRequestMethod(httpADT_t s, unsigned method) {
 	s->requestMethod = method;
 }
@@ -143,6 +154,14 @@ char *getOriginHost(struct http *s) {
 
 void setOriginHost(struct http *s, char *requestHost) {
 	s->host = requestHost;
+}
+
+void setErrorType(struct http *s, int errorTypeFound) {
+	s->errorTypeFound = errorTypeFound;
+}
+
+int getErrorType(struct http *s) {
+	return s->errorTypeFound;
 }
 
 void incrementReferences(struct http *s) {
@@ -187,6 +206,11 @@ static const struct state_definition clientStatbl[] = {
 		.on_write_ready = responseWithTransformWrite,
 	},
 	{
+		.state			= ERROR_CLIENT,
+		.on_arrival		= errorInit,
+		.on_write_ready = errorHandleWrite,
+	},
+	{
 		.state = DONE,
 
 	},
@@ -217,6 +241,7 @@ struct http *httpNew(int clientFd) {
 	memset(ret, 0x00, sizeof(*ret));
 
 	ret->host		   = NULL;
+	ret->originPort	= 80;
 	ret->originFd	  = -1;
 	ret->clientFd	  = clientFd;
 	ret->clientAddrLen = sizeof(ret->clientAddr);
@@ -232,6 +257,8 @@ struct http *httpNew(int clientFd) {
 	buffer_init(&ret->writeBuffer, SIZE_OF_ARRAY(ret->rawBuffB), ret->rawBuffB);
 	buffer_init(&ret->finishParserBuffer, SIZE_OF_ARRAY(ret->finishParserData),
 				ret->finishParserData);
+
+	ret->errorTypeFound = DEFAULT;
 
 	ret->references = 1;
 finally:

@@ -3,7 +3,8 @@
 
 static int parse(struct parseRequest *parseRequest, buffer *input, int *flag,
 				 int (*parseChar)(struct parseRequest *, char));
-static int handleMethod(struct parseRequest *parseRequest, buffer *readBuffer,
+static int handleMethod(struct selector_key *key,
+						struct parseRequest *parseRequest, buffer *readBuffer,
 						unsigned *ret);
 static int handleTarget(struct selector_key *key,
 						struct parseRequest *parseRequest, buffer *readBuffer,
@@ -40,7 +41,7 @@ void parseInit(const unsigned state, struct selector_key *key) {
 void parseDestroy(const unsigned state, struct selector_key *key) {
 	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 	setRequestMethod(GET_DATA(key), getMethod(&(parseRequest->methodParser)));
-	// static :maybe more things
+	// TODO:maybe more things
 }
 
 unsigned parseRead(struct selector_key *key) {
@@ -75,9 +76,10 @@ unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 	while (bytesRead != bytesProcessed && ret == PARSE) {
 		switch (parseRequest->state) {
 			case PARSE_METHOD:
-				bytesFromAParser = handleMethod(parseRequest, readBuffer, &ret);
-				ret				 = CONNECT_TO_ORIGIN; // evans TODO
-				blockingToResolvName(key, key->fd);   // evans TODO
+				bytesFromAParser =
+					handleMethod(key, parseRequest, readBuffer, &ret);
+				// ret				 = CONNECT_TO_ORIGIN; // evans TODO
+				// blockingToResolvName(key, key->fd);   // evans TODO
 				break;
 			case PARSE_TARGET:
 				bytesFromAParser =
@@ -97,16 +99,21 @@ unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 	return ret;
 }
 
-int handleMethod(struct parseRequest *parseRequest, buffer *readBuffer,
-				 unsigned *ret) {
+int handleMethod(struct selector_key *key, struct parseRequest *parseRequest,
+				 buffer *readBuffer, unsigned *ret) {
 	int state = 0;
 	int bytesFromAParser =
 		parse(parseRequest, readBuffer, &state, &parseMethodCharWrapper);
 	if (state == 1) {
 		parseRequest->state = PARSE_TARGET;
+		if (getState(&(parseRequest->methodParser)) == ERROR_METHOD_STATE) {
+			setErrorType(GET_DATA(key), METHOD_NOT_ALLOW);
+			*ret = ERROR_CLIENT;
+		}
 	}
 	else if (state == 2) {
-		*ret = ERROR;
+		setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+		*ret = ERROR_CLIENT;
 	}
 	return bytesFromAParser;
 }
@@ -120,15 +127,14 @@ int handleTarget(struct selector_key *key, struct parseRequest *parseRequest,
 		parseRequest->state = PARSE_VERSION;
 		char *host			= getHost(&(parseRequest->targetParser));
 		if (host != NULL && host[0] != 0) {
-			printf("TARGET Host:%s\n", host);   // TODO: remove
 			setOriginHost(GET_DATA(key), host); // set host
 			int port = getPortTarget(&(parseRequest->targetParser));
-			printf("TARGET Port:%d\n", port); // TODO: remove
 			setOriginPort(GET_DATA(key), port);
 		}
 	}
 	else if (state == 2) {
-		*ret = ERROR;
+		setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+		*ret = ERROR_CLIENT;
 	}
 	return bytesFromAParser;
 }
@@ -140,23 +146,25 @@ int handleVersion(struct selector_key *key, struct parseRequest *parseRequest,
 		parse(parseRequest, readBuffer, &state, &parseVersionCharWrapper);
 	if (state == 1) {
 		if (getVersionState(&parseRequest->versionParser) == ERROR_V) {
-			*ret = ERROR; // TODO: check
+			*ret = ERROR_CLIENT;
 		}
 		else if (getOriginHost(GET_DATA(key)) == NULL ||
 				 getOriginHost(GET_DATA(key))[0] == 0) {
 			parseRequest->state = PARSE_HEADER;
-			printf("VERSION:%d.%d\n",
-				   getVersionVersionParser(&parseRequest->versionParser)[0],
-				   getVersionVersionParser(
-					   &parseRequest
-							->versionParser)[1]); // TODO:remove and set verison
+			int *version =
+				getVersionVersionParser(&parseRequest->versionParser);
+			if (version[0] != 1 || (version[1] != 0 && version[1] != 1)) {
+				setErrorType(GET_DATA(key), VERSION_NOT_SUPPORTED);
+				*ret = ERROR_CLIENT;
+			}
 		}
 		else {
 			*ret = DONE; // TODO: put connect and resolve state
 		}
 	}
 	else if (state == 2) {
-		*ret = ERROR;
+		setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+		*ret = ERROR_CLIENT;
 	}
 	return bytesFromAParser;
 }
@@ -167,19 +175,19 @@ int handleHeader(struct selector_key *key, struct parseRequest *parseRequest,
 	int bytesFromAParser =
 		parse(parseRequest, readBuffer, &state, &parseHeaderCharWrapper);
 	if (state == 1) {
-		if (hasFoundHostHeaderParser(
-				&parseRequest->headerParser)) { // TODO: drop error
+		if (hasFoundHostHeaderParser(&parseRequest->headerParser)) {
 			*ret	   = DONE; // TODO: put connect and resolve state
 			char *host = getHostHeaderParser(&(parseRequest->headerParser));
-			printf("Header Host:%s\n", host); // TODO: remove
 			setOriginHost(GET_DATA(key), host);
 		}
 		else {
-			*ret = ERROR;
+			setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+			*ret = ERROR_CLIENT;
 		}
 	}
 	else if (state == 2) {
-		*ret = ERROR;
+		setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+		*ret = ERROR_CLIENT;
 	}
 	return bytesFromAParser;
 }

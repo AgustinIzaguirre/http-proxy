@@ -13,6 +13,7 @@
 #include <versionParser.h>
 #include <hostHeaderParser.h>
 #include <handleParsers.h>
+#include <handleError.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
@@ -55,6 +56,7 @@ enum httpState {
 	HANDLE_REQUEST,
 	HANDLE_RESPONSE,
 	HANDLE_RESPONSE_WITH_TRANSFORMATION,
+	ERROR_CLIENT,
 
 	// final states
 	DONE,
@@ -199,5 +201,25 @@ void setOriginHost(struct http *s, char *requestHost);
  * Increments references to struct http in 1
  */
 void incrementReferences(struct http *s);
+
+/*
+ * Return error buffer
+ */
+buffer *getErrorBuffer(httpADT_t s);
+
+/*
+ * Set data as errors buffers data
+ */
+void setErrorBuffer(httpADT_t s, uint8_t *data, int length);
+
+/*
+ * Set type of error found
+ */
+void setErrorType(struct http *s, int errorTypeFound);
+
+/*
+ * Return error type
+ */
+int getErrorType(struct http *s);
 
 #endif
