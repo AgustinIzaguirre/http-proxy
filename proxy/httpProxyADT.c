@@ -17,7 +17,7 @@ struct http {
 	// Origin server address resolution
 	struct addrinfo *originResolution;
 	// Current try origin server address
-	struct addrinfo *originResolutionCurrent;
+	struct addrinfo *originResolutionCurrent; // TODO: it is not use
 
 	// Origin server info
 	struct sockaddr_storage originAddr;
@@ -66,6 +66,14 @@ struct http {
 	// Next in pool
 	struct http *next;
 };
+
+struct addrinfo *getOriginResolutions(struct http *s) {
+	return s->originResolution;
+}
+
+void setOriginResolutions(struct http *s, struct addrinfo *originResolution) {
+	s->originResolution = originResolution;
+}
 
 struct state_machine *getStateMachine(struct http *s) {
 	return &(s->stm);

@@ -2,6 +2,7 @@
 #include <httpProxyADT.h>
 #include <connectToOrigin.h>
 #include <stdio.h>
+#include <selector.h>
 
 int blockingToResolvName(struct selector_key *key, int fdClient) {
 	httpADT_t currentState = GET_DATA(key);
@@ -22,24 +23,60 @@ int blockingToResolvName(struct selector_key *key, int fdClient) {
 
 void *addressResolvName(void **data) {
 	pthread_detach(pthread_self());
-	// httpADT_t currentState   = data[0];
+	httpADT_t currentState   = data[0];
 	struct selector_key *key = data[1];
-	// resolv address evans todo
+
+	setOriginResolutions(currentState, NULL);
+
+	struct addrinfo hints, *res;
+	int errcode;
+	char *host = getOriginHost(currentState);
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family   = PF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	hints.ai_flags |= AI_CANONNAME;
+
+	errcode = getaddrinfo(host, NULL, &hints, &res);
+	if (errcode != 0) {
+		perror("getaddrinfo"); // TODO: use goto
+		return (void *) -1;
+	}
+
+	setOriginResolutions(currentState, res);
+
 	selector_notify_block(key->s, key->fd);
 	return (void *) 0;
 }
 
 unsigned addressResolvNameDone(struct selector_key *key) {
-	struct addrinfo *res = NULL; // currentState->originResolution; evans
+	int flag			 = ERROR;
+	struct addrinfo *res = getOriginResolutions(GET_DATA(key));
 
-	return connectToOrigin(key, res);
+	while (res && flag == ERROR) {
+		flag = connectToOrigin(key, res);
+		res  = res->ai_next;
+	}
+	return HANDLE_REQUEST;
 }
 
 int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	httpADT_t currentState = GET_DATA(key);
-	setOriginPort(currentState, 1234); // should be already setted evans
 
-	char *serverIp			  = "127.0.0.1"; // should be already setted evans
+	void *ptr;
+	char serverIP[100];
+	inet_ntop(ipEntry->ai_family, ipEntry->ai_addr->sa_data, serverIP, 100);
+
+	switch (ipEntry->ai_family) {
+		case AF_INET:
+			ptr = &((struct sockaddr_in *) ipEntry->ai_addr)->sin_addr;
+			break;
+		case AF_INET6:
+			ptr = &((struct sockaddr_in6 *) ipEntry->ai_addr)->sin6_addr;
+			break;
+	}
+	inet_ntop(ipEntry->ai_family, ptr, serverIP, 100);
+
 	unsigned short originPort = getOriginPort(currentState);
 	int socketFd			  = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
@@ -53,7 +90,7 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	serverAddr.sin_family = AF_INET;
 	serverAddr.sin_port   = htons(originPort);
 
-	if (inet_pton(AF_INET, serverIp, &(serverAddr.sin_addr)) <= 0) {
+	if (inet_pton(AF_INET, serverIP, &(serverAddr.sin_addr)) <= 0) {
 		fprintf(stderr, "not valid IP\ninet_pton() failed\n");
 		return ERROR;
 	}
@@ -76,5 +113,6 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 		return ERROR;
 	}
 	incrementReferences(currentState);
-	return HANDLE_REQUEST; // return new state now should abort
+
+	return HANDLE_REQUEST;
 }

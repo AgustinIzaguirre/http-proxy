@@ -222,4 +222,7 @@ void setErrorType(struct http *s, int errorTypeFound);
  */
 int getErrorType(struct http *s);
 
+struct addrinfo *getOriginResolutions(struct http *s);
+void setOriginResolutions(struct http *s, struct addrinfo *originResolution);
+
 #endif

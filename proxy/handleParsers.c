@@ -78,8 +78,6 @@ unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 			case PARSE_METHOD:
 				bytesFromAParser =
 					handleMethod(key, parseRequest, readBuffer, &ret);
-				// ret				 = CONNECT_TO_ORIGIN; // evans TODO
-				// blockingToResolvName(key, key->fd);   // evans TODO
 				break;
 			case PARSE_TARGET:
 				bytesFromAParser =
@@ -159,7 +157,8 @@ int handleVersion(struct selector_key *key, struct parseRequest *parseRequest,
 			}
 		}
 		else {
-			*ret = DONE; // TODO: put connect and resolve state
+			*ret = CONNECT_TO_ORIGIN;			// evans TODO
+			blockingToResolvName(key, key->fd); // evans TODO
 		}
 	}
 	else if (state == 2) {
@@ -176,9 +175,10 @@ int handleHeader(struct selector_key *key, struct parseRequest *parseRequest,
 		parse(parseRequest, readBuffer, &state, &parseHeaderCharWrapper);
 	if (state == 1) {
 		if (hasFoundHostHeaderParser(&parseRequest->headerParser)) {
-			*ret	   = DONE; // TODO: put connect and resolve state
 			char *host = getHostHeaderParser(&(parseRequest->headerParser));
 			setOriginHost(GET_DATA(key), host);
+			*ret = CONNECT_TO_ORIGIN;			// evans TODO
+			blockingToResolvName(key, key->fd); // evans TODO
 		}
 		else {
 			setErrorType(GET_DATA(key), NOT_FOUND_HOST);
