@@ -3,8 +3,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <admin.h>
 #include <ctype.h>
+#include <admin.h>
+
+#define PARSER_MALLOC_BLOCK 10
 
 #define EXPECTS(expectedChar, expectedState)                                   \
 	{                                                                          \
@@ -51,31 +53,31 @@ enum state_t {
 	DOT,
 	B,
 	BY,
-	BYE, /* command */
+	BYE,
 	G,
 	GE,
 	GET,
 	GET_,
 	GET_M,
 	GET_MT,
-	GET_MTR, /* command */
+	GET_MTR,
 	GET_MTR_,
 	GET_MTR_B,
-	GET_MTR_BT, /* command */
+	GET_MTR_BT,
 	GET_MTR_C,
-	GET_MTR_CN, /* command */
+	GET_MTR_CN,
 	GET_MTR_H,
-	GET_MTR_HS, /* command */
+	GET_MTR_HS,
 	GET_B,
-	GET_BF, /* command */
+	GET_BF,
 	GET_C,
 	GET_CM,
-	GET_CMD, /* command */
+	GET_CMD,
 	GET_MI,
 	GET_MIM,
-	GET_MIME, /* command */
+	GET_MIME,
 	GET_T,
-	GET_TF, /* command */
+	GET_TF,
 	S,
 	SE,
 	SET,
@@ -83,29 +85,31 @@ enum state_t {
 	SET_M,
 	SET_MI,
 	SET_MIM,
-	SET_MIME, /* command */
+	SET_MIME,
 	SET_MIME_,
-	SET_MIME_DATA, /* command */
+	SET_MIME_DATA,
 	SET_T,
 	SET_TF,
 	SET_TF_,
 	SET_TF_O,
-	SET_TF_ON, /* command */
+	SET_TF_ON,
 	SET_TF_OF,
-	SET_TF_OFF, /* command */
+	SET_TF_OFF,
 	SET_B,
 	SET_BF,
 	SET_BF_,
-	SET_BF_DATA, /* command */
+	SET_BF_DATA,
 	SET_BF_DATA_,
 	SET_C,
 	SET_CM,
 	SET_CMD,
 	SET_CMD_,
-	SET_CMD_DATA, /* command */
+	SET_CMD_DATA,
 	SET_CMD_DATA_
 };
 
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
+
+enum operation_t { BYE, GET, SET };
 
 #endif

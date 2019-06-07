@@ -5,7 +5,11 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 	enum returnCode_t returnCode = IGNORE;
 	enum state_t currentState	= NOTHING;
 	char currentChar;
-	*data = NULL;
+	*data		= NULL;
+	*dataLength = 0;
+	*id			= NO_ID;
+
+	// TODO: remember to use htons to transform to network-bytes
 
 	do {
 		currentChar = getchar();
@@ -28,7 +32,7 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 					case '\n':
 					case '\t':
 					case ' ': /* space */
-						/* Keeps currentState = NOTHING */
+						/* Keeps currentState */
 						break;
 					default:
 						returnCode = INVALID;
@@ -60,7 +64,8 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case BYE:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *bye* */
+					/* Set command information to *bye* */
+					*operation = BYE;
 					returnCode = NEW;
 				});
 				break;
@@ -133,7 +138,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						currentState = GET_MTR_;
 						break;
 					case '\n':
-						/* TODO: set command information to *get mtr* */
+						/* Set command information to *get mtr* */
+						*operation = GET;
+						*id		   = MTR_ID;
 						returnCode = NEW;
 						break;
 					default:
@@ -156,8 +163,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						currentState = GET_MTR_B;
 						break;
 					case '\n':
-						/* TODO: set command information to *get mtr* */
-						/* TODO: repeted above in GET_MTR */
+						/* Set command information to *get mtr* */
+						*operation = GET;
+						*id		   = MTR_ID;
 						returnCode = NEW;
 						break;
 					default:
@@ -175,19 +183,25 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case GET_MTR_CN:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get mtr cn* */
+					/* Set command information to *get mtr cn* */
+					*operation = GET;
+					*id		   = MTR_CN_ID;
 					returnCode = NEW;
 				});
 				break;
 			case GET_MTR_HS:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get mtr hs* */
+					/* Set command information to *get mtr hs* */
+					*operation = GET;
+					*id		   = MTR_HS_ID;
 					returnCode = NEW;
 				});
 				break;
 			case GET_MTR_BT:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get mtr bt* */
+					/* Set command information to *get mtr bt* */
+					*operation = GET;
+					*id		   = MTR_BT_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -196,7 +210,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case GET_BF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get bf* */
+					/* Set command information to *get bf* */
+					*operation = GET;
+					*id		   = BF_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -208,7 +224,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case GET_CMD:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get cmd* */
+					/* Set command information to *get cmd* */
+					*operation = GET;
+					*id		   = CMD_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -220,7 +238,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case GET_MIME:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get mime* */
+					/* Set command information to *get mime* */
+					*operation = GET;
+					*id		   = MIME_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -229,7 +249,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case GET_TF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get tf* */
+					/* Set command information to *get tf* */
+					*operation = GET;
+					*id		   = TF_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -237,7 +259,8 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				EXPECTS('f', SET_BF);
 				break;
 			case SET_BF:
-				*data = calloc(1, sizeof(int));
+				*dataLength = sizeof(uint32_t);
+				*data		= calloc(1, *dataLength);
 				EXPECTS_SPACE(SET_BF_);
 				break;
 			case SET_BF_:
@@ -256,8 +279,8 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 					case '7':
 					case '8':
 					case '9':
-						**((int **) data) =
-							**((int **) data) * 10 + currentChar - '0';
+						**((uint32_t **) data) =
+							**((uint32_t **) data) * 10 + currentChar - '0';
 						currentState = SET_BF_DATA;
 						break;
 					default:
@@ -280,12 +303,14 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 					case '7':
 					case '8':
 					case '9':
-						**((int **) data) =
-							**((int **) data) * 10 + currentChar - '0';
+						**((uint32_t **) data) =
+							**((uint32_t **) data) * 10 + currentChar - '0';
 						currentState = SET_BF_DATA;
 						break;
 					case '\n':
-						/* TODO: set command information to *get bf int* */
+						/* Set command information to *get bf int* */
+						*operation = GET;
+						*id		   = BF_ID;
 						returnCode = NEW;
 						break;
 					default:
@@ -294,8 +319,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case SET_BF_DATA_:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *get bf int* */
-					/* TODO: repeated above at SET_BF_DATA */
+					/* Set command information to *get bf int* */
+					*operation = GET;
+					*id		   = BF_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -332,8 +358,13 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case SET_TF_ON:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *set tf on* */
-					returnCode = NEW;
+					/* Set command information to *set tf on* */
+					*operation			  = SET;
+					*id					  = TF_ID;
+					*dataLength			  = sizeof(uint8_t);
+					*data				  = malloc(*dataLength);
+					**((uint8_t **) data) = ON;
+					returnCode			  = NEW;
 				});
 				break;
 			case SET_TF_OF:
@@ -341,8 +372,13 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case SET_TF_OFF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command information to *set tf off* */
-					returnCode = NEW;
+					/* Set command information to *set tf off* */
+					*operation			  = SET;
+					*id					  = TF_ID;
+					*dataLength			  = sizeof(uint8_t);
+					*data				  = malloc(*dataLength);
+					**((uint8_t **) data) = OFF;
+					returnCode			  = NEW;
 				});
 				break;
 			case SET_M:
@@ -361,7 +397,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						currentState = SET_MIME_;
 						break;
 					case '\n':
-						/* TODO: *set mime* to clean mime list */
+						/* Set command information to *set mime* */
+						*operation = SET;
+						*id		   = MIME_ID;
 						returnCode = NEW;
 						break;
 					default:
@@ -375,12 +413,17 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						/* Keeps current state */
 						break;
 					case '\n':
-						/* TODO: *set mime* to clean mime list */
+						/* Set command information to *set mime* */
+						*operation = SET;
+						*id		   = MIME_ID;
 						returnCode = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
-							/* TODO: start to allocate/generate data */
+							/* Start to allocate data */
+							*data = malloc(PARSER_MALLOC_BLOCK);
+							*(*((char **) data) + *dataLength) = currentChar;
+							(*dataLength)++;
 							currentState = SET_MIME_DATA;
 						}
 						else {
@@ -391,12 +434,21 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 			case SET_MIME_DATA:
 				switch (currentChar) {
 					case '\n':
-						/* TODO: set command info *set mime media-type* */
+						/* Set command info *set mime media-type* */
+						*operation = SET;
+						*id		   = MIME_ID;
 						returnCode = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
-							/* TODO: continuing allocating/generating data */
+							/* Continuing allocating data */
+							if (*dataLength % PARSER_MALLOC_BLOCK == 0) {
+								*data = realloc(
+									*data,
+									*dataLength / PARSER_MALLOC_BLOCK + 1);
+							}
+							*(*((char **) data) + *dataLength) = currentChar;
+							(*dataLength)++;
 							/* Keeps current state */
 						}
 						else {
@@ -421,7 +473,10 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						break;
 					default:
 						if (isprint(currentChar)) {
-							/* TODO: start to allocate/generate data */
+							/* Start to allocate data */
+							*data = malloc(PARSER_MALLOC_BLOCK);
+							*(*((char **) data) + *dataLength) = currentChar;
+							(*dataLength)++;
 							currentState = SET_CMD_DATA;
 						}
 						else {
@@ -436,12 +491,21 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 						currentState = SET_CMD_DATA_;
 						break;
 					case '\n':
-						/* TODO: set command info *set cmd command* */
+						/* Set command info *set cmd command* */
+						*operation = SET;
+						*id		   = CMD_ID;
 						returnCode = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
-							/* TODO: continuing allocating/generating data */
+							/* Continuing allocating/generating data */
+							if (*dataLength % PARSER_MALLOC_BLOCK == 0) {
+								*data = realloc(
+									*data,
+									*dataLength / PARSER_MALLOC_BLOCK + 1);
+							}
+							*(*((char **) data) + *dataLength) = currentChar;
+							(*dataLength)++;
 							/* Keeps current state */
 						}
 						else {
@@ -451,7 +515,9 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 				break;
 			case SET_CMD_DATA_:
 				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* TODO: set command info *set mime media-type* */
+					/* Set command info *set mime media-type* */
+					*operation = SET;
+					*id		   = MIME_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -467,7 +533,10 @@ int parseCommand(uint8_t *operation, uint8_t *id, void **data,
 
 		if (*data != NULL) {
 			free(*data);
+			*data = NULL;
 		}
+
+		*dataLength = 0;
 	}
 
 	return returnCode;
