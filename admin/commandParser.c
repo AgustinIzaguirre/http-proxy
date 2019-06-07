@@ -1,9 +1,9 @@
 #include <commandParser.h>
 
-int parseCommand(uint8_t *operation, uint8_t *id, void **data,
+int parseCommand(operation_t *operation, id_t *id, void **data,
 				 size_t *dataLength) {
-	enum returnCode_t returnCode = IGNORE;
-	enum state_t currentState	= NOTHING;
+	returnCode_t returnCode = IGNORE;
+	state_t currentState	= NOTHING;
 	char currentChar;
 	*data		= NULL;
 	*dataLength = 0;

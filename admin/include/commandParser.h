@@ -45,9 +45,6 @@
 		}                                                                      \
 	}
 
-int parseCommand(uint8_t *operation, uint8_t *id, void **data,
-				 size_t *dataLength);
-
 enum state_t {
 	NOTHING,
 	DOT,
@@ -107,9 +104,13 @@ enum state_t {
 	SET_CMD_DATA,
 	SET_CMD_DATA_
 };
-
+typedef enum state_t state_t;
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
-
+typedef enum returnCode_t returnCode_t;
 enum operation_t { BYE_OP, GET_OP, SET_OP };
+typedef enum operation_t operation_t;
+
+int parseCommand(operation_t *operation, id_t *id, void **data,
+				 size_t *dataLength);
 
 #endif
