@@ -5,5 +5,8 @@
 #define AUTHENTICATION_STREAM 0
 
 int establishConnection(char *serverIP, unsigned int serverPort);
+void sendByeRequest();
+void sendGetRequest();
+void sendPostRequest();
 
 #endif

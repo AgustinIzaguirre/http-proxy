@@ -126,7 +126,7 @@ static size_t receiveSCTPMsg(int server, void **buffer, size_t maxLengthToRead,
 	return bytesRead;
 }
 
-/* TODO: Manage version number if gets errorVersion */
+// TODO: Manage version number if gets errorVersion
 uint8_t readAuthenticationResponse(int server) {
 	uint8_t responseByte;
 	uint8_t *response;
@@ -139,4 +139,13 @@ uint8_t readAuthenticationResponse(int server) {
 	free(response);
 
 	return responseByte;
+}
+
+void sendByeRequest() {
+}
+
+void sendGetRequest() {
+}
+
+void sendPostRequest() {
 }

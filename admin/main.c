@@ -3,7 +3,7 @@
 #include <commandParser.h>
 
 int main(int argc, char const *argv[]) {
-	/* TODO: receive from argv IP and PORT for the server to administrate */
+	// TODO: receive from argv IP and PORT for the server to administrate
 	int server = establishConnection(DEFAULT_IP, DEFAULT_PORT);
 
 	if (server < 0) {
@@ -13,10 +13,14 @@ int main(int argc, char const *argv[]) {
 
 	autenticate(server);
 
+	uint8_t byeRead = 0;
+
 	do {
-		uint8_t byeRead = parseAndSendRequests();
+		byeRead = parseAndSendRequests();
 		recvAndPrintResponses();
 	} while (!byeRead);
+
+	// TODO: read all bytes in socket to clean its buffer? close it?
 
 	return 0;
 }
@@ -44,7 +48,7 @@ void autenticate(int server) {
 
 		uint8_t response = readAuthenticationResponse(server);
 
-		/* TODO: manage version error to show server current version */
+		// TODO: manage version error to show server current version
 		if ((response & GENERAL_ERROR) == GENERAL_ERROR) {
 			if ((response & VERSION_ERROR) == VERSION_ERROR) {
 				return VERSION_ERROR;
@@ -56,11 +60,15 @@ void autenticate(int server) {
 	} while ((response & GENERAL_ERROR) == GENERAL_ERROR);
 }
 
-void parseAndSendRequests() {
+/* Return different than zero if a BYE command was read */
+uint8_t parseAndSendRequests() {
 	operation_t operation;
 	id_t id;
 	void *data;
 	size_t dataLength;
+
+	uint8_t byeRead = 0;
+
 	returnCode_t returnCode;
 
 	do {
@@ -68,15 +76,48 @@ void parseAndSendRequests() {
 		dataLength = 0;
 		returnCode = parseCommand(&operation, &id, &data, &dataLength);
 
-		switch (returnCode) {
-			case NEW:
-				// TODO: manage new command
-				break;
-			case INVALID:
-				// TODO: manage invalid command
-				break;
+		if (!byeRead) {
+			switch (returnCode) {
+				case NEW:
+					byeRead =
+						newCommandHandler(operation, id, data, dataLength);
+					break;
+				case INVALID:
+					invalidCommandHandler();
+					break;
+				default:
+					break;
+			}
 		}
 
-		free(data);
+		if (data != NULL) {
+			free(data);
+		}
 	} while (returnCode != SEND);
+
+	return byeRead;
+}
+
+uint8_t newCommandHandler(operation_t operation, id_t id, void *data,
+						  size_t dataLength) {
+	uint8_t byeRead = 0;
+
+	switch (operation) {
+		case BYE_OP:
+			byeRead = 1;
+			sendByeRequest();
+			break;
+		case GET_OP:
+			sendGetRequest();
+			break;
+		case SET_OP:
+			sendPostRequest();
+			break;
+	}
+
+	return byeRead;
+}
+
+void invalidCommandHandler() {
+	// TODO: add to the queue in order to print "invalid commandd" as response
 }
