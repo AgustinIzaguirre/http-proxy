@@ -152,8 +152,8 @@ static void isCensureHeader(struct headersParser *header) {
 			header->isMime = TRUE;
 		}
 		printf("no matcheo %s\n", header->headerBuf);
-		memcpy(header->headerBuf, header->currHeader, header->headerIndex);
-		header->headerBuf[header->headerIndex] = ':';
+		header->currHeader[header->headerIndex - 1] = ':';
+		memcpy(header->headerBuf, header->currHeader, header->headerIndex + 1);
 		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
 		header->censure = FALSE;
 	}

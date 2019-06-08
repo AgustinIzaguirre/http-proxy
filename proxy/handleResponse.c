@@ -81,12 +81,16 @@ unsigned setResponseFdInterests(struct selector_key *key) {
 	httpADT_t state						  = GET_DATA(key);
 	struct handleResponse *handleResponse = getHandleResponseState(state);
 	buffer *writeBuffer					  = getWriteBuffer(GET_DATA(key));
-	buffer *parsedBuffer				  = getCurrentResponseBuffer(state);
-	unsigned ret						  = HANDLE_RESPONSE;
-	int clientInterest					  = OP_NOOP;
-	int originInterest					  = OP_NOOP;
+	buffer *parsedBuffer =
+		&(getHandleResponseState(state)->parseHeaders.headerBuffer);
+	;
+	unsigned ret	   = HANDLE_RESPONSE;
+	int clientInterest = OP_NOOP;
+	int originInterest = OP_NOOP;
 
-	if (buffer_can_read(parsedBuffer)) {
+	if (buffer_can_read(parsedBuffer) ||
+		(!handleResponse->parseHeaders.censure &&
+		 buffer_can_read(writeBuffer))) {
 		clientInterest |= OP_WRITE;
 	}
 
