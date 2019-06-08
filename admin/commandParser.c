@@ -66,6 +66,7 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *bye* */
 					*operation = BYE_OP;
+					*id		   = NO_ID;
 					returnCode = NEW;
 				});
 				break;

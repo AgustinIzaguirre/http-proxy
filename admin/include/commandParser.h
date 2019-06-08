@@ -107,8 +107,6 @@ enum state_t {
 typedef enum state_t state_t;
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
 typedef enum returnCode_t returnCode_t;
-enum operation_t { BYE_OP, GET_OP, SET_OP };
-typedef enum operation_t operation_t;
 
 int parseCommand(operation_t *operation, id_t *id, void **data,
 				 size_t *dataLength);

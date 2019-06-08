@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-typedef struct Node *listADT_t;
+typedef struct Node *linkedListADT_t;
 typedef struct Node *queueADT_t;
 
 void enqueue(struct Node **head, const void *newData, size_t size);
