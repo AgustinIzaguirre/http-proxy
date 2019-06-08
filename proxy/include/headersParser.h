@@ -29,6 +29,7 @@ struct headersParser {
 };
 
 enum headersState {
+	FIRST_LINE,
 	HEADERS_START,
 	HEADER_NAME,
 	HEADER_VALUE,

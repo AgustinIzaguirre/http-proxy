@@ -9,7 +9,7 @@
 static void isCensureHeader(struct headersParser *header);
 
 void headersParserInit(struct headersParser *header) {
-	header->state		= HEADERS_START;
+	header->state		= FIRST_LINE;
 	header->headerIndex = 0;
 	header->valueIndex  = 0;
 	header->mimeIndex   = 0;
@@ -43,6 +43,12 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 void parseHeadersByChar(char l, struct headersParser *header) {
 	int state = header->state;
 	switch (state) {
+		case FIRST_LINE:
+			if (l == '\n') {
+				header->state = HEADERS_START;
+			}
+			buffer_write(&header->valueBuffer, l);
+			break;
 		case HEADERS_START:
 			if (l == '\n') {
 				header->state = BODY_START;
@@ -58,9 +64,7 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 				header->currHeader[header->headerIndex++] = tolower(l);
 				header->state							  = HEADER_NAME;
 			}
-
 			break;
-
 		case HEADER_NAME:
 			if (l == ':') {
 				header->currHeader[header->headerIndex++] = 0;
@@ -75,9 +79,7 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 				copyBuffer(header);
 				header->headerIndex = 0;
 			}
-
 			break;
-
 		case HEADER_VALUE:
 			if (l == '\n') {
 				if (header->isMime) {
@@ -94,7 +96,6 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 				buffer_write(&header->valueBuffer, l);
 			}
 			break;
-
 		case HEADER_END:
 			if (l == '\n') {
 				header->state = BODY_START;
@@ -108,10 +109,8 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			}
 
 			break;
-
 		case HEADER_DONE:
 		case BODY_START:
-
 			break;
 	}
 
