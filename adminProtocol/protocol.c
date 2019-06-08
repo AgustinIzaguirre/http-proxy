@@ -2,15 +2,17 @@
 #include <netinet/sctp.h>
 
 static void sendSCTPMsg(int server, void *msg, size_t msgLength,
-						int streamNumber) {
+						uint16_t streamNumber) {
 	sctp_sendmsg(server, msg, msgLength, NULL, 0, 0, 0, streamNumber, 0, 0);
 }
 
-int establishConnection(char *serverIP, unsigned int serverPort) {
-	return prepareSCTPSocket(serverIP, serverPort);
+int establishConnection(char *serverIP, unsigned int serverPort,
+						uint16_t streamQuantity) {
+	return prepareSCTPSocket(serverIP, serverPort, streamQuantity);
 }
 
-static int prepareSCTPSocket(char *serverIP, unsigned int serverPort) {
+static int prepareSCTPSocket(char *serverIP, unsigned int serverPort,
+							 uint16_t streamQuantity) {
 	struct sockaddr_in serverAddress;
 	struct sctp_initmsg initMsg;
 	struct sctp_event_subscribe events;
@@ -18,14 +20,14 @@ static int prepareSCTPSocket(char *serverIP, unsigned int serverPort) {
 	int server = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
 
 	if (server < 0) {
-		printf("Error: Can not create SCTP Socket\n");
+		printf("Error: Can't create SCTP Socket\n");
 		return -1;
 	}
 
 	memset(&initMsg, 0, sizeof(initMsg));
 
-	initMsg.sinit_num_ostreams  = NUM_STREAMS;
-	initMsg.sinit_max_instreams = NUM_STREAMS;
+	initMsg.sinit_num_ostreams  = streamQuantity;
+	initMsg.sinit_max_instreams = streamQuantity;
 	initMsg.sinit_max_attempts  = MAX_ATTEMPTS;
 
 	setsockopt(server, IPPROTO_SCTP, SCTP_INITMSG, &initMsg, sizeof(initMsg));
@@ -127,7 +129,7 @@ static size_t receiveSCTPMsg(int server, void **buffer, size_t maxLengthToRead,
 }
 
 // TODO: Manage version number if gets errorVersion
-uint8_t readAuthenticationResponse(int server) {
+uint8_t recvAuthenticationResponse(int server) {
 	uint8_t responseByte;
 	uint8_t *response;
 	struct sctp_sndrcvinfo sndRcvInfo;
@@ -148,4 +150,8 @@ void sendGetRequest() {
 }
 
 void sendPostRequest() {
+}
+
+void recvResponse(operation_t *operation, id_t *id, ) {
+	/* code */
 }
