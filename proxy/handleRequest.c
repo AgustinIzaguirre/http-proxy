@@ -129,8 +129,11 @@ unsigned getAdecuateResponseState(struct selector_key *key) {
 
 static buffer *getCurrentBuffer(httpADT_t state) {
 	struct handleRequest *handleRequest = getHandleRequestState(state);
-	if (handleRequest->parseHeaders.state != BODY_START ||
-		buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
+	if (buffer_can_read(getFinishParserBuffer(state))) {
+		return getFinishParserBuffer(state);
+	}
+	else if (handleRequest->parseHeaders.state != BODY_START ||
+			 buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
 		return &handleRequest->parseHeaders.valueBuffer;
 	}
 	else {
