@@ -68,8 +68,8 @@ unsigned responseWrite(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
-		resetValueBuffer(
-			&(getHandleResponseState(GET_DATA(key))->parseHeaders.valueBuffer));
+		//		resetValueBuffer(
+		//			&(getHandleResponseState(GET_DATA(key))->parseHeaders.valueBuffer));
 		ret = setResponseFdInterests(key);
 	}
 	else {
@@ -83,14 +83,14 @@ unsigned setResponseFdInterests(struct selector_key *key) {
 	httpADT_t state						  = GET_DATA(key);
 	struct handleResponse *handleResponse = getHandleResponseState(state);
 	buffer *writeBuffer					  = getWriteBuffer(GET_DATA(key));
-	buffer *parsedBuffer = &(handleResponse->parseHeaders.headerBuffer);
+	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
 	;
 	unsigned ret	   = HANDLE_RESPONSE;
 	int clientInterest = OP_NOOP;
 	int originInterest = OP_NOOP;
 
 	if (buffer_can_read(parsedBuffer) ||
-		(!handleResponse->parseHeaders.censure &&
+		(handleResponse->parseHeaders.state == BODY_START &&
 		 buffer_can_read(writeBuffer))) {
 		clientInterest |= OP_WRITE;
 	}
@@ -111,10 +111,9 @@ unsigned setResponseFdInterests(struct selector_key *key) {
 
 static buffer *getCurrentResponseBuffer(httpADT_t state) {
 	struct handleResponse *handleResponse = getHandleResponseState(state);
-	buffer *buf = &(getHandleResponseState(state)->parseHeaders.headerBuffer);
-
-	if (buffer_can_read(buf)) {
-		return buf;
+	if (handleResponse->parseHeaders.state != BODY_START ||
+		buffer_can_read(&handleResponse->parseHeaders.valueBuffer)) {
+		return &handleResponse->parseHeaders.valueBuffer;
 	}
 	else {
 		return getWriteBuffer(state);

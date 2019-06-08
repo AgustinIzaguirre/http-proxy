@@ -16,20 +16,17 @@ void headersParserInit(struct headersParser *header) {
 	header->censure		= FALSE;
 	header->isMime		= FALSE;
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
+	buffer_init(&(header->valueBuffer), 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
+				header->valueBuf); // TODO update with configuration buffer size
 }
 
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
-	int size = end - begining;
-	while (begining < end) {
-		//		if ((header->state != HEADER_VALUE &&
-		//			 header->headerIndex < MAX_HOP_BY_HOP_HEADER_LENGTH) ||
-		//			header->censure) {
-		//			buffer_read_adv(input, 1);
-		//		}
-
-		parseHeadersByChar(input->data[begining], header);
-		begining++;
+	int size  = end - begining;
+	int count = 0;
+	uint8_t l = buffer_read(input);
+	while (l) {
+		parseHeadersByChar(l, header);
 
 		if (header->state == HEADER_DONE) {
 			printf("%s\n", header->currHeader);
@@ -38,9 +35,11 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 		else if (header->state == BODY_START) {
 			addConnectionClose(header);
 			printf("body start\n");
+			return;
 		}
+
+		l = buffer_read(input);
 	}
-	buffer_read_adv(input, size);
 }
 
 void parseHeadersByChar(char l, struct headersParser *header) {
@@ -53,13 +52,13 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			else if (l == '\r') {
 				header->state = HEADER_END;
 			}
-			else if (l != ':') {
-				header->currHeader[header->headerIndex++] = tolower(l);
-				header->state							  = HEADER_NAME;
-			}
-			else {
+			else if (l == ':') {
 				header->censure = FALSE;
 				header->state   = HEADER_VALUE;
+			}
+			else {
+				header->currHeader[header->headerIndex++] = tolower(l);
+				header->state							  = HEADER_NAME;
 			}
 
 			break;
@@ -76,26 +75,26 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 
 			if (header->headerIndex == MAX_HOP_BY_HOP_HEADER_LENGTH) {
 				copyBuffer(header);
+				header->headerIndex = 0;
 			}
 
 			break;
 
 		case HEADER_VALUE:
 			if (l == '\n') {
-				header->valueBuf[header->headerIndex++] = l;
 				if (header->isMime) {
 					header->mimeValue[header->mimeIndex++] = 0;
 				}
 				header->state = HEADER_DONE;
 			}
 			else {
-				header->valueBuf[header->valueIndex++] = l;
 				if (header->isMime && l != '\r') {
 					header->mimeValue[header->mimeIndex++] = l;
 				}
 			}
-			buffer_read_adv(&header->valueBuffer, 1);
-
+			if (!header->censure) {
+				buffer_write(&header->valueBuffer, l);
+			}
 			break;
 
 		case HEADER_END:
@@ -159,11 +158,10 @@ static void isCensureHeader(struct headersParser *header) {
 		//			printf("matcheo con content-type\n");
 		//			header->isMime = TRUE;
 		//		}
-		printf("no matcheo %s\n", header->headerBuf);
-		header->currHeader[header->headerIndex - 1] = ':';
-		header->currHeader[header->headerIndex]		= 0;
-		memcpy(header->headerBuf, header->currHeader, header->headerIndex + 1);
-		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
+		// printf("no matcheo %s\n", header->headerBuf);
+
+		copyBuffer(header);
+		buffer_write(&header->valueBuffer, ':');
 		header->censure = FALSE;
 	}
 }
@@ -175,8 +173,12 @@ void addConnectionClose(struct headersParser *header) {
 }
 
 void copyBuffer(struct headersParser *header) {
-	memcpy(header->headerBuf, header->currHeader, header->headerIndex);
-	buffer_write_adv(&header->headerBuffer, header->headerIndex);
+	size_t count;
+	uint8_t *pointer = buffer_write_ptr(&header->valueBuffer, &count);
+	printf("count:%ld\nindex:%d\n", count, header->headerIndex);
+	memcpy(buffer_write_ptr(&header->valueBuffer, &count), header->currHeader,
+		   header->headerIndex); // TOdo CHECK IF ZERO IS COPIED
+	buffer_write_adv(&header->valueBuffer, header->headerIndex);
 }
 
 void resetValueBuffer(struct headersParser *header) {
