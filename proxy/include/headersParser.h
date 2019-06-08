@@ -14,12 +14,12 @@ struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
 	uint8_t headerBuf[MAX_HEADER_LENGTH];
 	uint8_t mimeValue[MAX_MIME_HEADER];
-	uint8_t
-		headerValueBuf[20]; // TODO set length with BUFF size from configuration
+	uint8_t valueBuf[20]; // TODO set length with BUFF size from configuration
 	buffer headerBuffer;
-	buffer headerValueBuffer;
+	buffer valueBuffer;
 	int headerIndex;
 	int mimeIndex;
+	int valueIndex;
 	int state;
 	uint8_t censure;
 	uint8_t isMime;
@@ -62,5 +62,10 @@ void addConnectionClose(struct headersParser *header);
  * Copies current headerBuf into headerBuffer
  */
 void copyBuffer(struct headersParser *header);
+
+/*
+ * Resets value index if necessary
+ */
+void resetValueBuffer(struct headersParser *header);
 
 #endif

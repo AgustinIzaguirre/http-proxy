@@ -68,6 +68,8 @@ unsigned responseWrite(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
+		resetValueBuffer(
+			&(getHandleResponseState(GET_DATA(key))->parseHeaders.valueBuffer));
 		ret = setResponseFdInterests(key);
 	}
 	else {
@@ -108,6 +110,7 @@ unsigned setResponseFdInterests(struct selector_key *key) {
 }
 
 static buffer *getCurrentResponseBuffer(httpADT_t state) {
+	struct handleResponse *handleResponse = getHandleResponseState(state);
 	buffer *buf = &(getHandleResponseState(state)->parseHeaders.headerBuffer);
 
 	if (buffer_can_read(buf)) {

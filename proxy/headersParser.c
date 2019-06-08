@@ -11,6 +11,7 @@ static void isCensureHeader(struct headersParser *header);
 void headersParserInit(struct headersParser *header) {
 	header->state		= HEADERS_START;
 	header->headerIndex = 0;
+	header->valueIndex  = 0;
 	header->mimeIndex   = 0;
 	header->censure		= FALSE;
 	header->isMime		= FALSE;
@@ -19,12 +20,13 @@ void headersParserInit(struct headersParser *header) {
 
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
+	int size = end - begining;
 	while (begining < end) {
-		if ((header->state != HEADER_VALUE &&
-			 header->headerIndex < MAX_HOP_BY_HOP_HEADER_LENGTH) ||
-			header->censure) {
-			buffer_read_adv(input, 1);
-		}
+		//		if ((header->state != HEADER_VALUE &&
+		//			 header->headerIndex < MAX_HOP_BY_HOP_HEADER_LENGTH) ||
+		//			header->censure) {
+		//			buffer_read_adv(input, 1);
+		//		}
 
 		parseHeadersByChar(input->data[begining], header);
 		begining++;
@@ -38,6 +40,7 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 			printf("body start\n");
 		}
 	}
+	buffer_read_adv(input, size);
 }
 
 void parseHeadersByChar(char l, struct headersParser *header) {
@@ -79,14 +82,19 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 
 		case HEADER_VALUE:
 			if (l == '\n') {
+				header->valueBuf[header->headerIndex++] = l;
 				if (header->isMime) {
 					header->mimeValue[header->mimeIndex++] = 0;
 				}
 				header->state = HEADER_DONE;
 			}
-			else if (header->isMime) {
-				header->mimeValue[header->mimeIndex++] = l;
+			else {
+				header->valueBuf[header->valueIndex++] = l;
+				if (header->isMime && l != '\r') {
+					header->mimeValue[header->mimeIndex++] = l;
+				}
 			}
+			buffer_read_adv(&header->valueBuffer, 1);
 
 			break;
 
@@ -169,4 +177,10 @@ void addConnectionClose(struct headersParser *header) {
 void copyBuffer(struct headersParser *header) {
 	memcpy(header->headerBuf, header->currHeader, header->headerIndex);
 	buffer_write_adv(&header->headerBuffer, header->headerIndex);
+}
+
+void resetValueBuffer(struct headersParser *header) {
+	if (!buffer_can_read(&header->valueBuffer)) {
+		header->valueIndex = 0;
+	}
 }
