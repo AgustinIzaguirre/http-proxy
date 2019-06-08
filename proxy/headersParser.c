@@ -147,10 +147,10 @@ static void isCensureHeader(struct headersParser *header) {
 		header->censure = TRUE;
 	}
 	else {
-		if (strcmp(header->headerBuf, "content-type") == 0) {
-			printf("matcheo con content-type\n");
-			header->isMime = TRUE;
-		}
+		//		if (strcmp(header->headerBuf, "content-type") == 0) {
+		//			printf("matcheo con content-type\n");
+		//			header->isMime = TRUE;
+		//		}
 		printf("no matcheo %s\n", header->headerBuf);
 		header->currHeader[header->headerIndex - 1] = ':';
 		header->currHeader[header->headerIndex]		= 0;

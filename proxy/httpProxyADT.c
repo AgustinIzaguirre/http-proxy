@@ -51,7 +51,8 @@ struct http {
 
 	// buffers to use: readBuffer and writeBuffer.
 
-	uint8_t rawBuffA[BUFFER_SIZE], rawBuffB[BUFFER_SIZE];
+	uint8_t rawBuffA[BUFFER_SIZE],
+		rawBuffB[BUFFER_SIZE]; // TODO Buffer size should be read from config
 	buffer readBuffer, writeBuffer;
 
 	uint8_t finishParserData[MAX_PARSER];
