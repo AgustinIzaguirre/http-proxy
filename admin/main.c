@@ -8,7 +8,7 @@ timeTag_t timeTags[ID_QUANTITY] = {0};
 typedef struct {
 	returnCode_t code;
 	uint16_t streamNumber;
-} requestParsed_t;
+} requestParsed_t; // TODO: check this name to be semanthically better
 
 queueADT_t requestsParsed;
 

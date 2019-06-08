@@ -1,6 +1,7 @@
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 #include <stdlib.h>
+#include <stdint.h>
 
 #define MAX_ATTEMPTS 4
 #define AUTHENTICATION_STREAM 0
