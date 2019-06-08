@@ -16,14 +16,12 @@ void headersParserInit(struct headersParser *header) {
 	header->censure		= FALSE;
 	header->isMime		= FALSE;
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
-	buffer_init(&(header->valueBuffer), 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
+	buffer_init(&(header->valueBuffer), 20 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
 				header->valueBuf); // TODO update with configuration buffer size
 }
 
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
-	int size  = end - begining;
-	int count = 0;
 	uint8_t l = buffer_read(input);
 	while (l) {
 		parseHeadersByChar(l, header);
@@ -168,14 +166,14 @@ static void isCensureHeader(struct headersParser *header) {
 
 void addConnectionClose(struct headersParser *header) {
 	char *newHeader = "connection: close\r\n\r\n";
-	memcpy(header->headerBuf, newHeader, strlen(newHeader));
-	buffer_write_adv(&header->headerBuffer, strlen(newHeader));
+	size_t count, size;
+	size = strlen(newHeader);
+	memcpy(buffer_write_ptr(&header->valueBuffer, &count), newHeader, size);
+	buffer_write_adv(&header->valueBuffer, size);
 }
 
 void copyBuffer(struct headersParser *header) {
 	size_t count;
-	uint8_t *pointer = buffer_write_ptr(&header->valueBuffer, &count);
-	printf("count:%ld\nindex:%d\n", count, header->headerIndex);
 	memcpy(buffer_write_ptr(&header->valueBuffer, &count), header->currHeader,
 		   header->headerIndex); // TOdo CHECK IF ZERO IS COPIED
 	buffer_write_adv(&header->valueBuffer, header->headerIndex);

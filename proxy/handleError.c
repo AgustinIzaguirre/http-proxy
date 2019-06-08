@@ -1,6 +1,6 @@
 #include <handleError.h>
-#include <stdio.h> //TODO: remove
 
+// TODO: maybe put it in files
 char *errorResposes[] = {"HTTP/1.0 400 Bad Request\n\
 Content-Type: text/html; charset=UTF-8\n\
 \n\

@@ -39,7 +39,7 @@ void *addressResolvName(void **data) {
 
 	errcode = getaddrinfo(host, NULL, &hints, &res);
 	if (errcode != 0) {
-		perror("getaddrinfo"); // TODO: use goto
+		perror("getaddrinfo"); // TODO: use message error to client
 		return (void *) -1;
 	}
 

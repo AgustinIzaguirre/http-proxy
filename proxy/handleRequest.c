@@ -128,10 +128,10 @@ unsigned getAdecuateResponseState(struct selector_key *key) {
 }
 
 static buffer *getCurrentBuffer(httpADT_t state) {
-	buffer *buf = &(getHandleRequestState(state)->parseHeaders.headerBuffer);
-	// if(buffer_can_read(originalBuffer))TODO
-	if (buffer_can_read(buf)) {
-		return buf;
+	struct handleRequest *handleRequest = getHandleRequestState(state);
+	if (handleRequest->parseHeaders.state != BODY_START ||
+		buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
+		return &handleRequest->parseHeaders.valueBuffer;
 	}
 	else {
 		return getReadBuffer(state);

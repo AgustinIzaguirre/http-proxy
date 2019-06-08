@@ -15,7 +15,7 @@ struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
 	uint8_t headerBuf[MAX_HEADER_LENGTH];
 	uint8_t mimeValue[MAX_MIME_HEADER];
-	uint8_t valueBuf[20 +
+	uint8_t valueBuf[20 + 20 +						// TODO: check the 20 addes
 					 MAX_HOP_BY_HOP_HEADER_LENGTH]; // TODO set length with BUFF
 													// size from configuration
 	buffer headerBuffer;
