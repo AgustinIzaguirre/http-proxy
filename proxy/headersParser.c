@@ -153,6 +153,7 @@ static void isCensureHeader(struct headersParser *header) {
 		}
 		printf("no matcheo %s\n", header->headerBuf);
 		header->currHeader[header->headerIndex - 1] = ':';
+		header->currHeader[header->headerIndex]		= 0;
 		memcpy(header->headerBuf, header->currHeader, header->headerIndex + 1);
 		buffer_write_adv(&header->headerBuffer, header->headerIndex + 1);
 		header->censure = FALSE;
