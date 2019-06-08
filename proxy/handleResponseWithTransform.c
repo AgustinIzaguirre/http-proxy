@@ -4,6 +4,7 @@
 #include <headersParser.h>
 #include <stdio.h>
 #include <selector.h>
+#include <configuration.h>
 
 static buffer *getCurrentResponseBuffer(httpADT_t state);
 
@@ -21,7 +22,7 @@ unsigned responseWithTransformRead(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
-	// rarprintf("In transformation\n"); // TODO REMOVE WHEN Transformation is
+	// printf("In transformation\n"); // TODO REMOVE WHEN Transformation is
 	// completed and tested
 
 	// if there is no space to read should write what i already read
@@ -41,6 +42,8 @@ unsigned responseWithTransformRead(struct selector_key *key) {
 						 writeBuffer, begining, begining + bytesRead);
 		}
 		else {
+			executeTransformCommand(); // TODO validate return and act in
+									   // response
 			// TODO here is where we should call the transformer
 		}
 		ret = setResponseWithTransformFdInterests(key);
@@ -88,9 +91,10 @@ unsigned setResponseWithTransformFdInterests(struct selector_key *key) {
 		getHandleResponseWithTransformState(state);
 	buffer *writeBuffer  = getWriteBuffer(GET_DATA(key));
 	buffer *parsedBuffer = &(handleResponse->parseHeaders.headerBuffer);
-	unsigned ret		 = HANDLE_RESPONSE_WITH_TRANSFORMATION;
-	int clientInterest   = OP_NOOP;
-	int originInterest   = OP_NOOP;
+
+	unsigned ret	   = HANDLE_RESPONSE_WITH_TRANSFORMATION;
+	int clientInterest = OP_NOOP;
+	int originInterest = OP_NOOP;
 
 	if (buffer_can_read(parsedBuffer) ||
 		(!handleResponse->parseHeaders.censure &&
@@ -122,4 +126,45 @@ static buffer *getCurrentResponseBuffer(httpADT_t state) {
 	else {
 		return getWriteBuffer(state);
 	}
+}
+
+int executeTransformCommand() {
+	int inputPipe[]  = {-1, -1};
+	int outputPipe[] = {-1, -1};
+	int errorFd =
+		-1; // TODO open /dev/null or the setted in config and dup2 stderr
+	char *commandPath = getCommand(getConfiguration());
+	pid_t commandPid;
+
+	if (pipe(inputPipe) == -1 || pipe(outputPipe) == -1) {
+		return PIPE_CREATION_ERROR;
+	}
+
+	commandPid = fork();
+	if (commandPid == -1) {
+		return FORK_ERROR;
+	}
+	else if (commandPid == 0) {
+		close(0);			  // closing stdin
+		close(1);			  // closing stdout
+		close(inputPipe[1]);  // closing write end of input pipe
+		close(outputPipe[0]); // closing read end of output pipe
+		dup2(inputPipe[0], 0);
+		dup2(outputPipe, 1);
+
+		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {
+			// closing other pipes end
+			close(inputPipe[0]);
+			close(outputPipe[1]);
+			return EXEC_ERROR;
+		}
+	}
+	else {
+		// In father process
+		close(inputPipe[0]);  // closing read end of input pipe
+		close(outputPipe[1]); // closing write end of output pipe
+							  // TODO register fd on selector
+	}
+
+	return TRANSFORM_COMMAND_OK;
 }
