@@ -5,6 +5,9 @@
 #include <selector.h>
 
 int blockingToResolvName(struct selector_key *key, int fdClient) {
+	if (SELECTOR_SUCCESS != selector_set_interest(key->s, fdClient, OP_NOOP)) {
+		return ERROR;
+	}
 	httpADT_t currentState = GET_DATA(key);
 	pthread_t tid;
 	void **args = malloc(2 * sizeof(void *));
@@ -18,7 +21,7 @@ int blockingToResolvName(struct selector_key *key, int fdClient) {
 							 (void *) args)) {
 		return ERROR;
 	}
-	return 1;
+	return CONNECT_TO_ORIGIN;
 }
 
 void *addressResolvName(void **data) {
@@ -57,6 +60,7 @@ unsigned addressResolvNameDone(struct selector_key *key) {
 		flag = connectToOrigin(key, res);
 		res  = res->ai_next;
 	}
+
 	return HANDLE_REQUEST;
 }
 

@@ -157,8 +157,7 @@ int handleVersion(struct selector_key *key, struct parseRequest *parseRequest,
 			}
 		}
 		else {
-			*ret = CONNECT_TO_ORIGIN;			// evans TODO
-			blockingToResolvName(key, key->fd); // evans TODO
+			*ret = blockingToResolvName(key, key->fd); // evans TODO
 		}
 	}
 	else if (state == 2) {
@@ -181,8 +180,7 @@ int handleHeader(struct selector_key *key, struct parseRequest *parseRequest,
 			if (port != -1) {
 				setOriginPort(GET_DATA(key), port);
 			}
-			*ret = CONNECT_TO_ORIGIN;			// evans TODO
-			blockingToResolvName(key, key->fd); // evans TODO
+			*ret = blockingToResolvName(key, key->fd); // evans TODO
 		}
 		else {
 			setErrorType(GET_DATA(key), NOT_FOUND_HOST);
