@@ -541,7 +541,7 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 	return returnCode;
 }
 
-size_t readLine(char **buffer) {
+static size_t readLine(char **buffer) {
 	char c;
 	size_t length = 0;
 	*buffer		  = NULL;
@@ -589,4 +589,14 @@ void parseAuthenticationData(char **username, size_t *usernameLength,
 			printf("Invalid password length. Please try again.\n\n");
 		}
 	} while (*passwordLength <= 0);
+}
+
+// TODO: We can improve this to be more flexible...
+void parseIPAndPortFromArguments(const char **ip, uint16_t *port, int argc,
+								 char const *argv[]) {
+	/* We spect: * ./admin ip port *, for example * ./admin 127.0.0.1 80 **/
+	if (argc == 3) {
+		*ip   = argv[1];
+		*port = atoi(argv[2]);
+	}
 }

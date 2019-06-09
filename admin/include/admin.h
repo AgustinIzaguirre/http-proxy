@@ -1,6 +1,7 @@
 #ifndef ADMIN_H
 #define ADMIN_H
 #include <stdlib.h>
+#include <protocol.h>
 
 enum id_t {
 	NO_ID,

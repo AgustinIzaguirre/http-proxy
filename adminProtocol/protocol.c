@@ -1,17 +1,30 @@
 #include <protocol.h>
-#include <netinet/sctp.h>
+
+static char *errorMessage = NULL;
+
+static void sendSCTPMsg(int server, void *msg, size_t msgLength,
+						uint16_t streamNumber);
+
+static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
+							 uint16_t streamQuantity);
+
+static void setVersionBytes(void *data);
+
+/* If maxLengthToRead is not set, reads all the bytes in the socket */
+static size_t receiveSCTPMsg(int server, void **buffer, size_t maxLengthToRead,
+							 struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
 
 static void sendSCTPMsg(int server, void *msg, size_t msgLength,
 						uint16_t streamNumber) {
 	sctp_sendmsg(server, msg, msgLength, NULL, 0, 0, 0, streamNumber, 0, 0);
 }
 
-int establishConnection(char *serverIP, unsigned int serverPort,
+int establishConnection(const char *serverIP, uint16_t serverPort,
 						uint16_t streamQuantity) {
 	return prepareSCTPSocket(serverIP, serverPort, streamQuantity);
 }
 
-static int prepareSCTPSocket(char *serverIP, unsigned int serverPort,
+static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 							 uint16_t streamQuantity) {
 	struct sockaddr_in serverAddress;
 	struct sctp_initmsg initMsg;
@@ -20,7 +33,7 @@ static int prepareSCTPSocket(char *serverIP, unsigned int serverPort,
 	int server = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
 
 	if (server < 0) {
-		printf("Error: Can't create SCTP Socket\n");
+		errorMessage = strerror(errno);
 		return -1;
 	}
 
@@ -41,7 +54,7 @@ static int prepareSCTPSocket(char *serverIP, unsigned int serverPort,
 	int convert = inet_pton(AF_INET, serverIP, &serverAddress.sin_addr.s_addr);
 
 	if (convert <= 0) {
-		printf("Error: Invalid IP address\n");
+		errorMessage = strerror(errno);
 		return -1;
 	}
 
@@ -49,8 +62,7 @@ static int prepareSCTPSocket(char *serverIP, unsigned int serverPort,
 							 sizeof(serverAddress));
 
 	if (connection < 0) {
-		printf("errno = %d, error_message = %s\n", errno, strerror(errno));
-		printf("Error: Connection failed\n");
+		errorMessage = strerror(errno);
 		return -1;
 	}
 
@@ -64,6 +76,10 @@ static int prepareSCTPSocket(char *serverIP, unsigned int serverPort,
 			   sizeof(events));
 
 	return server;
+}
+
+static void setVersionBytes(void *data) {
+	((uint8_t *) data)[0] = VERSION_BYTE;
 }
 
 void sendAuthenticationRequest(int server, char *username,
@@ -91,10 +107,6 @@ void sendAuthenticationRequest(int server, char *username,
 	sendSCTPMsg(server, (void *) data, length, AUTHENTICATION_STREAM);
 
 	free(data);
-}
-
-void setVersionBytes(void *data) {
-	((uint8_t *) data)[0] = VERSION_BYTE;
 }
 
 /* If maxLengthToRead is not set, reads all the bytes in the socket */
@@ -143,15 +155,27 @@ uint8_t recvAuthenticationResponse(int server) {
 	return responseByte;
 }
 
-void sendByeRequest() {
+char *getProtocolErrorMessage() {
+	if (errorMessage != NULL) {
+		return errorMessage;
+	}
+
+	return "Unknown protocol error";
 }
 
-void sendGetRequest() {
+void sendByeRequest(uint16_t streamNumber) {
+	/* code */
 }
 
-void sendPostRequest() {
+void sendGetRequest(uint8_t id, timeTag_t timeTag, uint16_t streamNumber) {
+	/* code */
 }
 
-void recvResponse(operation_t *operation, id_t *id, ) {
+void sendPostRequest(uint8_t id, timeTag_t timeTag, void *data,
+					 size_t dataLength, uint16_t streamNumber) {
+	/* code */
+}
+
+void recvResponse(response_t *response) {
 	/* code */
 }
