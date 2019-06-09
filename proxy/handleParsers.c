@@ -25,6 +25,11 @@ static int parseHeaderCharWrapper(struct parseRequest *parseRequest,
 								  char letter);
 static unsigned parseProcess(struct selector_key *key, buffer *readBuffer,
 							 size_t bytesRead);
+static int consumeRestOfBuffer(struct parseRequest *parseRequest,
+							   buffer *input);
+static int handleExitToConnect(struct selector_key *key,
+							   struct parseRequest *parseRequest,
+							   buffer *readBuffer);
 
 void parseInit(const unsigned state, struct selector_key *key) {
 	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
@@ -157,7 +162,7 @@ int handleVersion(struct selector_key *key, struct parseRequest *parseRequest,
 			}
 		}
 		else {
-			*ret = blockingToResolvName(key, key->fd); // evans TODO
+			*ret = handleExitToConnect(key, parseRequest, readBuffer);
 		}
 	}
 	else if (state == 2) {
@@ -180,7 +185,7 @@ int handleHeader(struct selector_key *key, struct parseRequest *parseRequest,
 			if (port != -1) {
 				setOriginPort(GET_DATA(key), port);
 			}
-			*ret = blockingToResolvName(key, key->fd); // evans TODO
+			*ret = handleExitToConnect(key, parseRequest, readBuffer);
 		}
 		else {
 			setErrorType(GET_DATA(key), NOT_FOUND_HOST);
@@ -237,4 +242,36 @@ int parseVersionCharWrapper(struct parseRequest *parseRequest, char letter) {
 
 int parseHeaderCharWrapper(struct parseRequest *parseRequest, char letter) {
 	return parseHeaderChar(&parseRequest->headerParser, letter);
+}
+
+int consumeRestOfBuffer(struct parseRequest *parseRequest, buffer *input) {
+	int state = 0;
+	char letter;
+	do {
+		letter = buffer_read(input);
+
+		if (letter) {
+			if (buffer_can_write(parseRequest->finishParserBuffer)) {
+				buffer_write(parseRequest->finishParserBuffer, letter);
+			}
+			else {
+				state = 2;
+			}
+		}
+	} while (state != 2 && letter);
+	return state;
+}
+
+int handleExitToConnect(struct selector_key *key,
+						struct parseRequest *parseRequest, buffer *readBuffer) {
+	int state = consumeRestOfBuffer(parseRequest, readBuffer);
+	int ret;
+	if (state == 2) {
+		setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+		ret = ERROR_CLIENT;
+	}
+	else {
+		ret = blockingToResolvName(key, key->fd); // evans TODO
+	}
+	return ret;
 }
