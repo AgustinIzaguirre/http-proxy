@@ -84,8 +84,9 @@ unsigned requestWrite(struct selector_key *key) {
 unsigned setAdecuateFdInterests(struct selector_key *key) {
 	httpADT_t state						= GET_DATA(key);
 	struct handleRequest *handleRequest = getHandleRequestState(state);
+	buffer *finishBuffer				= getFinishParserBuffer(state);
 	buffer *readBuffer					= getReadBuffer(state);
-	buffer *parsedBuffer = &(handleRequest->parseHeaders.headerBuffer);
+	buffer *parsedBuffer = &(handleRequest->parseHeaders.valueBuffer);
 	buffer *writeBuffer  = getWriteBuffer(state);
 	unsigned ret		 = HANDLE_REQUEST;
 	int clientInterest   = OP_NOOP;
@@ -100,7 +101,8 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 	}
 
 	if (buffer_can_read(parsedBuffer) ||
-		(!handleRequest->parseHeaders.censure && buffer_can_read(readBuffer))) {
+		(!handleRequest->parseHeaders.censure && buffer_can_read(readBuffer)) ||
+		buffer_can_read(finishBuffer)) {
 		originInterest |= OP_WRITE;
 	}
 
