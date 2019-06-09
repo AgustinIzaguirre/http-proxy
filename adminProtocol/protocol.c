@@ -198,6 +198,47 @@ void *formatData(void *data, size_t dataLength, size_t *formattedDataLength) {
 	return (void *) formattedData;
 }
 
+void *getConcretData(int server, size_t *dataLength) {
+	struct sctp_sndrcvinfo sndRcvInfo;
+	uint8_t *buffer		= NULL;
+	int flags			= 0;
+	*dataLength			= 0;
+	uint8_t *data		= NULL;
+	int offset			= 0;
+	uint8_t isFinalByte = 0;
+
+	do {
+		if (buffer != NULL) {
+			free(buffer);
+			buffer = NULL;
+		}
+
+		receiveSCTPMsg(server, (void **) &buffer, DATA_BLOCK_BYTES, &sndRcvInfo,
+					   &flags);
+
+		data = realloc(data, (*dataLength + CONCRET_DATA_BLOCK_BYTES + 1) *
+								 sizeof(*data));
+
+		offset		= 0;
+		isFinalByte = data[offset];
+		offset++;
+
+		while (buffer[offset] != START_DATA_BYTE) {
+			offset++; /* Search for the START_DATA_BYTE */
+		}
+
+		offset++; /* Now points to START_DATA_BYTE, so we avoid it... */
+
+		while (offset < DATA_BLOCK_BYTES) {
+			data[(*dataLength)++] = buffer[offset++];
+		}
+	} while (isFinalByte != IS_FINAL_BYTE);
+
+	data[*dataLength] = 0;
+
+	return (void *) data;
+}
+
 int recvAuthenticationResponse(
 	int server, authenticationResponse_t *authenticationResponse) {
 	uint8_t *response;
