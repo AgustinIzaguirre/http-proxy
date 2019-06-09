@@ -148,6 +148,56 @@ static int receiveSCTPMsg(int server, void **buffer, int maxLengthToRead,
 	return bytesRead;
 }
 
+void *formatData(void *data, size_t dataLength, size_t *formattedDataLength) {
+	if (dataLength <= 0) {
+		*formattedDataLength = 0;
+		return NULL;
+	}
+
+	int paddingBytesNeeded = 0;
+	int dataBlocksNeeded   = dataLength / CONCRET_DATA_BLOCK_BYTES;
+
+	if (dataLength % CONCRET_DATA_BLOCK_BYTES != 0) {
+		paddingBytesNeeded =
+			CONCRET_DATA_BLOCK_BYTES - dataLength % CONCRET_DATA_BLOCK_BYTES;
+		dataBlocksNeeded++;
+	}
+
+	*formattedDataLength = dataBlocksNeeded * (DATA_BLOCK_BYTES);
+	int dataIndex		 = 0;
+
+	uint8_t *formattedData = calloc(*formattedDataLength, sizeof(uint8_t));
+	int byteOffsetInBlock;
+	int bytesToCopy;
+
+	for (int blockNumber = 0; blockNumber < dataBlocksNeeded; blockNumber++) {
+		byteOffsetInBlock = 0;
+
+		formattedData[blockNumber * DATA_BLOCK_BYTES + byteOffsetInBlock] =
+			blockNumber == dataBlocksNeeded - 1 ? IS_FINAL_BYTE :
+												  NOT_FINAL_BYTE;
+		byteOffsetInBlock++;
+
+		bytesToCopy = CONCRET_DATA_BLOCK_BYTES;
+
+		if (blockNumber == 0) {
+			byteOffsetInBlock += paddingBytesNeeded;
+			bytesToCopy -= paddingBytesNeeded;
+		}
+
+		formattedData[blockNumber * DATA_BLOCK_BYTES + byteOffsetInBlock] =
+			START_DATA_BYTE;
+		byteOffsetInBlock++;
+
+		memcpy(formattedData + blockNumber * DATA_BLOCK_BYTES +
+				   byteOffsetInBlock,
+			   (uint8_t *) data + dataIndex, bytesToCopy);
+		dataIndex += bytesToCopy;
+	}
+
+	return (void *) formattedData;
+}
+
 int recvAuthenticationResponse(
 	int server, authenticationResponse_t *authenticationResponse) {
 	uint8_t *response;

@@ -30,6 +30,9 @@
 #define START_DATA_BYTE 0x80
 
 #define RECV_BYTES 10 /* To use in sctp_recvmsg when want to read all bytes */
+#define CONCRET_DATA_BLOCK_BYTES 8
+#define INFO_BYTES 2
+#define DATA_BLOCK_BYTES (CONCRET_DATA_BLOCK_BYTES + INFO_BYTES)
 #define VERSION_BYTES 1
 #define VERSION_BYTE 0x80
 
