@@ -36,6 +36,13 @@
 #define VERSION_BYTES 1
 #define VERSION_BYTE 0x80
 
+#define ID_MASK 0x3F
+#define OPCODE_MASK 0xC0
+
+#define BYE_MASK 0x00
+#define GET_MASK 0x40
+#define SET_MASK 0x80
+
 #define CHECK_FOR_ERROR(status)                                                \
 	{                                                                          \
 		if (status < 0) {                                                      \
@@ -89,14 +96,15 @@ int sendAuthenticationRequest(int server, char *username, size_t usernameLength,
 int recvAuthenticationResponse(
 	int server, authenticationResponse_t *authenticationResponse);
 
-int sendByeRequest(uint16_t streamNumber);
+int sendByeRequest(int server, uint16_t streamNumber);
 
-int sendGetRequest(uint8_t id, timeTag_t timeTag, uint16_t streamNumber);
+int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
+				   uint16_t streamNumber);
 
-int sendPostRequest(uint8_t id, timeTag_t timeTag, void *data,
+int sendPostRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
 					size_t dataLength, uint16_t streamNumber);
 
-int recvResponse(response_t *response);
+int recvResponse(int server, response_t *response);
 
 char *getProtocolErrorMessage();
 

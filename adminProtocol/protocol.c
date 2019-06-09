@@ -319,23 +319,49 @@ char *getProtocolErrorMessage() {
 	return "Unknown protocol error";
 }
 
-int sendByeRequest(uint16_t streamNumber) {
-	/* code */
-	return 0;
+int sendByeRequest(int server, uint16_t streamNumber) {
+	uint8_t byeRequest = BYE_MASK;
+
+	return sendSCTPMsg(server, (void *) &byeRequest, 1, streamNumber);
 }
 
-int sendGetRequest(uint8_t id, timeTag_t timeTag, uint16_t streamNumber) {
-	/* code */
-	return 0;
+int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
+				   uint16_t streamNumber) {
+	size_t length		= sizeof(uint8_t) + sizeof(timeTag_t);
+	uint8_t *getRequest = malloc(length);
+
+	getRequest[0] = GET_MASK | (id & ID_MASK);
+
+	memcpy(getRequest + sizeof(uint8_t), &timeTag, sizeof(timeTag));
+
+	int sent = sendSCTPMsg(server, (void *) getRequest, length, streamNumber);
+
+	free(getRequest);
+
+	return sent;
 }
 
-int sendPostRequest(uint8_t id, timeTag_t timeTag, void *data,
+int sendPostRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
 					size_t dataLength, uint16_t streamNumber) {
-	/* code */
-	return 0;
+	size_t formattedDataLength;
+	void *formattedData = formatData(data, dataLength, &formattedDataLength);
+	size_t length = sizeof(uint8_t) + sizeof(timeTag_t) + formattedDataLength;
+	uint8_t *setRequest = malloc(length);
+
+	setRequest[0] = SET_MASK | (id & ID_MASK);
+
+	memcpy(setRequest + sizeof(uint8_t), &timeTag, sizeof(timeTag));
+	memcpy(setRequest + sizeof(uint8_t) + sizeof(timeTag_t), formattedData,
+		   formattedDataLength);
+
+	int sent = sendSCTPMsg(server, (void *) setRequest, length, streamNumber);
+
+	free(formattedData);
+	free(setRequest);
+
+	return sent;
 }
 
-int recvResponse(response_t *response) {
-	/* code */
+int recvResponse(int server, response_t *response) {
 	return 0;
 }

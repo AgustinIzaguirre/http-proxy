@@ -18,10 +18,10 @@ linkedListADT_t responsesRecvOnGetStream;
 
 static int authenticate(int server);
 
-static uint8_t parseAndSendRequests();
+static uint8_t parseAndSendRequests(int server);
 
-static uint8_t newCommandHandler(operation_t operation, id_t id, void *data,
-								 size_t dataLength);
+static uint8_t newCommandHandler(int server, operation_t operation, id_t id,
+								 void *data, size_t dataLength);
 
 static void invalidCommandHandler();
 
@@ -54,7 +54,7 @@ int main(int argc, char const *argv[]) {
 	uint8_t byeRead = 0;
 
 	do {
-		byeRead = parseAndSendRequests();
+		byeRead = parseAndSendRequests(server);
 		recvAndPrintResponses();
 	} while (!byeRead);
 
@@ -113,7 +113,7 @@ static int authenticate(int server) {
 }
 
 /* Return different than zero if a BYE command was read */
-static uint8_t parseAndSendRequests() {
+static uint8_t parseAndSendRequests(int server) {
 	operation_t operation;
 	id_t id;
 	void *data;
@@ -131,8 +131,8 @@ static uint8_t parseAndSendRequests() {
 		if (!byeRead) {
 			switch (returnCode) {
 				case NEW:
-					byeRead =
-						newCommandHandler(operation, id, data, dataLength);
+					byeRead = newCommandHandler(server, operation, id, data,
+												dataLength);
 					break;
 				case INVALID:
 					invalidCommandHandler();
@@ -151,8 +151,8 @@ static uint8_t parseAndSendRequests() {
 	return byeRead;
 }
 
-static uint8_t newCommandHandler(operation_t operation, id_t id, void *data,
-								 size_t dataLength) {
+static uint8_t newCommandHandler(int server, operation_t operation, id_t id,
+								 void *data, size_t dataLength) {
 	uint8_t byeRead = 0;
 	uint16_t streamNumber;
 
@@ -160,15 +160,16 @@ static uint8_t newCommandHandler(operation_t operation, id_t id, void *data,
 		case BYE_OP:
 			byeRead		 = 1;
 			streamNumber = BYE_STREAM;
-			sendByeRequest(streamNumber);
+			sendByeRequest(server, streamNumber);
 			break;
 		case GET_OP:
 			streamNumber = GET_STREAM;
-			sendGetRequest(id, timeTags[id], streamNumber);
+			sendGetRequest(server, id, timeTags[id], streamNumber);
 			break;
 		case SET_OP:
 			streamNumber = SET_STREAM;
-			sendPostRequest(id, timeTags[id], data, dataLength, streamNumber);
+			sendPostRequest(server, id, timeTags[id], data, dataLength,
+							streamNumber);
 			break;
 	}
 
