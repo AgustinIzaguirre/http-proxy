@@ -177,6 +177,10 @@ int handleHeader(struct selector_key *key, struct parseRequest *parseRequest,
 		if (hasFoundHostHeaderParser(&parseRequest->headerParser)) {
 			char *host = getHostHeaderParser(&(parseRequest->headerParser));
 			setOriginHost(GET_DATA(key), host);
+			int port = getPortHeaderParser(&parseRequest->headerParser);
+			if (port != -1) {
+				setOriginPort(GET_DATA(key), port);
+			}
 			*ret = CONNECT_TO_ORIGIN;			// evans TODO
 			blockingToResolvName(key, key->fd); // evans TODO
 		}
