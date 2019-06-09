@@ -51,61 +51,62 @@ int hasFoundHostHeaderParser(struct headerParser *parser) {
 int parseHeaderChar(struct headerParser *parser, char l) {
 	parser->charactersRead++;
 	int flag = 1;
-
-	switch (parser->state) {
-		case START_H:
-			parser->state = startTransition(parser, l);
-			break;
-		case H_H:
-			parser->state = hTransition(parser, l);
-			break;
-		case HO:
-			parser->state = hoTransition(parser, l);
-			break;
-		case HOS:
-			parser->state = hosTransition(parser, l);
-			break;
-		case HOST:
-			parser->state = hostTransition(parser, l);
-			break;
-		case HOST_DDOTS:
-			parser->state = hostDDotsTransition(parser, l);
-			break;
-		case IPSIX:
-			parser->state = ipSixTransition(parser, l);
-			break;
-		case END_IPSIX:
-			parser->state = endIpSixTransition(parser, l);
-			break;
-		case IPFOUR_OR_HOST_NAME:
-			parser->state = ipFourOrHostNameTransition(parser, l);
-			break;
-		case PORT:
-			parser->state = portTransition(parser, l);
-			break;
-		case START_PORT:
-			parser->state = startPortTransition(parser, l);
-			break;
-		case NOT_HEADER_HOST:
-			parser->state = notHeaderHostTransition(parser, l);
-			break;
-		case CR_H:
-			parser->state = crTransition(parser, l);
-			break;
-		case OWS_H:
-			parser->state = owsHTransition(parser, l);
-			break;
-		case FINISH:
-			if (l == '\n') {
-				parser->hasFoundHost = TRUE;
-			}
-			else {
-				parser->state = ERROR_H;
-			}
-		case ERROR_H:
-			flag = 0;
-			break;
-	}
+	do {
+		switch (parser->state) {
+			case START_H:
+				parser->state = startTransition(parser, l);
+				break;
+			case H_H:
+				parser->state = hTransition(parser, l);
+				break;
+			case HO:
+				parser->state = hoTransition(parser, l);
+				break;
+			case HOS:
+				parser->state = hosTransition(parser, l);
+				break;
+			case HOST:
+				parser->state = hostTransition(parser, l);
+				break;
+			case HOST_DDOTS:
+				parser->state = hostDDotsTransition(parser, l);
+				break;
+			case IPSIX:
+				parser->state = ipSixTransition(parser, l);
+				break;
+			case END_IPSIX:
+				parser->state = endIpSixTransition(parser, l);
+				break;
+			case IPFOUR_OR_HOST_NAME:
+				parser->state = ipFourOrHostNameTransition(parser, l);
+				break;
+			case PORT:
+				parser->state = portTransition(parser, l);
+				break;
+			case START_PORT:
+				parser->state = startPortTransition(parser, l);
+				break;
+			case NOT_HEADER_HOST:
+				parser->state = notHeaderHostTransition(parser, l);
+				break;
+			case CR_H:
+				parser->state = crTransition(parser, l);
+				break;
+			case OWS_H:
+				parser->state = owsHTransition(parser, l);
+				break;
+			case FINISH:
+				if (l == '\n') {
+					parser->hasFoundHost = TRUE;
+				}
+				else {
+					parser->state = ERROR_H;
+				}
+			case ERROR_H:
+				flag = 0;
+				break;
+		}
+	} while (parser->state == FINISH && flag);
 
 	return flag;
 }
@@ -174,7 +175,7 @@ enum headerState ipSixTransition(struct headerParser *parser, char l) {
 
 enum headerState endIpSixTransition(struct headerParser *parser, char l) {
 	enum headerState state = ERROR_H;
-	if (l == '\r') {
+	if (l == '\r' || l == '\n') {
 		state = FINISH;
 	}
 	else if (l == ':') {
@@ -190,7 +191,7 @@ enum headerState endIpSixTransition(struct headerParser *parser, char l) {
 enum headerState ipFourOrHostNameTransition(struct headerParser *parser,
 											char l) {
 	enum headerState state = IPFOUR_OR_HOST_NAME;
-	if (l == '\r') {
+	if (l == '\r' || l == '\n') {
 		state = FINISH;
 		l	 = '\0';
 	}
@@ -209,7 +210,7 @@ enum headerState ipFourOrHostNameTransition(struct headerParser *parser,
 
 enum headerState portTransition(struct headerParser *parser, char l) {
 	enum headerState state = PORT;
-	if (l == '\r') {
+	if (l == '\r' || l == '\n') {
 		state = FINISH;
 	}
 	else if (!isDigit(l)) {
@@ -243,12 +244,15 @@ enum headerState notHeaderHostTransition(struct headerParser *parser, char l) {
 	if (l == '\r') {
 		state = CR_H;
 	}
+	else if (l == '\n') {
+		state = START_H;
+	}
 	return state;
 }
 
 enum headerState owsHTransition(struct headerParser *parser, char l) {
 	enum headerState state = OWS_H;
-	if (l == '\r') {
+	if (l == '\r' || l == '\n') {
 		state = FINISH;
 	}
 	else if (!isOWS(l)) {
