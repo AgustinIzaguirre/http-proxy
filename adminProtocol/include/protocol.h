@@ -10,9 +10,9 @@
 #include <errno.h>
 
 #define AUTHENTICATION_STREAM 0
+#define VERSION 0
 
-/* Used to setup SCTP Socket */
-#define MAX_ATTEMPTS 4
+#define MAX_ATTEMPTS 4 /* Used to setup SCTP Socket */
 
 /* Response status masks */
 #define GENERAL_STATUS_MASK 0x80
@@ -26,29 +26,38 @@
 #define AUTH_STATUS_MASK 0x20
 
 #define IS_FINAL_BYTE 0x10
+#define NOT_FINAL_BYTE 0x00
 #define START_DATA_BYTE 0x80
 
-#define OK 0
-#define ERROR 1
-
-#define RCV_BLOCK 10 // TODO: check this later!
+#define RECV_BYTES 10 /* To use in sctp_recvmsg when want to read all bytes */
 #define VERSION_BYTES 1
 #define VERSION_BYTE 0x80
 
-typedef uint64_t timeTag_t;
+#define CHECK_FOR_ERROR(status)                                                \
+	{                                                                          \
+		if (status < 0) {                                                      \
+			errorMessage = strerror(errno);                                    \
+			return status;                                                     \
+		}                                                                      \
+	}
 
 enum operation_t { BYE_OP, GET_OP, SET_OP };
 typedef enum operation_t operation_t;
 
-typedef struct {
-	uint8_t generalState;
-	uint8_t operationState;
-	//	...
-	uint8_t blahState;
-} states_t;
+enum statusCode_t { OK, ERROR };
+typedef enum statusCode_t statusCode_t;
+
+typedef uint64_t timeTag_t;
 
 typedef struct {
-	states_t states;
+	statusCode_t generalStatus;
+	statusCode_t operationStatus;
+	statusCode_t timeTagStatus;
+	statusCode_t idStatus;
+} responseStatus_t;
+
+typedef struct {
+	responseStatus_t status;
 	operation_t operation;
 	uint8_t id;
 	timeTag_t timeTag;
@@ -57,23 +66,34 @@ typedef struct {
 	uint16_t streamNumber;
 } response_t;
 
+typedef struct {
+	statusCode_t generalStatus;
+	statusCode_t versionStatus;
+	statusCode_t authenticationStatus;
+} versionStatus_t;
+
+typedef struct {
+	versionStatus_t status;
+	uint64_t version;
+} authenticationResponse_t;
+
 int establishConnection(const char *serverIP, uint16_t serverPort,
 						uint16_t streamQuantity);
 
-void sendAuthenticationRequest(int server, char *username,
-							   size_t usernameLength, char *password,
-							   size_t passwordLength);
+int sendAuthenticationRequest(int server, char *username, size_t usernameLength,
+							  char *password, size_t passwordLength);
 
-uint8_t recvAuthenticationResponse(int server);
+int recvAuthenticationResponse(
+	int server, authenticationResponse_t *authenticationResponse);
 
-void sendByeRequest(uint16_t streamNumber);
+int sendByeRequest(uint16_t streamNumber);
 
-void sendGetRequest(uint8_t id, timeTag_t timeTag, uint16_t streamNumber);
+int sendGetRequest(uint8_t id, timeTag_t timeTag, uint16_t streamNumber);
 
-void sendPostRequest(uint8_t id, timeTag_t timeTag, void *data,
-					 size_t dataLength, uint16_t streamNumber);
+int sendPostRequest(uint8_t id, timeTag_t timeTag, void *data,
+					size_t dataLength, uint16_t streamNumber);
 
-void recvResponse(response_t *response);
+int recvResponse(response_t *response);
 
 char *getProtocolErrorMessage();
 

@@ -16,7 +16,7 @@ queueADT_t requests;
 linkedListADT_t responsesRecvOnSetStream;
 linkedListADT_t responsesRecvOnGetStream;
 
-static void authenticate(int server);
+static int authenticate(int server);
 
 static uint8_t parseAndSendRequests();
 
@@ -27,9 +27,12 @@ static void invalidCommandHandler();
 
 static void recvAndPrintResponses();
 
+/*****************************************************************************\
+\*****************************************************************************/
+
 int main(int argc, char const *argv[]) {
 	char const *ip = DEFAULT_IP;
-	uint16_t port  = DEFAULT_PORT; // TODO: is this an int?
+	uint16_t port  = DEFAULT_PORT;
 
 	parseIPAndPortFromArguments(&ip, &port, argc, argv);
 
@@ -37,11 +40,16 @@ int main(int argc, char const *argv[]) {
 
 	if (server < 0) {
 		printf("%s\n", getProtocolErrorMessage());
-		printf("Error: Can't establish connection with server\n");
+		printf("Can't establish connection with server\n");
 		return -1;
 	}
 
-	authenticate(server);
+	int authenticationStatus = authenticate(server);
+
+	if (authenticationStatus < 0) {
+		printf("Can't authenticate with server\n");
+		return -1;
+	}
 
 	uint8_t byeRead = 0;
 
@@ -55,13 +63,12 @@ int main(int argc, char const *argv[]) {
 	return 0;
 }
 
-// TODO: Maybe return 0 or -1 indicating if version error, to leave admin
-static void authenticate(int server) {
+static int authenticate(int server) {
 	char *username;
 	char *password;
 	size_t usernameLength;
 	size_t passwordLength;
-	uint8_t response;
+	authenticationResponse_t response;
 
 	do {
 		username	   = NULL;
@@ -72,24 +79,37 @@ static void authenticate(int server) {
 		parseAuthenticationData(&username, &usernameLength, &password,
 								&passwordLength);
 
-		sendAuthenticationRequest(server, username, usernameLength, password,
-								  passwordLength);
+		int sent = sendAuthenticationRequest(server, username, usernameLength,
+											 password, passwordLength);
 
 		free(username);
 		free(password);
 
-		response = recvAuthenticationResponse(server);
+		if (sent < 0) {
+			printf("Error sending authentication request\n");
+			return -1;
+		}
 
-		// TODO: manage version error to show server current version
-		if ((response & GENERAL_STATUS_MASK) == GENERAL_STATUS_MASK) {
-			if ((response & VERSION_STATUS_MASK) == VERSION_STATUS_MASK) {
-				// return VERSION_STATUS_MASK;
+		int read = recvAuthenticationResponse(server, &response);
+
+		if (read < 0) {
+			printf("Error receiving authentication response\n");
+			return -1;
+		}
+
+		if (response.status.generalStatus != OK) {
+			if (response.status.versionStatus != OK) {
+				printf("Server manages another version of the protocol\n");
+				printf("Server version = v%ld\n", response.version);
+				return -1;
 			}
-			else if ((response & AUTH_STATUS_MASK) == AUTH_STATUS_MASK) {
-				printf("Incorrect username or password. Try again\n");
+			else if (response.status.authenticationStatus != OK) {
+				printf("Incorrect username or password. Please, try again\n");
 			}
 		}
-	} while ((response & GENERAL_STATUS_MASK) == GENERAL_STATUS_MASK);
+	} while (response.status.generalStatus != OK);
+
+	return 0;
 }
 
 /* Return different than zero if a BYE command was read */

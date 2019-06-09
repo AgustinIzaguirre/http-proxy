@@ -2,8 +2,8 @@
 
 static char *errorMessage = NULL;
 
-static void sendSCTPMsg(int server, void *msg, size_t msgLength,
-						uint16_t streamNumber);
+static int sendSCTPMsg(int server, void *msg, size_t msgLength,
+					   uint16_t streamNumber);
 
 static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 							 uint16_t streamQuantity);
@@ -11,12 +11,21 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 static void setVersionBytes(void *data);
 
 /* If maxLengthToRead is not set, reads all the bytes in the socket */
-static size_t receiveSCTPMsg(int server, void **buffer, size_t maxLengthToRead,
-							 struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
+static int receiveSCTPMsg(int server, void **buffer, int maxLengthToRead,
+						  struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
 
-static void sendSCTPMsg(int server, void *msg, size_t msgLength,
-						uint16_t streamNumber) {
-	sctp_sendmsg(server, msg, msgLength, NULL, 0, 0, 0, streamNumber, 0, 0);
+static void loadRecvAuthenticationResponse(
+	uint8_t *response, authenticationResponse_t *authenticationResponse);
+
+static uint64_t getVersion(uint8_t *response);
+
+/*****************************************************************************\
+\*****************************************************************************/
+
+static int sendSCTPMsg(int server, void *msg, size_t msgLength,
+					   uint16_t streamNumber) {
+	return sctp_sendmsg(server, msg, msgLength, NULL, 0, 0, 0, streamNumber, 0,
+						0);
 }
 
 int establishConnection(const char *serverIP, uint16_t serverPort,
@@ -32,10 +41,7 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 
 	int server = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
 
-	if (server < 0) {
-		errorMessage = strerror(errno);
-		return -1;
-	}
+	CHECK_FOR_ERROR(server);
 
 	memset(&initMsg, 0, sizeof(initMsg));
 
@@ -53,18 +59,12 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 	/* Convert IPv4 and IPv6 addresses from text to binary form */
 	int convert = inet_pton(AF_INET, serverIP, &serverAddress.sin_addr.s_addr);
 
-	if (convert <= 0) {
-		errorMessage = strerror(errno);
-		return -1;
-	}
+	CHECK_FOR_ERROR(convert);
 
 	int connection = connect(server, (struct sockaddr *) &serverAddress,
 							 sizeof(serverAddress));
 
-	if (connection < 0) {
-		errorMessage = strerror(errno);
-		return -1;
-	}
+	CHECK_FOR_ERROR(connection);
 
 	memset((void *) &events, 0, sizeof(events));
 
@@ -82,9 +82,8 @@ static void setVersionBytes(void *data) {
 	((uint8_t *) data)[0] = VERSION_BYTE;
 }
 
-void sendAuthenticationRequest(int server, char *username,
-							   size_t usernameLength, char *password,
-							   size_t passwordLength) {
+int sendAuthenticationRequest(int server, char *username, size_t usernameLength,
+							  char *password, size_t passwordLength) {
 	/* Build authentication request */
 	/* + 2 because username and password are null terminated */
 	size_t length = VERSION_BYTES + usernameLength + passwordLength + 2;
@@ -104,55 +103,118 @@ void sendAuthenticationRequest(int server, char *username,
 
 	data[VERSION_BYTES + usernameLength + 1 + passwordLength] = 0;
 
-	sendSCTPMsg(server, (void *) data, length, AUTHENTICATION_STREAM);
+	int sent =
+		sendSCTPMsg(server, (void *) data, length, AUTHENTICATION_STREAM);
 
 	free(data);
+
+	CHECK_FOR_ERROR(sent);
+
+	return sent;
 }
 
 /* If maxLengthToRead is not set, reads all the bytes in the socket */
-static size_t receiveSCTPMsg(int server, void **buffer, size_t maxLengthToRead,
-							 struct sctp_sndrcvinfo *sndRcvInfo, int *flags) {
-	size_t bytesRead = 0;
+static int receiveSCTPMsg(int server, void **buffer, int maxLengthToRead,
+						  struct sctp_sndrcvinfo *sndRcvInfo, int *flags) {
+	int bytesRead = 0;
 
 	if (maxLengthToRead > 0) {
 		*((uint8_t **) buffer) = calloc(maxLengthToRead, sizeof(uint8_t));
 		bytesRead =
 			sctp_recvmsg(server, *buffer, maxLengthToRead,
 						 (struct sockaddr *) NULL, 0, sndRcvInfo, flags);
+
+		CHECK_FOR_ERROR(bytesRead);
 	}
 	else {
-		size_t read			   = 0;
+		int read			   = 0;
 		*((uint8_t **) buffer) = NULL;
 
 		do {
 			*((uint8_t **) buffer) =
 				realloc(*((uint8_t **) buffer),
-						(bytesRead + RCV_BLOCK) * sizeof(uint8_t));
+						(bytesRead + RECV_BYTES) * sizeof(uint8_t));
 
 			read = sctp_recvmsg(server, (*(uint8_t **) buffer) + bytesRead,
-								RCV_BLOCK, (struct sockaddr *) NULL, 0,
+								RECV_BYTES, (struct sockaddr *) NULL, 0,
 								sndRcvInfo, flags);
 
+			CHECK_FOR_ERROR(read);
+
 			bytesRead += read;
-		} while (read == RCV_BLOCK);
+		} while (read == RECV_BYTES);
 	}
 
 	return bytesRead;
 }
 
-// TODO: Manage version number if gets errorVersion
-uint8_t recvAuthenticationResponse(int server) {
-	uint8_t responseByte;
+int recvAuthenticationResponse(
+	int server, authenticationResponse_t *authenticationResponse) {
 	uint8_t *response;
 	struct sctp_sndrcvinfo sndRcvInfo;
 	int flags = 0;
 
-	receiveSCTPMsg(server, (void **) &response, 0, &sndRcvInfo, &flags);
+	int read =
+		receiveSCTPMsg(server, (void **) &response, 0, &sndRcvInfo, &flags);
 
-	responseByte = *response;
+	CHECK_FOR_ERROR(read);
+
+	loadRecvAuthenticationResponse(response, authenticationResponse);
+
 	free(response);
 
-	return responseByte;
+	return read;
+}
+
+static void loadRecvAuthenticationResponse(
+	uint8_t *response, authenticationResponse_t *authenticationResponse) {
+	uint8_t firstByte;
+	firstByte = *response;
+
+	if (firstByte & GENERAL_STATUS_MASK) {
+		authenticationResponse->status.generalStatus = ERROR;
+
+		if (firstByte & VERSION_STATUS_MASK) {
+			authenticationResponse->status.versionStatus = ERROR;
+			authenticationResponse->version				 = getVersion(response);
+		}
+		if (firstByte & AUTH_STATUS_MASK) {
+			authenticationResponse->status.authenticationStatus = ERROR;
+		}
+	}
+	else {
+		authenticationResponse->status.generalStatus		= OK;
+		authenticationResponse->status.versionStatus		= OK;
+		authenticationResponse->status.authenticationStatus = OK;
+		authenticationResponse->version						= VERSION;
+	}
+}
+
+static uint64_t getVersion(uint8_t *response) {
+	uint64_t version				 = 0;
+	int bitQuantityForRepresentation = 0;
+	int byteIndex					 = 0;
+	uint8_t byte					 = response[byteIndex];
+	byte							 = byte << 3; /* Avoid status bits */
+
+	while (byte & 0x80) {
+		bitQuantityForRepresentation++;
+		byte = byte << 1;
+
+		if (bitQuantityForRepresentation % 8 == 0) {
+			byteIndex++;
+			byte = response[byteIndex];
+		}
+	}
+
+	while (bitQuantityForRepresentation > 0) {
+		bitQuantityForRepresentation--;
+		version = version << 1;
+		version = version | (byte & 0x80 ? 0x01 : 0x00);
+		byte	= byte << 1;
+	}
+
+	return version;
 }
 
 char *getProtocolErrorMessage() {
@@ -163,19 +225,23 @@ char *getProtocolErrorMessage() {
 	return "Unknown protocol error";
 }
 
-void sendByeRequest(uint16_t streamNumber) {
+int sendByeRequest(uint16_t streamNumber) {
 	/* code */
+	return 0;
 }
 
-void sendGetRequest(uint8_t id, timeTag_t timeTag, uint16_t streamNumber) {
+int sendGetRequest(uint8_t id, timeTag_t timeTag, uint16_t streamNumber) {
 	/* code */
+	return 0;
 }
 
-void sendPostRequest(uint8_t id, timeTag_t timeTag, void *data,
-					 size_t dataLength, uint16_t streamNumber) {
+int sendPostRequest(uint8_t id, timeTag_t timeTag, void *data,
+					size_t dataLength, uint16_t streamNumber) {
 	/* code */
+	return 0;
 }
 
-void recvResponse(response_t *response) {
+int recvResponse(response_t *response) {
 	/* code */
+	return 0;
 }
