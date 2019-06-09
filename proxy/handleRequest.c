@@ -12,6 +12,7 @@ static buffer *getCurrentBuffer(httpADT_t state);
 void requestInit(const unsigned state, struct selector_key *key) {
 	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
 	headersParserInit(&(handleRequest->parseHeaders));
+	handleRequest->requestState = FIRST_BUFFER;
 }
 
 unsigned requestRead(struct selector_key *key) {
@@ -54,11 +55,20 @@ unsigned requestRead(struct selector_key *key) {
 }
 
 unsigned requestWrite(struct selector_key *key) {
-	buffer *readBuffer = getCurrentBuffer(GET_DATA(key));
-	unsigned ret	   = HANDLE_REQUEST;
+	buffer *readBuffer					= getCurrentBuffer(GET_DATA(key));
+	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
+	unsigned ret						= HANDLE_REQUEST;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
+
+	if (handleRequest->requestState == FIRST_BUFFER) {
+		parseHeaders(&handleRequest->parseHeaders,
+					 getFinishParserBuffer(GET_DATA(key)), 0, 0);
+		if (!buffer_can_read(getFinishParserBuffer(GET_DATA(key)))) {
+			handleRequest->requestState = LAST_BUFFER;
+		}
+	}
 
 	// if everything is read on buffer
 	if (!buffer_can_read(readBuffer)) {
@@ -131,11 +141,12 @@ unsigned getAdecuateResponseState(struct selector_key *key) {
 
 static buffer *getCurrentBuffer(httpADT_t state) {
 	struct handleRequest *handleRequest = getHandleRequestState(state);
-	if (buffer_can_read(getFinishParserBuffer(state))) {
-		return getFinishParserBuffer(state);
-	}
-	else if (handleRequest->parseHeaders.state != BODY_START ||
-			 buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
+	//	if (buffer_can_read(getFinishParserBuffer(state))) {
+	//		return getFinishParserBuffer(state);
+	//	}
+	//	else
+	if (handleRequest->parseHeaders.state != BODY_START ||
+		buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
 		return &handleRequest->parseHeaders.valueBuffer;
 	}
 	else {

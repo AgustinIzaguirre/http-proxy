@@ -6,7 +6,10 @@
 
 struct handleRequest {
 	struct headersParser parseHeaders;
+	unsigned requestState;
 };
+
+enum requestState { FIRST_BUFFER = 0, LAST_BUFFER };
 
 /*
  * Initialize headers parser struct
