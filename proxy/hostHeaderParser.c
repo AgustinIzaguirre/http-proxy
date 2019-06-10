@@ -106,7 +106,7 @@ int parseHeaderChar(struct headerParser *parser, char l) {
 				flag = 0;
 				break;
 		}
-	} while (parser->state == FINISH && flag);
+	} while (parser->state == FINISH && l == '\n' && flag);
 
 	return flag;
 }

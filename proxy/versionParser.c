@@ -33,7 +33,6 @@ int *getVersionVersionParser(struct versionParser *parser) {
 int parseVersionChar(struct versionParser *parser, char l) {
 	parser->charactersRead++;
 	int flag = 1;
-
 	do {
 		switch (parser->state) {
 			case START_V:
@@ -73,7 +72,7 @@ int parseVersionChar(struct versionParser *parser, char l) {
 				flag = 0;
 				break;
 		}
-	} while (parser->state == FINISH_V && flag);
+	} while (parser->state == FINISH_V && l == '\n' && flag);
 
 	return flag;
 }
