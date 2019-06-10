@@ -28,9 +28,9 @@ unsigned transformBodyRead(struct selector_key *key) {
 	else {
 		ret = ERROR;
 	}
-	// setAdecuateFdInterests();
 	return ret;
 }
+
 unsigned transformBodyWrite(struct selector_key *key) {
 	httpADT_t state						= GET_DATA(key);
 	struct transformBody *transformBody = getTransformBodyState(state);
@@ -47,12 +47,39 @@ unsigned transformBodyWrite(struct selector_key *key) {
 	else {
 		ret = ERROR;
 	}
-	// setAdecuateFdInterests();
 	return ret;
 }
 
 unsigned standardOriginRead(struct selector_key *key) {
-	return ERROR;
+	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+	unsigned ret;
+
+	// if there is no space to read should write what i already read
+	if (!buffer_can_write(writeBuffer)) {
+		// set interest no op on fd an write on origin fd
+		return setStandardFdInterests(key);
+	}
+
+	pointer   = buffer_write_ptr(writeBuffer, &count);
+	bytesRead = recv(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		int begining = pointer - writeBuffer->data;
+		buffer_write_adv(writeBuffer, bytesRead);
+		ret = setStandardFdInterests(key);
+	}
+	else if (bytesRead == 0) {
+		// if response is not chunked or is last chunk
+		ret = DONE; // should send what is left on buffer TODO
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
 }
 
 unsigned readFromTransform(struct selector_key *key) {
@@ -64,7 +91,30 @@ unsigned readFromOrigin(struct selector_key *key) {
 }
 
 unsigned standardClientWrite(struct selector_key *key) {
-	return ERROR;
+	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
+	unsigned ret		= TRANSFORM_BODY;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+
+	// if everything is read on buffer
+	if (!buffer_can_read(writeBuffer)) {
+		// set interest no op on fd an read on client fd
+		return setStandardFdInterests(key);
+	}
+
+	pointer   = buffer_read_ptr(writeBuffer, &count);
+	bytesRead = send(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_read_adv(writeBuffer, bytesRead);
+		ret = setStandardFdInterests(key);
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
 }
 
 unsigned writeToTransform(struct selector_key *key) {
@@ -73,6 +123,72 @@ unsigned writeToTransform(struct selector_key *key) {
 
 unsigned writeToClient(struct selector_key *key) {
 	return ERROR;
+}
+
+unsigned setStandardFdInterests(struct selector_key *key) {
+	httpADT_t state		= GET_DATA(key);
+	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
+	;
+	unsigned ret	   = TRANSFORM_BODY;
+	int clientInterest = OP_NOOP;
+	int originInterest = OP_NOOP;
+
+	if (buffer_can_read(writeBuffer)) {
+		clientInterest |= OP_WRITE;
+	}
+
+	if (buffer_can_write(writeBuffer)) {
+		originInterest |= OP_READ;
+	}
+
+	if (SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
+		return ERROR;
+	}
+
+	return ret;
+}
+
+unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
+	httpADT_t state = GET_DATA(key);
+	struct handleResponseWithTransform *handleResponse =
+		getHandleResponseWithTransformState(state);
+	buffer *readBuffer   = getReadBuffer(GET_DATA(key));
+	buffer *writeBuffer  = getWriteBuffer(GET_DATA(key));
+	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
+
+	unsigned ret		  = HANDLE_RESPONSE_WITH_TRANSFORMATION;
+	int clientInterest	= OP_NOOP;
+	int originInterest	= OP_NOOP;
+	int transformInterest = OP_NOOP;
+	buffer_reset(readBuffer);
+
+	if (buffer_can_read(writeBuffer)) {
+		transformInterest |= OP_WRITE;
+	}
+
+	if (buffer_can_read(readBuffer)) {
+		clientInterest |= OP_WRITE;
+	}
+
+	if (buffer_can_write(readBuffer)) {
+		transformInterest |= OP_READ;
+	}
+
+	if (buffer_can_write(writeBuffer)) {
+		originInterest |= OP_READ;
+	}
+
+	if (SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
+		return ERROR;
+	}
+
+	return ret;
 }
 
 int executeTransformCommand(struct selector_key *key) {
