@@ -24,7 +24,7 @@ unsigned requestRead(struct selector_key *key) {
 	ssize_t bytesRead;
 
 	if (key->fd == getOriginFd(GET_DATA(key))) {
-		return getAdecuateResponseState(key);
+		return HANDLE_RESPONSE;
 	}
 
 	// if there is no space to read should write what i already read
@@ -126,6 +126,7 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 	return ret;
 }
 
+// TODO remove function deprecated
 unsigned getAdecuateResponseState(struct selector_key *key) {
 	configurationADT config = getConfiguration();
 	unsigned ret;

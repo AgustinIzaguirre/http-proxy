@@ -19,6 +19,7 @@ struct transformBody {
  */
 void transformBodyInit(const unsigned state, struct selector_key *key);
 
+int executeTransformCommand(struct selector_key *key);
 unsigned transformBodyRead(struct selector_key *key);
 unsigned transformBodyWrite(struct selector_key *key);
 

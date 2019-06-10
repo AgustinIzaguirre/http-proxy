@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <selector.h>
 #include <transformBody.h>
+#include <configuration.h>
 
 static buffer *getCurrentResponseBuffer(httpADT_t state);
 
@@ -23,6 +24,11 @@ unsigned responseRead(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 
+	if (handleResponse->parseHeaders.state == BODY_START &&
+		getIsTransformationOn(getConfiguration()) &&
+		1 /* Mime type is in filter list */) { // TODO add condition
+		return TRANSFORM_BODY;
+	}
 	// if there is no space to read should write what i already read
 	if (!buffer_can_write(writeBuffer)) {
 		// set interest no op on fd an write on origin fd
@@ -39,11 +45,6 @@ unsigned responseRead(struct selector_key *key) {
 			parseHeaders(&handleResponse->parseHeaders, writeBuffer, begining,
 						 begining + bytesRead);
 		}
-		else if (1 /* Mime type is in filter list */) {
-			executeTransformCommand(key); // TODO validate return and act in
-										  // response
-			// TODO here is where we should call the transformer
-		}
 		ret = setResponseFdInterests(key);
 	}
 	else if (bytesRead == 0) {
@@ -59,10 +60,18 @@ unsigned responseRead(struct selector_key *key) {
 
 unsigned responseWrite(struct selector_key *key) {
 	buffer *writeBuffer = getCurrentResponseBuffer(GET_DATA(key));
-	unsigned ret		= HANDLE_RESPONSE;
+	struct handleResponse *handleResponse =
+		getHandleResponseState(GET_DATA(key));
+	unsigned ret = HANDLE_RESPONSE;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
+
+	if (handleResponse->parseHeaders.state == BODY_START &&
+		getIsTransformationOn(getConfiguration()) &&
+		1 /* Mime type is in filter list */) { // TODO add condition
+		return TRANSFORM_BODY;
+	}
 	// if everything is read on buffer
 	if (!buffer_can_read(writeBuffer)) {
 		// set interest no op on fd an read on client fd
