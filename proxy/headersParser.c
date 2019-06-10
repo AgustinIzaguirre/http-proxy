@@ -84,12 +84,16 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			if (l == '\n') {
 				if (header->isMime) {
 					header->mimeValue[header->mimeIndex++] = 0;
+					printf("mimeType: %s\n", header->mimeValue); // TODO remove
 				}
 				header->state = HEADER_DONE;
 			}
 			else {
 				if (header->isMime && l != '\r') {
 					header->mimeValue[header->mimeIndex++] = l;
+				}
+				else if (header->isMime && l == '\r') {
+					header->mimeValue[header->mimeIndex++] = 0;
 				}
 			}
 			if (!header->censure) {
@@ -151,11 +155,10 @@ static void isCensureHeader(struct headersParser *header) {
 		header->censure = TRUE;
 	}
 	else {
-		//		if (strcmp(header->headerBuf, "content-type") == 0) {
-		//			printf("matcheo con content-type\n");
-		//			header->isMime = TRUE;
-		//		}
-		// printf("no matcheo %s\n", header->headerBuf);
+		if (strcmp(header->currHeader, "content-type") == 0 &&
+			getIsTransformationOn(getConfiguration())) {
+			header->isMime = TRUE;
+		}
 
 		copyBuffer(header);
 		buffer_write(&header->valueBuffer, ':');
