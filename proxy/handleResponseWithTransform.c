@@ -150,8 +150,8 @@ int executeTransformCommand(struct selector_key *key) {
 	else if (commandPid == 0) {
 		dup2(inputPipe[0], 0);
 		dup2(outputPipe, 1);
-		close(0);			  // closing stdin
-		close(1);			  // closing stdout
+		//		close(0);			  // closing stdin
+		//		close(1);			  // closing stdout
 		close(inputPipe[1]);  // closing write end of input pipe
 		close(outputPipe[0]); // closing read end of output pipe
 
