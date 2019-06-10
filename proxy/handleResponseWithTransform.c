@@ -148,12 +148,12 @@ int executeTransformCommand(struct selector_key *key) {
 		return FORK_ERROR;
 	}
 	else if (commandPid == 0) {
-		dup2(inputPipe[0], 0);
-		dup2(outputPipe, 1);
-		//		close(0);			  // closing stdin
-		//		close(1);			  // closing stdout
-		close(inputPipe[1]);  // closing write end of input pipe
-		close(outputPipe[0]); // closing read end of output pipe
+		dup2(inputPipe[0], 0); // setting pipe as stdin
+		dup2(outputPipe, 1);   // setting pipe as stdout
+		close(inputPipe[0]);   // closing unused copy of pipe
+		close(outputPipe[1]);  // closing unused copy o pipe
+		close(inputPipe[1]);   // closing write end of input pipe
+		close(outputPipe[0]);  // closing read end of output pipe
 
 		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {
 			// closing other pipes end
