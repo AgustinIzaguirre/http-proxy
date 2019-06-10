@@ -4,6 +4,7 @@
 #include <headersParser.h>
 #include <stdio.h>
 #include <selector.h>
+#include <transformBody.h>
 
 static buffer *getCurrentResponseBuffer(httpADT_t state);
 
@@ -37,6 +38,11 @@ unsigned responseRead(struct selector_key *key) {
 		if (handleResponse->parseHeaders.state != BODY_START) {
 			parseHeaders(&handleResponse->parseHeaders, writeBuffer, begining,
 						 begining + bytesRead);
+		}
+		else if (1 /* Mime type is in filter list */) {
+			executeTransformCommand(key); // TODO validate return and act in
+										  // response
+			// TODO here is where we should call the transformer
 		}
 		ret = setResponseFdInterests(key);
 	}

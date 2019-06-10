@@ -3,13 +3,13 @@
 
 #include <headersParser.h>
 
-enum transformCommandErrors {
-	TRANSFORM_COMMAND_OK = 0,
-	PIPE_CREATION_ERROR,
-	FORK_ERROR,
-	EXEC_ERROR,
-	SELECT_ERROR
-};
+// enum transformCommandErrors {
+//	TRANSFORM_COMMAND_OK = 0,
+//	PIPE_CREATION_ERROR,
+//	FORK_ERROR,
+//	EXEC_ERROR,
+//	SELECT_ERROR
+//};
 
 struct handleResponseWithTransform {
 	struct headersParser parseHeaders;

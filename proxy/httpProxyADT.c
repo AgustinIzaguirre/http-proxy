@@ -5,6 +5,7 @@
 #include <handleResponse.h>
 #include <handleResponseWithTransform.h>
 #include <headersParser.h>
+#include <transformBody.h>
 
 static const struct state_definition *httpDescribeStates(void);
 
@@ -38,10 +39,12 @@ struct http {
 		struct parseRequest parseRequest;
 		struct handleRequest handleRequest;
 		struct handleResponse handleResponse;
-		struct handleResponseWithTransform handleResponseWithTransform;
-		int other;
-		// struct request_st         request;
-		// struct copy               copy;
+		struct handleResponseWithTransform
+			handleResponseWithTransform; // TODO remove deprecated
+		struct transformBody transformBody;
+		int other; // TODO REMOVE
+				   // struct request_st         request;
+				   // struct copy               copy;
 	} clientState;
 	// /** estados para el origin_fd */
 	// union {
@@ -115,6 +118,10 @@ struct handleResponse *getHandleResponseState(httpADT_t s) {
 struct handleResponseWithTransform *
 getHandleResponseWithTransformState(httpADT_t s) {
 	return &((s->clientState).handleResponseWithTransform);
+}
+
+struct transformBody *getTransformBodyState(httpADT_t s) {
+	return &((s->clientState).transformBody);
 }
 
 struct sockaddr_storage *getClientAddress(httpADT_t s) {
@@ -213,6 +220,12 @@ static const struct state_definition clientStatbl[] = {
 		.on_arrival		= responseWithTransformInit,
 		.on_read_ready  = responseWithTransformRead,
 		.on_write_ready = responseWithTransformWrite,
+	},
+	{
+		.state			= TRANSFORM_BODY,
+		.on_arrival		= transformBodyInit,
+		.on_read_ready  = transformBodyRead,
+		.on_write_ready = transformBodyWrite,
 	},
 	{
 		.state			= ERROR_CLIENT,
