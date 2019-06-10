@@ -6,16 +6,72 @@
 #include <handleParsers.h>
 
 void transformBodyInit(const unsigned state, struct selector_key *key) {
-	// struct transformBody *transformBody =
-	// getTransformBodyState(GET_DATA(key));
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	transformBody->commandStatus		= executeTransformCommand(key);
 	printf("arrived to transform body state\n");
 	buffer_reset(getReadBuffer(GET_DATA(key)));
 }
 
 unsigned transformBodyRead(struct selector_key *key) {
-	return ERROR;
+	httpADT_t state						= GET_DATA(key);
+	struct transformBody *transformBody = getTransformBodyState(state);
+	unsigned ret;
+	if (transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
+		ret = standardOriginRead(key);
+	}
+	else if (key->fd == transformBody->readFromTransformFd) {
+		ret = readFromTransform(key);
+	}
+	else if (key->fd == getOriginFd(state)) {
+		ret = readFromOrigin(key);
+	}
+	else {
+		ret = ERROR;
+	}
+	// setAdecuateFdInterests();
+	return ret;
 }
 unsigned transformBodyWrite(struct selector_key *key) {
+	httpADT_t state						= GET_DATA(key);
+	struct transformBody *transformBody = getTransformBodyState(state);
+	unsigned ret;
+	if (transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
+		ret = standardClientWrite(key);
+	}
+	else if (key->fd == transformBody->writeToTransformFd) {
+		ret = writeToTransform(key);
+	}
+	else if (key->fd == getClientFd(state)) {
+		ret = writeToClient(key);
+	}
+	else {
+		ret = ERROR;
+	}
+	// setAdecuateFdInterests();
+	return ret;
+}
+
+unsigned standardOriginRead(struct selector_key *key) {
+	return ERROR;
+}
+
+unsigned readFromTransform(struct selector_key *key) {
+	return ERROR;
+}
+
+unsigned readFromOrigin(struct selector_key *key) {
+	return ERROR;
+}
+
+unsigned standardClientWrite(struct selector_key *key) {
+	return ERROR;
+}
+
+unsigned writeToTransform(struct selector_key *key) {
+	return ERROR;
+}
+
+unsigned writeToClient(struct selector_key *key) {
 	return ERROR;
 }
 
