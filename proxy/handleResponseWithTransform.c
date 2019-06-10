@@ -41,9 +41,9 @@ unsigned responseWithTransformRead(struct selector_key *key) {
 			parseHeaders(&handleResponseWithTransform->parseHeaders,
 						 writeBuffer, begining, begining + bytesRead);
 		}
-		else {
-			executeTransformCommand(); // TODO validate return and act in
-									   // response
+		else if (1 /* Mime type is in filter list */) {
+			executeTransformCommand(key); // TODO validate return and act in
+										  // response
 			// TODO here is where we should call the transformer
 		}
 		ret = setResponseWithTransformFdInterests(key);
@@ -90,14 +90,14 @@ unsigned setResponseWithTransformFdInterests(struct selector_key *key) {
 	struct handleResponseWithTransform *handleResponse =
 		getHandleResponseWithTransformState(state);
 	buffer *writeBuffer  = getWriteBuffer(GET_DATA(key));
-	buffer *parsedBuffer = &(handleResponse->parseHeaders.headerBuffer);
+	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
 
 	unsigned ret	   = HANDLE_RESPONSE_WITH_TRANSFORMATION;
 	int clientInterest = OP_NOOP;
 	int originInterest = OP_NOOP;
 
 	if (buffer_can_read(parsedBuffer) ||
-		(!handleResponse->parseHeaders.censure &&
+		(handleResponse->parseHeaders.state == BODY_START &&
 		 buffer_can_read(writeBuffer))) {
 		clientInterest |= OP_WRITE;
 	}
@@ -117,18 +117,21 @@ unsigned setResponseWithTransformFdInterests(struct selector_key *key) {
 }
 
 static buffer *getCurrentResponseBuffer(httpADT_t state) {
-	buffer *buf = &(
-		getHandleResponseWithTransformState(state)->parseHeaders.headerBuffer);
-
-	if (buffer_can_read(buf)) {
-		return buf;
+	struct handleResponseWithTransform *handleResponse =
+		getHandleResponseWithTransformState(state);
+	if (handleResponse->parseHeaders.state != BODY_START ||
+		buffer_can_read(&handleResponse->parseHeaders.valueBuffer)) {
+		return &handleResponse->parseHeaders.valueBuffer;
 	}
 	else {
 		return getWriteBuffer(state);
 	}
 }
 
-int executeTransformCommand() {
+int executeTransformCommand(struct selector_key *key) {
+	httpADT_t state = GET_DATA(key);
+	struct handleResponseWithTransform *handleResponseWithTransform =
+		getHandleResponseWithTransformState(state);
 	int inputPipe[]  = {-1, -1};
 	int outputPipe[] = {-1, -1};
 	int errorFd =
@@ -145,12 +148,12 @@ int executeTransformCommand() {
 		return FORK_ERROR;
 	}
 	else if (commandPid == 0) {
+		dup2(inputPipe[0], 0);
+		dup2(outputPipe, 1);
 		close(0);			  // closing stdin
 		close(1);			  // closing stdout
 		close(inputPipe[1]);  // closing write end of input pipe
 		close(outputPipe[0]); // closing read end of output pipe
-		dup2(inputPipe[0], 0);
-		dup2(outputPipe, 1);
 
 		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {
 			// closing other pipes end
@@ -163,8 +166,57 @@ int executeTransformCommand() {
 		// In father process
 		close(inputPipe[0]);  // closing read end of input pipe
 		close(outputPipe[1]); // closing write end of output pipe
-							  // TODO register fd on selector
+		handleResponseWithTransform->writeToTransformFd  = inputPipe[1];
+		handleResponseWithTransform->readFromTransformFd = outputPipe[0];
+
+		if (SELECTOR_SUCCESS !=
+				selector_set_interest(key->s, inputPipe[1], OP_WRITE) ||
+			SELECTOR_SUCCESS !=
+				selector_set_interest(key->s, outputPipe[0], OP_READ)) {
+			return SELECT_ERROR;
+		}
+		// TODO register fd on selector
 	}
 
 	return TRANSFORM_COMMAND_OK;
+}
+
+unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
+	httpADT_t state = GET_DATA(key);
+	struct handleResponseWithTransform *handleResponse =
+		getHandleResponseWithTransformState(state);
+	buffer *readBuffer   = getReadBuffer(GET_DATA(key));
+	buffer *writeBuffer  = getWriteBuffer(GET_DATA(key));
+	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
+
+	unsigned ret		  = HANDLE_RESPONSE_WITH_TRANSFORMATION;
+	int clientInterest	= OP_NOOP;
+	int originInterest	= OP_NOOP;
+	int transformInterest = OP_NOOP;
+	buffer_reset(readBuffer);
+
+	if (buffer_can_read(writeBuffer)) {
+		transformInterest |= OP_WRITE;
+	}
+
+	if (buffer_can_read(readBuffer)) {
+		clientInterest |= OP_WRITE;
+	}
+
+	if (buffer_can_write(readBuffer)) {
+		transformInterest |= OP_READ;
+	}
+
+	if (buffer_can_write(writeBuffer)) {
+		originInterest |= OP_READ;
+	}
+
+	if (SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
+		return ERROR;
+	}
+
+	return ret;
 }
