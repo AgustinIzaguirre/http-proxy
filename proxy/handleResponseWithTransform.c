@@ -127,43 +127,43 @@ static buffer *getCurrentResponseBuffer(httpADT_t state) {
 		return getWriteBuffer(state);
 	}
 }
-
-unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
-	httpADT_t state = GET_DATA(key);
-	struct handleResponseWithTransform *handleResponse =
-		getHandleResponseWithTransformState(state);
-	buffer *readBuffer   = getReadBuffer(GET_DATA(key));
-	buffer *writeBuffer  = getWriteBuffer(GET_DATA(key));
-	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
-
-	unsigned ret		  = HANDLE_RESPONSE_WITH_TRANSFORMATION;
-	int clientInterest	= OP_NOOP;
-	int originInterest	= OP_NOOP;
-	int transformInterest = OP_NOOP;
-	buffer_reset(readBuffer);
-
-	if (buffer_can_read(writeBuffer)) {
-		transformInterest |= OP_WRITE;
-	}
-
-	if (buffer_can_read(readBuffer)) {
-		clientInterest |= OP_WRITE;
-	}
-
-	if (buffer_can_write(readBuffer)) {
-		transformInterest |= OP_READ;
-	}
-
-	if (buffer_can_write(writeBuffer)) {
-		originInterest |= OP_READ;
-	}
-
-	if (SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
-		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
-		return ERROR;
-	}
-
-	return ret;
-}
+//
+// unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
+//	httpADT_t state = GET_DATA(key);
+//	struct handleResponseWithTransform *handleResponse =
+//		getHandleResponseWithTransformState(state);
+//	buffer *readBuffer   = getReadBuffer(GET_DATA(key));
+//	buffer *writeBuffer  = getWriteBuffer(GET_DATA(key));
+//	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
+//
+//	unsigned ret		  = HANDLE_RESPONSE_WITH_TRANSFORMATION;
+//	int clientInterest	= OP_NOOP;
+//	int originInterest	= OP_NOOP;
+//	int transformInterest = OP_NOOP;
+//	buffer_reset(readBuffer);
+//
+//	if (buffer_can_read(writeBuffer)) {
+//		transformInterest |= OP_WRITE;
+//	}
+//
+//	if (buffer_can_read(readBuffer)) {
+//		clientInterest |= OP_WRITE;
+//	}
+//
+//	if (buffer_can_write(readBuffer)) {
+//		transformInterest |= OP_READ;
+//	}
+//
+//	if (buffer_can_write(writeBuffer)) {
+//		originInterest |= OP_READ;
+//	}
+//
+//	if (SELECTOR_SUCCESS !=
+//			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
+//		SELECTOR_SUCCESS !=
+//			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
+//		return ERROR;
+//	}
+//
+//	return ret;
+//}

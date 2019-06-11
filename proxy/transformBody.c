@@ -67,7 +67,6 @@ unsigned standardOriginRead(struct selector_key *key) {
 	bytesRead = recv(key->fd, pointer, count, 0);
 
 	if (bytesRead > 0) {
-		int begining = pointer - writeBuffer->data;
 		buffer_write_adv(writeBuffer, bytesRead);
 		ret = setStandardFdInterests(key);
 	}
@@ -83,11 +82,65 @@ unsigned standardOriginRead(struct selector_key *key) {
 }
 
 unsigned readFromTransform(struct selector_key *key) {
-	return ERROR;
+	buffer *buffer = getReadBuffer(GET_DATA(key));
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+	unsigned ret;
+
+	// if there is no space to read should write what i already read
+	if (!buffer_can_write(buffer)) {
+		// set interest no op on fd an write on origin fd
+		return setFdInterestsWithTransformerCommand(key);
+	}
+
+	pointer   = buffer_write_ptr(buffer, &count);
+	bytesRead = recv(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_write_adv(buffer, bytesRead);
+		ret = setFdInterestsWithTransformerCommand(key);
+	}
+	else if (bytesRead == 0) {
+		// if response is not chunked or is last chunk
+		ret = DONE; // should send what is left on buffer TODO
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
 }
 
 unsigned readFromOrigin(struct selector_key *key) {
-	return ERROR;
+	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+	unsigned ret;
+
+	// if there is no space to read should write what i already read
+	if (!buffer_can_write(writeBuffer)) {
+		// set interest no op on fd an write on origin fd
+		return setFdInterestsWithTransformerCommand(key);
+	}
+
+	pointer   = buffer_write_ptr(writeBuffer, &count);
+	bytesRead = recv(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_write_adv(writeBuffer, bytesRead);
+		ret = setFdInterestsWithTransformerCommand(key);
+	}
+	else if (bytesRead == 0) {
+		// if response is not chunked or is last chunk
+		ret = DONE; // should send what is left on buffer TODO
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
 }
 
 unsigned standardClientWrite(struct selector_key *key) {
@@ -118,11 +171,57 @@ unsigned standardClientWrite(struct selector_key *key) {
 }
 
 unsigned writeToTransform(struct selector_key *key) {
-	return ERROR;
+	buffer *buffer = getWriteBuffer(GET_DATA(key));
+	unsigned ret   = TRANSFORM_BODY;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+
+	// if everything is read on buffer
+	if (!buffer_can_read(buffer)) {
+		// set interest no op on fd an read on client fd
+		return setFdInterestsWithTransformerCommand(key);
+	}
+
+	pointer   = buffer_read_ptr(buffer, &count);
+	bytesRead = send(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_read_adv(buffer, bytesRead);
+		ret = setFdInterestsWithTransformerCommand(key);
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
 }
 
 unsigned writeToClient(struct selector_key *key) {
-	return ERROR;
+	buffer *buffer = getReadBuffer(GET_DATA(key));
+	unsigned ret   = TRANSFORM_BODY;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+
+	// if everything is read on buffer
+	if (!buffer_can_read(buffer)) {
+		// set interest no op on fd an read on client fd
+		return setFdInterestsWithTransformerCommand(key);
+	}
+
+	pointer   = buffer_read_ptr(buffer, &count);
+	bytesRead = send(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_read_adv(buffer, bytesRead);
+		ret = setFdInterestsWithTransformerCommand(key);
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
 }
 
 unsigned setStandardFdInterests(struct selector_key *key) {
@@ -152,21 +251,20 @@ unsigned setStandardFdInterests(struct selector_key *key) {
 }
 
 unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
-	httpADT_t state = GET_DATA(key);
-	struct handleResponseWithTransform *handleResponse =
-		getHandleResponseWithTransformState(state);
-	buffer *readBuffer   = getReadBuffer(GET_DATA(key));
-	buffer *writeBuffer  = getWriteBuffer(GET_DATA(key));
-	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
+	httpADT_t state						= GET_DATA(key);
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	buffer *readBuffer					= getReadBuffer(GET_DATA(key));
+	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
 
-	unsigned ret		  = HANDLE_RESPONSE_WITH_TRANSFORMATION;
-	int clientInterest	= OP_NOOP;
-	int originInterest	= OP_NOOP;
-	int transformInterest = OP_NOOP;
+	unsigned ret			   = HANDLE_RESPONSE_WITH_TRANSFORMATION;
+	int clientInterest		   = OP_NOOP;
+	int originInterest		   = OP_NOOP;
+	int transformReadInterest  = OP_NOOP;
+	int transformWriteInterest = OP_NOOP;
 	buffer_reset(readBuffer);
 
 	if (buffer_can_read(writeBuffer)) {
-		transformInterest |= OP_WRITE;
+		transformWriteInterest |= OP_WRITE;
 	}
 
 	if (buffer_can_read(readBuffer)) {
@@ -174,7 +272,7 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	}
 
 	if (buffer_can_write(readBuffer)) {
-		transformInterest |= OP_READ;
+		transformReadInterest |= OP_READ;
 	}
 
 	if (buffer_can_write(writeBuffer)) {
@@ -184,7 +282,13 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	if (SELECTOR_SUCCESS !=
 			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
 		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
+			selector_set_interest(key->s, getOriginFd(state), originInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, transformBody->readFromTransformFd,
+								  transformReadInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, transformBody->writeToTransformFd,
+								  transformWriteInterest)) {
 		return ERROR;
 	}
 

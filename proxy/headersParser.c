@@ -35,7 +35,6 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 			printf("body start\n");
 			return;
 		}
-
 		l = buffer_read(input);
 	}
 }
@@ -76,6 +75,8 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			}
 
 			if (header->headerIndex == MAX_HOP_BY_HOP_HEADER_LENGTH) {
+				//			    header->headerIndex++; //TODO fix better el
+				// parche
 				copyBuffer(header);
 				header->headerIndex = 0;
 			}
@@ -177,8 +178,8 @@ void addConnectionClose(struct headersParser *header) {
 void copyBuffer(struct headersParser *header) {
 	size_t count;
 	memcpy(buffer_write_ptr(&header->valueBuffer, &count), header->currHeader,
-		   header->headerIndex); // TOdo CHECK IF ZERO IS COPIED
-	buffer_write_adv(&header->valueBuffer, header->headerIndex);
+		   header->headerIndex - 1); // TOdo CHECK IF ZERO IS COPIED
+	buffer_write_adv(&header->valueBuffer, header->headerIndex - 1);
 }
 
 void resetValueBuffer(struct headersParser *header) {
