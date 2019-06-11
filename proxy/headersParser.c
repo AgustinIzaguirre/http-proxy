@@ -35,6 +35,9 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 			printf("body start\n");
 			return;
 		}
+		if (!buffer_can_write(&header->valueBuffer)) {
+			return;
+		}
 		l = buffer_read(input);
 	}
 }
