@@ -162,7 +162,7 @@ static int parseAndSendRequests(int server, uint8_t *byeRead) {
 		if (data != NULL) {
 			free(data);
 		}
-	} while (returnCode != SEND);
+	} while (returnCode != SEND && sent >= 0);
 
 	return sent;
 }
