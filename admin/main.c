@@ -18,14 +18,14 @@ linkedListADT_t responsesRecvOnGetStream;
 
 static int authenticate(int server);
 
-static uint8_t parseAndSendRequests(int server);
+static int parseAndSendRequests(int server, uint8_t *byeRead);
 
-static uint8_t newCommandHandler(int server, operation_t operation, id_t id,
-								 void *data, size_t dataLength);
+static int newCommandHandler(int server, operation_t operation, id_t id,
+							 void *data, size_t dataLength, uint8_t *byeRead);
 
 static void invalidCommandHandler();
 
-static void recvAndPrintResponses();
+static int recvAndPrintResponses(int server);
 
 /*****************************************************************************\
 \*****************************************************************************/
@@ -51,11 +51,27 @@ int main(int argc, char const *argv[]) {
 		return -1;
 	}
 
-	uint8_t byeRead = 0;
+	uint8_t byeRead;
+
+	int sentState;
+	int recvState;
 
 	do {
-		byeRead = parseAndSendRequests(server);
-		recvAndPrintResponses();
+		sentState = parseAndSendRequests(server, &byeRead);
+
+		if (sentState < 0) {
+			printf("%s\n", getProtocolErrorMessage());
+			printf("Error while sending requests to server\n");
+			return -1;
+		}
+
+		recvState = recvAndPrintResponses(server);
+
+		if (recvState < 0) {
+			printf("%s\n", getProtocolErrorMessage());
+			printf("Error while receiving responses from server\n");
+			return -1;
+		}
 	} while (!byeRead);
 
 	// TODO: read all bytes in socket to clean its buffer? close it?
@@ -112,27 +128,27 @@ static int authenticate(int server) {
 	return 0;
 }
 
-/* Return different than zero if a BYE command was read */
-static uint8_t parseAndSendRequests(int server) {
+static int parseAndSendRequests(int server, uint8_t *byeRead) {
 	operation_t operation;
 	id_t id;
 	void *data;
 	size_t dataLength;
-
-	uint8_t byeRead = 0;
+	int sent;
+	*byeRead = 0;
 
 	returnCode_t returnCode;
 
 	do {
 		data	   = NULL;
 		dataLength = 0;
+		sent	   = 0;
 		returnCode = parseCommand(&operation, &id, &data, &dataLength);
 
-		if (!byeRead) {
+		if (!*byeRead) {
 			switch (returnCode) {
 				case NEW:
-					byeRead = newCommandHandler(server, operation, id, data,
-												dataLength);
+					sent = newCommandHandler(server, operation, id, data,
+											 dataLength, byeRead);
 					break;
 				case INVALID:
 					invalidCommandHandler();
@@ -148,37 +164,38 @@ static uint8_t parseAndSendRequests(int server) {
 		}
 	} while (returnCode != SEND);
 
-	return byeRead;
+	return sent;
 }
 
-static uint8_t newCommandHandler(int server, operation_t operation, id_t id,
-								 void *data, size_t dataLength) {
-	uint8_t byeRead = 0;
+static int newCommandHandler(int server, operation_t operation, id_t id,
+							 void *data, size_t dataLength, uint8_t *byeRead) {
 	uint16_t streamNumber;
+	int sent;
+	*byeRead = 0;
 
 	switch (operation) {
 		case BYE_OP:
-			byeRead		 = 1;
+			*byeRead	 = 1;
 			streamNumber = BYE_STREAM;
-			sendByeRequest(server, streamNumber);
+			sent		 = sendByeRequest(server, streamNumber);
 			break;
 		case GET_OP:
 			streamNumber = GET_STREAM;
-			sendGetRequest(server, id, timeTags[id], streamNumber);
+			sent = sendGetRequest(server, id, timeTags[id], streamNumber);
 			break;
 		case SET_OP:
 			streamNumber = SET_STREAM;
-			sendPostRequest(server, id, timeTags[id], data, dataLength,
-							streamNumber);
+			sent = sendPostRequest(server, id, timeTags[id], data, dataLength,
+								   streamNumber);
 			break;
 	}
 
-	request_t requestSent = {.code = NEW, .streamNumber = streamNumber};
+	if (!byeRead) {
+		request_t requestSent = {.code = NEW, .streamNumber = streamNumber};
+		enqueue(&requests, &requestSent, sizeof(requestSent));
+	}
 
-	// TODO: if (byeRead) { add to the queue...or not? }
-	enqueue(&requests, &requestSent, sizeof(requestSent));
-
-	return byeRead;
+	return sent;
 }
 
 static void invalidCommandHandler() {
@@ -190,6 +207,6 @@ static void invalidCommandHandler() {
 	enqueue(&requests, &invalidCommand, sizeof(invalidCommand));
 }
 
-static void recvAndPrintResponses() {
-	/* code */
+static int recvAndPrintResponses(int server) {
+	return 0;
 }
