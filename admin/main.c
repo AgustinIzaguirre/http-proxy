@@ -9,7 +9,7 @@ timeTag_t timeTags[ID_QUANTITY] = {0};
 typedef struct {
 	returnCode_t code;
 	uint16_t streamNumber;
-} request_t;
+} requestToRecv_t;
 
 queueADT_t requests;
 
@@ -185,13 +185,14 @@ static int newCommandHandler(int server, operation_t operation, id_t id,
 			break;
 		case SET_OP:
 			streamNumber = SET_STREAM;
-			sent = sendPostRequest(server, id, timeTags[id], data, dataLength,
-								   streamNumber);
+			sent = sendSetRequest(server, id, timeTags[id], data, dataLength,
+								  streamNumber);
 			break;
 	}
 
 	if (!byeRead) {
-		request_t requestSent = {.code = NEW, .streamNumber = streamNumber};
+		requestToRecv_t requestSent = {.code		 = NEW,
+									   .streamNumber = streamNumber};
 		enqueue(&requests, &requestSent, sizeof(requestSent));
 	}
 
@@ -199,7 +200,7 @@ static int newCommandHandler(int server, operation_t operation, id_t id,
 }
 
 static void invalidCommandHandler() {
-	request_t invalidCommand = {
+	requestToRecv_t invalidCommand = {
 		.code		  = INVALID,
 		.streamNumber = 0 /* Could be any stream number, will be ignored */
 	};
