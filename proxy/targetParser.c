@@ -65,8 +65,14 @@ int parseTargetChar(struct targetParser *parser, char l) {
 			parser->state = A_AUTH;
 			break;
 		case END_T:
+		case ERROR_T:
 			flag = 0;
 			break;
+	}
+
+	if (l == '\n') {
+		flag		  = 0;
+		parser->state = ERROR_T;
 	}
 
 	return flag;

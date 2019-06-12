@@ -236,6 +236,10 @@ int parseMethodChar(struct methodParser *parser, char l) {
 			break;
 	}
 
+	if (parser->state == ERROR_METHOD_STATE) {
+		flag = 0;
+	}
+
 	return flag;
 }
 

@@ -69,10 +69,13 @@ int parseVersionChar(struct versionParser *parser, char l) {
 				}
 				parser->state = ERROR_V;
 			case ERROR_V:
-				flag = 0;
 				break;
 		}
 	} while (parser->state == FINISH_V && l == '\n' && flag);
+
+	if (parser->state == ERROR_V) {
+		flag = 0;
+	}
 
 	return flag;
 }

@@ -15,6 +15,7 @@ enum targetState {
 	START_PORT_T,
 	PORT_T,
 	A_AUTH,
+	ERROR_T,
 	END_T
 };
 

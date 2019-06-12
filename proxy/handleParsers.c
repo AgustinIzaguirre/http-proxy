@@ -127,12 +127,17 @@ int handleTarget(struct selector_key *key, struct parseRequest *parseRequest,
 	int bytesFromAParser =
 		parse(parseRequest, readBuffer, &state, &parseTargetCharWrapper);
 	if (state == 1) {
-		parseRequest->state = PARSE_VERSION;
-		char *host			= getHost(&(parseRequest->targetParser));
-		if (host != NULL && host[0] != 0) {
-			setOriginHost(GET_DATA(key), host); // set host
-			int port = getPortTarget(&(parseRequest->targetParser));
-			setOriginPort(GET_DATA(key), port);
+		if (getTargetState(&(parseRequest->targetParser)) == ERROR_T) {
+			*ret = ERROR_CLIENT;
+		}
+		else {
+			parseRequest->state = PARSE_VERSION;
+			char *host			= getHost(&(parseRequest->targetParser));
+			if (host != NULL && host[0] != 0) {
+				setOriginHost(GET_DATA(key), host); // set host
+				int port = getPortTarget(&(parseRequest->targetParser));
+				setOriginPort(GET_DATA(key), port);
+			}
 		}
 	}
 	else if (state == 2) {
