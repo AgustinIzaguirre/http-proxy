@@ -103,7 +103,8 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 	int clientInterest   = OP_NOOP;
 	int originInterest   = OP_NOOP;
 
-	if (buffer_can_write(readBuffer) && !buffer_can_read(parsedBuffer)) {
+	if (buffer_can_write(readBuffer) && !buffer_can_read(parsedBuffer) &&
+		!buffer_can_read(finishBuffer)) {
 		clientInterest |= OP_READ;
 	}
 

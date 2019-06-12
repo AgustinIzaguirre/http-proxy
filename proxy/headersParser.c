@@ -23,6 +23,7 @@ void headersParserInit(struct headersParser *header) {
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	uint8_t l = buffer_read(input);
+	size_t spaceLeft;
 
 	while (l) {
 		parseHeadersByChar(l, header);
@@ -36,7 +37,8 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 			printf("body start\n");
 			return;
 		}
-		if (!buffer_can_write(&header->valueBuffer)) {
+		buffer_write_ptr(&header->valueBuffer, &spaceLeft);
+		if (spaceLeft <= MAX_HOP_BY_HOP_HEADER_LENGTH) {
 			return;
 		}
 		l = buffer_read(input);
