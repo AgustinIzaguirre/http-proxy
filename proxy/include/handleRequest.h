@@ -31,4 +31,14 @@ unsigned requestWrite(struct selector_key *key);
  */
 unsigned setAdecuateFdInterests(struct selector_key *key);
 
+<<<<<<< HEAD
+=======
+/*
+ * Returns response state based on transformations, if transformations
+ * are enabled returns HANDLE_RESPONSE_WITH_TRANSFORMATION otherwise
+ * returns HANDLE_RESPONSE
+ */
+unsigned getAdecuateResponseState(struct selector_key *key);
+
+>>>>>>> Warnings corrected
 #endif
