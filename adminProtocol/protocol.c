@@ -1,28 +1,26 @@
 #include <protocol.h>
 
-static char *errorMessage = NULL;
-
 static int sendSCTPMsg(int fd, void *msg, size_t msgLength,
 					   uint16_t streamNumber);
+
+/* If maxLengthToRead is not set, reads all the bytes in the socket fd */
+static int receiveSCTPMsg(int fd, void **buffer, int maxLengthToRead,
+						  struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
 
 static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 							 uint16_t streamQuantity);
 
 static void setVersionBytes(void *data);
 
-/* If maxLengthToRead is not set, reads all the bytes in the socket */
-static int receiveSCTPMsg(int fd, void **buffer, int maxLengthToRead,
-						  struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
+static void *formatData(void *data, size_t dataLength,
+						size_t *formattedDataLength);
+
+static int getConcretData(int fd, uint8_t **data, size_t *dataLength);
 
 static void loadRecvAuthenticationResponse(
 	uint8_t *response, authenticationResponse_t *authenticationResponse);
 
 static uint64_t getVersion(uint8_t *response);
-
-static void *formatData(void *data, size_t dataLength,
-						size_t *formattedDataLength);
-
-static int getConcretData(int fd, uint8_t **data, size_t *dataLength);
 
 static int recvGetResponse(int server, response_t *response);
 
@@ -30,10 +28,22 @@ static int recvSetResponse(int server, response_t *response);
 
 static int recvTimeTag(int fd, timeTag_t *timeTag);
 
+/* Read and loads head byte and stream number */
 static int recvHeadByte(int fd, uint8_t *headByte, uint16_t *streamNumber);
 
+/* Read first byte and loads information to response struct */
 static int recvHeadByteAndLoadResponseInfo(int fd, response_t *response);
 
+static int recvGetRequest(int client, request_t *request);
+
+static int recvSetRequest(int client, request_t *request);
+
+/* Read first byte and loads information to request struct */
+static int recvHeadByteAndLoadRequestInfo(int fd, request_t *request);
+
+static char *allocateAndCopyString(char *source, size_t *length);
+
+static char *errorMessage = NULL;
 /*****************************************************************************\
 \*****************************************************************************/
 
@@ -341,23 +351,6 @@ char *getProtocolErrorMessage() {
 	return "Unknown protocol error";
 }
 
-int sendRequest(int server, request_t request) {
-	switch (request.operation) {
-		case BYE_OP:
-			return sendByeRequest(server, request.streamNumber);
-		case GET_OP:
-			return sendGetRequest(server, request.id, request.timeTag,
-								  request.streamNumber);
-		case SET_OP:
-			return sendSetRequest(server, request.id, request.timeTag,
-								  request.data, request.dataLength,
-								  request.streamNumber);
-		default:
-			errorMessage = "Invalid opcode";
-			return -1;
-	}
-}
-
 int sendByeRequest(int server, uint16_t streamNumber) {
 	uint8_t byeRequest = BYE_MASK;
 
@@ -556,31 +549,175 @@ static int recvHeadByteAndLoadResponseInfo(int fd, response_t *response) {
 }
 
 int recvRequest(int client, request_t *request) {
-	uint8_t headByte;
-	int read = recvHeadByte(client, &headByte, &request->streamNumber);
+	int totalRead = 0;
+	int read;
 
-	// TODO: implement
+	read = recvHeadByteAndLoadRequestInfo(client, request);
+
+	if (read < 0) {
+		return read;
+	}
+
+	totalRead += read;
+
+	if (request->operationStatus == OK) {
+		switch (request->operation) {
+			case BYE_OP:
+				/* Nothing extra to recv */
+				read = 0;
+				break;
+			case GET_OP:
+				read = recvGetRequest(client, request);
+				break;
+			case SET_OP:
+				read = recvSetRequest(client, request);
+				break;
+		}
+
+		if (read < 0) {
+			return read;
+		}
+
+		totalRead += read;
+	}
+
+	return totalRead;
+}
+
+static int recvGetRequest(int client, request_t *request) {
+	request->data		= NULL;
+	request->dataLength = 0;
+
+	return recvTimeTag(client, &request->timeTag);
+}
+
+static int recvSetRequest(int client, request_t *request) {
+	int read;
+	int totalRead = 0;
+
+	read = recvTimeTag(client, &request->timeTag);
+
+	if (read < 0) {
+		return read;
+	}
+
+	totalRead += read;
+
+	request->data		= NULL;
+	request->dataLength = 0;
+
+	read = getConcretData(client, (uint8_t **) &request->data,
+						  &request->dataLength);
+
+	if (read < 0) {
+		return read;
+	}
+
+	totalRead += read;
+
+	return totalRead;
+}
+
+int recvAuthenticationRequest(int client, char **username, char **password,
+							  uint8_t *hasSameVersion) {
+	uint8_t *buffer = NULL;
+	struct sctp_sndrcvinfo sndRcvInfo;
+	int flags = 0;
+
+	int read =
+		receiveSCTPMsg(client, (void **) &buffer, 0, &sndRcvInfo, &flags);
+
+	if (read < 0) {
+		return read;
+	}
+
+	uint8_t versionByte = buffer[0];
+	*hasSameVersion		= FALSE;
+
+	if (versionByte == VERSION_BYTE) {
+		*hasSameVersion = TRUE;
+		size_t length;
+
+		*username = allocateAndCopyString((char *) (buffer + 1), &length);
+		*password =
+			allocateAndCopyString((char *) (buffer + 1 + length + 1), &length);
+	}
+
+	free(buffer);
 
 	return read;
 }
 
-static int recvGetRequest(int client, request_t *request) {
-	// TODO: implement
-	return 0;
-}
+/* Read first byte and loads information to request struct */
+static int recvHeadByteAndLoadRequestInfo(int fd, request_t *request) {
+	uint8_t headByte;
+	int read = recvHeadByte(fd, &headByte, &request->streamNumber);
 
-static int recvSetRequest(int client, request_t *request) {
-	// TODO: implement
-	return 0;
-}
+	if (read < 0) {
+		return read;
+	}
 
-int recvAuthenticationRequest(int client, char **username, char **password) {
-	// TODO: implement
-	return 0;
+	request->operationStatus = OK;
+
+	switch (headByte & OPCODE_MASK) {
+		case GET_MASK:
+			request->operation = GET_OP;
+			break;
+		case SET_MASK:
+			request->operation = SET_OP;
+			break;
+		case BYE_MASK:
+			request->operation = BYE_OP;
+			break;
+		default:
+			request->operationStatus = ERROR;
+			break;
+	}
+
+	request->id = headByte & ID_MASK;
+
+	return read;
 }
 
 int sendAuthenticationResponse(
 	int client, authenticationResponse_t authenticationResponse) {
-	// TODO: implement
-	return 0;
+	uint8_t response = 0x00;
+
+	if (authenticationResponse.status.generalStatus != OK) {
+		response = response | GENERAL_STATUS_MASK;
+
+		if (authenticationResponse.status.versionStatus != OK) {
+			response = response | VERSION_STATUS_MASK;
+
+			/* >> 3 because one shift per status bit */
+			response = response | (VERSION_BYTE >> 3);
+		}
+
+		if (authenticationResponse.status.authenticationStatus != OK) {
+			response = response | AUTH_STATUS_MASK;
+		}
+	}
+
+	return sendSCTPMsg(client, (void *) &response, 1, AUTHENTICATION_STREAM);
+}
+
+static char *allocateAndCopyString(char *source, size_t *length) {
+	*length		 = 0;
+	char *string = NULL;
+
+	for (int i = 0; source[i] != 0; i++) {
+		if (*length % ALLOC_BLOCK == 0) {
+			string = realloc(string, (*length + ALLOC_BLOCK) * sizeof(*string));
+		}
+
+		string[(*length)++] = source[i];
+	}
+
+	if (*length % ALLOC_BLOCK == 0) {
+		string = realloc(string, (*length + 1) * sizeof(*string));
+	}
+
+	string[*length] = 0;
+
+	return string;
 }

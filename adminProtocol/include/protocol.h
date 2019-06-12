@@ -9,8 +9,12 @@
 #include <string.h>
 #include <errno.h>
 
+#define ALLOC_BLOCK 8
 #define AUTHENTICATION_STREAM 0
 #define VERSION 0
+
+#define TRUE 1
+#define FALSE 0
 
 #define MAX_ATTEMPTS 4 /* Used to setup SCTP Socket */
 
@@ -88,6 +92,7 @@ typedef struct {
 } authenticationResponse_t;
 
 typedef struct {
+	statusCode_t operationStatus;
 	operation_t operation;
 	uint8_t id;
 	timeTag_t timeTag;
@@ -96,11 +101,19 @@ typedef struct {
 	uint16_t streamNumber;
 } request_t;
 
+char *getProtocolErrorMessage();
+
 int establishConnection(const char *serverIP, uint16_t serverPort,
 						uint16_t streamQuantity);
 
 int sendAuthenticationRequest(int server, char *username, size_t usernameLength,
 							  char *password, size_t passwordLength);
+
+int recvAuthenticationRequest(int client, char **username, char **password,
+							  uint8_t *hasSameVersion);
+
+int sendAuthenticationResponse(int client,
+							   authenticationResponse_t authenticationResponse);
 
 int recvAuthenticationResponse(
 	int server, authenticationResponse_t *authenticationResponse);
@@ -113,10 +126,8 @@ int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
 int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
 				   size_t dataLength, uint16_t streamNumber);
 
+int recvRequest(int client, request_t *request);
+
 int recvResponse(int server, response_t *response);
-
-int sendRequest(int server, request_t request);
-
-char *getProtocolErrorMessage();
 
 #endif
