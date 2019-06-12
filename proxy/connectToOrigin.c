@@ -53,15 +53,19 @@ void *addressResolvName(void **data) {
 }
 
 unsigned addressResolvNameDone(struct selector_key *key) {
-	int flag			 = ERROR;
+	int flag			 = ERROR_CLIENT;
 	struct addrinfo *res = getOriginResolutions(GET_DATA(key));
 
-	while (res && flag == ERROR) {
+	while (res && flag == ERROR_CLIENT) {
 		flag = connectToOrigin(key, res);
 		res  = res->ai_next;
 	}
 
-	return HANDLE_REQUEST;
+	if (flag == ERROR_CLIENT) {
+		setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+	}
+
+	return flag;
 }
 
 int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
@@ -85,8 +89,7 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	int socketFd			  = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
 	if (socketFd < 0) {
-		fprintf(stderr, "socket() failed\n");
-		return ERROR;
+		return ERROR_CLIENT;
 	}
 
 	struct sockaddr_in serverAddr;
@@ -95,18 +98,16 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	serverAddr.sin_port   = htons(originPort);
 
 	if (inet_pton(AF_INET, serverIP, &(serverAddr.sin_addr)) <= 0) {
-		fprintf(stderr, "not valid IP\ninet_pton() failed\n");
-		return ERROR;
+		return ERROR_CLIENT;
 	}
 
 	if (connect(socketFd, (const struct sockaddr *) (&serverAddr),
 				sizeof(serverAddr)) < 0) {
-		fprintf(stderr, "connect() failed\n");
-		return ERROR;
+		return ERROR_CLIENT;
 	}
 
 	if (selector_fd_set_nio(socketFd) == -1) {
-		return ERROR;
+		return ERROR_CLIENT;
 	}
 
 	setOriginFd(currentState, socketFd);
@@ -114,7 +115,7 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	if (SELECTOR_SUCCESS != selector_register(key->s, socketFd,
 											  getHttpHandler(), OP_WRITE,
 											  currentState)) {
-		return ERROR;
+		return ERROR_CLIENT;
 	}
 	incrementReferences(currentState);
 
