@@ -17,8 +17,8 @@
 /* Response status masks */
 #define GENERAL_STATUS_MASK 0x80
 #define OPCODE_STATUS_MASK 0x40
-#define TTAG_STATUS_MASK 0x20
-#define ID_STATUS_MASK 0x10
+#define ID_STATUS_MASK 0x20
+#define TTAG_STATUS_MASK 0x10
 
 /* Authentication response status masks */
 /* GENERAL_STATUS_MASK same as above... */
@@ -62,8 +62,8 @@ typedef uint64_t timeTag_t;
 typedef struct {
 	statusCode_t generalStatus;
 	statusCode_t operationStatus;
-	statusCode_t timeTagStatus;
 	statusCode_t idStatus;
+	statusCode_t timeTagStatus;
 } responseStatus_t;
 
 typedef struct {
@@ -87,6 +87,15 @@ typedef struct {
 	uint64_t version;
 } authenticationResponse_t;
 
+typedef struct {
+	operation_t operation;
+	uint8_t id;
+	timeTag_t timeTag;
+	void *data;
+	size_t dataLength;
+	uint16_t streamNumber;
+} request_t;
+
 int establishConnection(const char *serverIP, uint16_t serverPort,
 						uint16_t streamQuantity);
 
@@ -101,10 +110,12 @@ int sendByeRequest(int server, uint16_t streamNumber);
 int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
 				   uint16_t streamNumber);
 
-int sendPostRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
-					size_t dataLength, uint16_t streamNumber);
+int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
+				   size_t dataLength, uint16_t streamNumber);
 
 int recvResponse(int server, response_t *response);
+
+int sendRequest(int server, request_t request);
 
 char *getProtocolErrorMessage();
 
