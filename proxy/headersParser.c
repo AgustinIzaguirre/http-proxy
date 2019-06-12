@@ -23,6 +23,7 @@ void headersParserInit(struct headersParser *header) {
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end) {
 	uint8_t l = buffer_read(input);
+
 	while (l) {
 		parseHeadersByChar(l, header);
 
@@ -78,10 +79,10 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			}
 
 			if (header->headerIndex == MAX_HOP_BY_HOP_HEADER_LENGTH) {
-				header->headerIndex++; // TODO fix better el
-				// parche
+				header->headerIndex++; // TODO fix better
 				copyBuffer(header);
 				header->headerIndex = 0;
+				header->state		= HEADER_VALUE;
 			}
 			break;
 		case HEADER_VALUE:

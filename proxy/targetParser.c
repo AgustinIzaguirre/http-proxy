@@ -22,7 +22,7 @@ void parseTargetInit(struct targetParser *parser) {
 	parser->sizeHost	   = 0;
 	parser->target		   = NULL; // TODO:
 	parser->sizeTarget	 = 0;
-	parser->port		   = 0;
+	parser->port		   = PORT_DEFAULT;
 }
 
 int parseTargetChar(struct targetParser *parser, char l) {
