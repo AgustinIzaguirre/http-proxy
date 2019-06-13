@@ -4,6 +4,11 @@
 #include <transformBody.h>
 #include <configuration.h>
 #include <handleParsers.h>
+#include <http.h>
+
+// TODO REMOVE HEADER
+#include <stdio.h>
+#include <errno.h>
 
 void transformBodyInit(const unsigned state, struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
@@ -95,7 +100,7 @@ unsigned readFromTransform(struct selector_key *key) {
 	}
 
 	pointer   = buffer_write_ptr(buffer, &count);
-	bytesRead = recv(key->fd, pointer, count, 0);
+	bytesRead = read(key->fd, pointer, count);
 
 	if (bytesRead > 0) {
 		buffer_write_adv(buffer, bytesRead);
@@ -184,13 +189,14 @@ unsigned writeToTransform(struct selector_key *key) {
 	}
 
 	pointer   = buffer_read_ptr(buffer, &count);
-	bytesRead = send(key->fd, pointer, count, 0);
+	bytesRead = write(key->fd, pointer, count);
 
 	if (bytesRead > 0) {
 		buffer_read_adv(buffer, bytesRead);
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
+		printf("error:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 
@@ -256,12 +262,11 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	buffer *readBuffer					= getReadBuffer(GET_DATA(key));
 	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
 
-	unsigned ret			   = HANDLE_RESPONSE_WITH_TRANSFORMATION;
+	unsigned ret			   = TRANSFORM_BODY;
 	int clientInterest		   = OP_NOOP;
 	int originInterest		   = OP_NOOP;
 	int transformReadInterest  = OP_NOOP;
 	int transformWriteInterest = OP_NOOP;
-	buffer_reset(readBuffer);
 
 	if (buffer_can_read(writeBuffer)) {
 		transformWriteInterest |= OP_WRITE;
@@ -316,16 +321,19 @@ int executeTransformCommand(struct selector_key *key) {
 	else if (commandPid == 0) {
 		dup2(inputPipe[0], 0);  // setting pipe as stdin
 		dup2(outputPipe[1], 1); // setting pipe as stdout
-		close(inputPipe[0]);	// closing unused copy of pipe
-		close(outputPipe[1]);   // closing unused copy o pipe
-		close(inputPipe[1]);	// closing write end of input pipe
-		close(outputPipe[0]);   // closing read end of output pipe
+		// close(inputPipe[0]);	// closing unused copy of pipe
+		// close(outputPipe[1]);   // closing unused copy o pipe
+		close(inputPipe[1]);  // closing write end of input pipe
+		close(outputPipe[0]); // closing read end of output pipe
 
 		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {
 			// closing other pipes end
+			printf("In son\n");
 			close(inputPipe[0]);
 			close(outputPipe[1]);
-			return EXEC_ERROR;
+			printf("Exec error\n");
+			exit(1);
+			// return EXEC_ERROR;
 		}
 	}
 	else {
@@ -334,14 +342,16 @@ int executeTransformCommand(struct selector_key *key) {
 		close(outputPipe[1]); // closing write end of output pipe
 		transformBody->writeToTransformFd  = inputPipe[1];
 		transformBody->readFromTransformFd = outputPipe[0];
-
-		if (SELECTOR_SUCCESS !=
-				selector_set_interest(key->s, inputPipe[1], OP_WRITE) ||
-			SELECTOR_SUCCESS !=
-				selector_set_interest(key->s, outputPipe[0], OP_READ)) {
+		if (SELECTOR_SUCCESS != selector_register(key->s, inputPipe[1],
+												  getHttpHandler(), OP_WRITE,
+												  state) ||
+			SELECTOR_SUCCESS != selector_register(key->s, outputPipe[0],
+												  getHttpHandler(), OP_READ,
+												  state)) {
 			return SELECT_ERROR;
 		}
-		// TODO register fd on selector
+		incrementReferences(state);
+		incrementReferences(state);
 	}
 
 	return TRANSFORM_COMMAND_OK;
