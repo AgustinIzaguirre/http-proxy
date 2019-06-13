@@ -1,45 +1,78 @@
 #include <logger.h>
+#include <stdio.h>
+/* TODO: Check the reason for gcc showin a warning telling me to include
+ * <stdio.h> for the usage of snprintf when I have already included the library
+ */
 #include <time.h>
+#include <http.h>
+#include <httpProxyADT.h>
 
 void createLogFile(const char *path) {
   // TODO: Check if size makes sense & if it should be set as #define
   size_t size = 64;
-  char newLogFilePath[size] = {0};
+  char newLogFilePath[size];
   char *accessLog = "access.log";
+  int bytesSupposedToWrite = 0;
 
   if (path == NULL)
     strcpy(newLogFilePath, "./");
   else
     strcpy(newLogFilePath, path);
 
-  snprintf(newLogFilePath + size, sizeof accessLog, "%s%s", newLogFilePath,
-    accessLog);
+  bytesSupposedToWrite = snprintf(newLogFilePath + size, sizeof newLogFilePath,
+      "%s%s", newLogFilePath, accessLog);
 
   fopen(newLogFilePath, "+a");
 }
 
-int addLogEntry(httpADT_t http) {
-  // TODO: Check if sizes make sense & if they should be set as #define's
-  size_t maxAddrSize = 512, maxLogEntrySize = 512;
-  char logEntry[maxLogEntrySize];
-  char host[maxAddrSize];
-  char server[maxAddrSize];
-  int couldGetIpAddresses = getIpAddresses(http->clientAddr, host, server);
+int addLogEntry(struct sockaddr_storage *clientAddr, const char *logFileName) {
+  // TODO: Check if size makes sense & if it should be set as #define's
+  size_t maxLogEntrySize = 512;
+  char logEntryBuffer[maxLogEntrySize];
+  FILE *logFile;
+  int ret = 0;
 
-  if (couldGetIpAddresses != 0)
-    ret = ERROR;
+  if (!createLogEntryStr(clientAddr, logEntryBuffer))
+    return ERROR;
 
-  snprintf(logEntry, sizeof(logEntry), "%s", host);
+  logFile = fopen (logFileName, "a+");
+
+  ret = fprintf(logFile, "%s", logEntryBuffer) <= 0;
+  fclose(logFile);
+
+  return ret;
 }
 
-int getIpAddresses(sockaddr_storage clientAddr, char *host, char *server) {
-  return getnameinfo((sockaddr *)clientAddr, sizeof(clientAddr), host,
+// TODO: Receive the response status saved in the proxy
+int createLogEntryStr(struct sockaddr_storage *clientAddr,
+    char *logEntryBuffer) {
+  // TODO: Check if sizes make sense & if they should be set as #define's
+  size_t maxAddrSize = 512;
+  size_t maxRequestSize = 1024;
+  char host[maxAddrSize], server[maxAddrSize];
+  // TODO: Get the request from the first line saved in the proxy
+  char request[maxRequestSize]; // TODO: Realloc request size if needed
+  int bytesSupposedToWrite = 0;
+  int couldGetIpAddresses = getIpAddresses(clientAddr, host, server);
+  int ret = 0;
+
+  if (couldGetIpAddresses != 0)
+    return ERROR;
+
+  bytesSupposedToWrite = snprintf(logEntryBuffer, sizeof(logEntryBuffer), "%s",
+    host);
+  ret = bytesSupposedToWrite < sizeof(logEntryBuffer);
+
+  return ret;
+}
+
+int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
+    char *server) {
+  return getnameinfo((struct sockaddr *)clientAddr, sizeof(clientAddr), host,
     sizeof(host), server, sizeof(server), NI_NAMEREQD);
 }
 
-char * getTime() {
+char *getTime() {
   time_t now = time(0);
-  return localtime(&now);
-  /* snprintf(buf, sizeof(buf), "[%d/%s/%d:%d%:d:%d %s]", day, month, year, hour,
-    min, sec, ); */
+  return ctime(&now);
 }
