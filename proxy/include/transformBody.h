@@ -1,6 +1,8 @@
 #ifndef TRANSFORM_BODY_H
 #define TRANSFORM_BODY_H
 
+#define LIMITATING_CHARS 4 //'\r' and '\n' at begining and end
+
 enum transformCommandStatus {
 	TRANSFORM_COMMAND_OK = 0,
 	PIPE_CREATION_ERROR,
@@ -14,6 +16,9 @@ struct transformBody {
 	int writeToTransformFd;
 	int readFromTransformFd;
 	unsigned commandStatus;
+	char *chunkedData;
+	buffer chunkedBuffer;
+	pid_t commandPid;
 };
 
 /*
@@ -34,5 +39,10 @@ unsigned writeToClient(struct selector_key *key);
 unsigned setStandardFdInterests(struct selector_key *key);
 unsigned setFdInterestsWithTransformerCommand(struct selector_key *key);
 unsigned setErrorDoneFd(struct selector_key *key);
+void initializeChunkedBuffer(struct transformBody *transformBody, int length);
+void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer, int bytesRead);
+void transformBodyDestroy(const unsigned state, struct selector_key *key);
+
+// TODO comment all methods
 
 #endif

@@ -4,6 +4,7 @@
 #include <selector.h>
 #include <stdint.h>
 #include <buffer.h>
+#include <mediaRange.h>
 
 #define MAX_HOP_BY_HOP_HEADER_LENGTH 20
 #define MAX_HEADER_LENGTH MAX_HOP_BY_HOP_HEADER_LENGTH + 128
@@ -24,12 +25,14 @@ struct headersParser {
 	int mimeIndex;
 	int valueIndex;
 	int state;
-	int isResponce;
 	uint8_t censure;
 	uint8_t isMime;
 
 	MediaRangePtr_t mediaRange;
-	int censureCon
+	int censureContent;
+	buffer *requestLineBuffer;
+	buffer *responseLineBuffer;
+	uint8_t isRequest;
 };
 
 enum headersState {
@@ -59,7 +62,8 @@ void resetHeaderParser(struct headersParser *header);
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
 
-void headersParserInit(struct headersParser *header, int isResponce); // TODO
+void headersParserInit(struct headersParser *header, struct selector_key *key,
+					   uint8_t isRequest); // TODO comment
 
 /*
  * Adds header connection: close to either request or response

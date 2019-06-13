@@ -11,7 +11,7 @@ static buffer *getCurrentBuffer(httpADT_t state);
 
 void requestInit(const unsigned state, struct selector_key *key) {
 	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
-	headersParserInit(&(handleRequest->parseHeaders), FALSE);
+	headersParserInit(&(handleRequest->parseHeaders), key, TRUE);
 	handleRequest->requestState = FIRST_BUFFER;
 }
 

@@ -639,8 +639,17 @@ int recvAuthenticationRequest(int client, char **username, char **password,
 		size_t length;
 
 		*username = allocateAndCopyString((char *) (buffer + 1), &length);
+
+		if (*username == NULL) {
+			return -1;
+		}
+
 		*password =
 			allocateAndCopyString((char *) (buffer + 1 + length + 1), &length);
+
+		if (*password == NULL) {
+			return -1;
+		}
 	}
 
 	free(buffer);
@@ -702,19 +711,25 @@ int sendAuthenticationResponse(
 }
 
 static char *allocateAndCopyString(char *source, size_t *length) {
-	*length			= 0;
-	char *string	= NULL;
-	char *newString = NULL;
+	*length				= 0;
+	char *string		= NULL;
+	char *reallocString = NULL;
 
 	for (int i = 0; source[i] != 0; i++) {
 		if (*length % ALLOC_BLOCK == 0) {
-			newString =
+			reallocString =
 				realloc(string, (*length + ALLOC_BLOCK) * sizeof(*string));
-			if (newString == null) {
-				free(string);
+
+			if (reallocString == NULL) {
+				if (string != NULL) {
+					free(string);
+				}
+
+				errorMessage = "Can't realloc!";
+				return NULL;
 			}
 			else {
-				string = newString; // TODO alan check
+				string = reallocString; // TODO alan check
 			}
 		}
 
@@ -722,12 +737,18 @@ static char *allocateAndCopyString(char *source, size_t *length) {
 	}
 
 	if (*length % ALLOC_BLOCK == 0) {
-		newString = realloc(string, (*length + 1) * sizeof(*string));
-		if (newString == null) {
-			free(string);
+		reallocString = realloc(string, (*length + 1) * sizeof(*string));
+
+		if (reallocString == NULL) {
+			if (string != NULL) {
+				free(string);
+			}
+
+			errorMessage = "Can't realloc!";
+			return NULL;
 		}
 		else {
-			string = newString; // TODO alan check
+			string = reallocString;
 		}
 	}
 

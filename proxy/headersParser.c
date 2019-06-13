@@ -5,17 +5,23 @@
 #include <utilities.h>
 #include <string.h>
 #include <ctype.h>
+#include <http.h>
+#include <httpProxyADT.h>
 
 static void isCensureHeader(struct headersParser *header);
 
-void headersParserInit(struct headersParser *header, int isResponce) {
-	header->state		= FIRST_LINE;
-	header->headerIndex = 0;
-	header->valueIndex  = 0;
-	header->mimeIndex   = 0;
-	header->censure		= FALSE;
-	header->isMime		= FALSE;
-	header->isResponce  = isResponce;
+void headersParserInit(struct headersParser *header, struct selector_key *key,
+					   uint8_t isRequest) {
+	header->state			   = FIRST_LINE;
+	header->headerIndex		   = 0;
+	header->valueIndex		   = 0;
+	header->mimeIndex		   = 0;
+	header->censure			   = FALSE;
+	header->isMime			   = FALSE;
+	header->requestLineBuffer  = getRequestLineBuffer(GET_DATA(key));
+	header->responseLineBuffer = getResponseLineBuffer(GET_DATA(key));
+	header->isRequest		   = isRequest;
+
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer),
 				20 + 30 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
@@ -53,6 +59,12 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 		case FIRST_LINE:
 			if (l == '\n') {
 				header->state = HEADERS_START;
+			}
+			else if (header->isRequest) {
+				buffer_write(header->requestLineBuffer, l);
+			}
+			else {
+				buffer_write(header->responseLineBuffer, l);
 			}
 			buffer_write(&header->valueBuffer, l);
 			break;
@@ -155,11 +167,11 @@ static void isCensureHeader(struct headersParser *header) {
 			 strcmp(header->currHeader, "trailer") == 0) {
 		header->censure = TRUE;
 	}
-	else if (getIsTransformationOn(getConfiguration()) && header->isResponce &&
+	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "transfer-encoding") == 0) {
 		header->censure = TRUE;
 	}
-	else if (getIsTransformationOn(getConfiguration()) && header->isResponce &&
+	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "content-length") == 0) {
 		header->censure = TRUE;
 	}
@@ -177,7 +189,7 @@ static void isCensureHeader(struct headersParser *header) {
 
 void addLastHeaders(struct headersParser *header) {
 	size_t count, size;
-	if (header->isResponce && getIsTransformationOn(getConfiguration())) {
+	if (!header->isRequest && getIsTransformationOn(getConfiguration())) {
 		char *newHeader2 = "transfer-encoding: chunked\r\n";
 		size			 = strlen(newHeader2);
 		memcpy(buffer_write_ptr(&header->valueBuffer, &count), newHeader2,

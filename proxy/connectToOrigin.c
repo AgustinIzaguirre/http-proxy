@@ -42,7 +42,7 @@ void *addressResolvName(void **data) {
 
 	errcode = getaddrinfo(host, NULL, &hints, &res);
 	if (errcode != 0) {
-		perror("getaddrinfo"); // TODO: use message error to client
+		selector_notify_block(key->s, key->fd);
 		return (void *) -1;
 	}
 

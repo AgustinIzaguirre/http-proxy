@@ -34,7 +34,7 @@ struct http {
 	// Request method
 	unsigned requestMethod;
 
-	// Client States
+	// States Structures
 	union {
 		struct parseRequest parseRequest;
 		struct handleRequest handleRequest;
@@ -43,20 +43,14 @@ struct http {
 			handleResponseWithTransform; // TODO remove deprecated
 		struct transformBody transformBody;
 		int other; // TODO REMOVE
-				   // struct request_st         request;
-				   // struct copy               copy;
 	} clientState;
-	// /** estados para el origin_fd */
-	// union {
-	//     struct connecting         conn;
-	//     struct copy               copy;
-	// } orig;
 
 	// buffers to use: readBuffer and writeBuffer.
-
+	uint8_t raWRequest[MAX_FIRST_LINE_LENGTH],
+		rawResponse[MAX_FIRST_LINE_LENGTH];
 	uint8_t rawBuffA[BUFFER_SIZE],
 		rawBuffB[BUFFER_SIZE]; // TODO Buffer size should be read from config
-	buffer readBuffer, writeBuffer;
+	buffer readBuffer, writeBuffer, requestLine, responseLine;
 
 	uint8_t finishParserData[MAX_PARSER];
 	buffer finishParserBuffer;
@@ -145,6 +139,14 @@ buffer *getReadBuffer(httpADT_t s) {
 
 buffer *getWriteBuffer(httpADT_t s) {
 	return &(s->writeBuffer);
+}
+
+buffer *getRequestLineBuffer(httpADT_t s) {
+	return &(s->requestLine);
+}
+
+buffer *getResponseLineBuffer(httpADT_t s) {
+	return &(s->responseLine);
 }
 
 buffer *getFinishParserBuffer(httpADT_t s) {
@@ -241,6 +243,7 @@ static const struct state_definition clientStatbl[] = {
 		.on_arrival		= transformBodyInit,
 		.on_read_ready  = transformBodyRead,
 		.on_write_ready = transformBodyWrite,
+		.on_departure   = transformBodyDestroy,
 	},
 	{
 		.state			= ERROR_CLIENT,
@@ -297,6 +300,10 @@ struct http *httpNew(int clientFd) {
 	buffer_init(&ret->writeBuffer, SIZE_OF_ARRAY(ret->rawBuffB), ret->rawBuffB);
 	buffer_init(&ret->finishParserBuffer, SIZE_OF_ARRAY(ret->finishParserData),
 				ret->finishParserData);
+	buffer_init(&ret->requestLine, SIZE_OF_ARRAY(ret->raWRequest),
+				ret->raWRequest);
+	buffer_init(&ret->responseLine, SIZE_OF_ARRAY(ret->rawResponse),
+				ret->rawResponse);
 
 	ret->errorTypeFound = DEFAULT;
 
