@@ -21,7 +21,7 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	int length = getLength(getReadBuffer(GET_DATA(key)));
 	initializeChunkedBuffer(transformBody, length);
 	transformBody->commandStatus = executeTransformCommand(key);
-	transformBody->commandStatus = EXEC_ERROR;
+	// transformBody->commandStatus = EXEC_ERROR;
 	printf("arrived to transform body state\n"); // TODO remove
 }
 
@@ -487,4 +487,7 @@ void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer,
 		buffer_write(chunkBuffer, buffer_read(inbuffer));
 		bytesRead--;
 	}
+
+	buffer_write(chunkBuffer, '\r');
+	buffer_write(chunkBuffer, '\n');
 }

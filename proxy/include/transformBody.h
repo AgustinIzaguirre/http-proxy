@@ -1,7 +1,7 @@
 #ifndef TRANSFORM_BODY_H
 #define TRANSFORM_BODY_H
 
-#define LIMITATING_CHARS 2 //'\r' and '\n'
+#define LIMITATING_CHARS 4 //'\r' and '\n' at begining and end
 
 enum transformCommandStatus {
 	TRANSFORM_COMMAND_OK = 0,
