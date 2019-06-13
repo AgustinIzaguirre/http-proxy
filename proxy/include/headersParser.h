@@ -27,6 +27,9 @@ struct headersParser {
 	int isResponce;
 	uint8_t censure;
 	uint8_t isMime;
+
+	MediaRangePtr_t mediaRange;
+	int censureCon
 };
 
 enum headersState {

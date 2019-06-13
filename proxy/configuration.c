@@ -8,7 +8,7 @@ struct configuration {
 	unsigned short managementPort;
 	char *httpInterfaces;
 	char *managementInterfaces;
-	char *mediaTypes;
+	MediaRangePtr_t mediaRange;
 	char *command;
 	int isTransformationOn;
 	int commandStderrFd;
@@ -21,7 +21,7 @@ static struct configuration config = {
 	.managementPort		  = DEFAULT_MANAGEMENT_PORT,
 	.httpInterfaces		  = NULL,
 	.managementInterfaces = "127.0.0.1",
-	.mediaTypes			  = NULL,
+	.mediaRange			  = NULL,
 	.command			  = NULL,
 	.commandStderrFd	  = INVALID_FD,
 	.isTransformationOn   = FALSE,
@@ -89,4 +89,12 @@ char *getCommand(configurationADT config) {
 
 int getIsTransformationOn(configurationADT config) {
 	return config->isTransformationOn;
+}
+
+void setMediaRange(configurationADT config, MediaRangePtr_t mediaRange) {
+	config->mediaRange = mediaRange;
+}
+
+MediaRangePtr_t getMediaRange(configurationADT config) {
+	return config->mediaRange;
 }

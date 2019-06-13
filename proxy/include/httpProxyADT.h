@@ -14,6 +14,8 @@
 #include <hostHeaderParser.h>
 #include <handleParsers.h>
 #include <handleError.h>
+#include <mediaRange.h>
+#include <configuration.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
@@ -229,7 +231,11 @@ void setErrorType(struct http *s, int errorTypeFound);
  */
 int getErrorType(struct http *s);
 
+// TODO
 struct addrinfo *getOriginResolutions(struct http *s);
 void setOriginResolutions(struct http *s, struct addrinfo *originResolution);
+int getTransformContent(struct http *s);
+void setTransformContent(struct http *s, int transformContent);
+MediaRangePtr_t getMediaRangeHTTP(struct http *s);
 
 #endif

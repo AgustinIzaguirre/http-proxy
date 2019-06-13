@@ -67,6 +67,9 @@ struct http {
 	// Number of references to this object, if one destroy
 	unsigned references;
 
+	int transformContent;
+	MediaRangePtr_t mediaRanges;
+
 	// Next in pool
 	struct http *next;
 };
@@ -176,6 +179,18 @@ void setErrorType(struct http *s, int errorTypeFound) {
 	s->errorTypeFound = errorTypeFound;
 }
 
+int getTransformContent(struct http *s) {
+	return s->transformContent;
+}
+
+void setTransformContent(struct http *s, int transformContent) {
+	s->transformContent = transformContent;
+}
+
+MediaRangePtr_t getMediaRangeHTTP(struct http *s) {
+	return s->mediaRanges;
+}
+
 int getErrorType(struct http *s) {
 	return s->errorTypeFound;
 }
@@ -262,11 +277,14 @@ struct http *httpNew(int clientFd) {
 
 	memset(ret, 0x00, sizeof(*ret));
 
-	ret->host		   = NULL;
-	ret->originPort	= 80;
-	ret->originFd	  = -1;
-	ret->clientFd	  = clientFd;
-	ret->clientAddrLen = sizeof(ret->clientAddr);
+	ret->host			  = NULL;
+	ret->originPort		  = 80;
+	ret->originFd		  = -1;
+	ret->clientFd		  = clientFd;
+	ret->clientAddrLen	= sizeof(ret->clientAddr);
+	ret->transformContent = FALSE;
+	ret->mediaRanges =
+		createMediaRangeFromListOfMediaType(getMediaRange(getConfiguration()));
 
 	// setting state machine
 	ret->stm.initial   = PARSE_METHOD;
