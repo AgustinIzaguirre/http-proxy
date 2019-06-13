@@ -34,7 +34,7 @@ struct http {
 	// Request method
 	unsigned requestMethod;
 
-	// Client States
+	// States Structures
 	union {
 		struct parseRequest parseRequest;
 		struct handleRequest handleRequest;
@@ -43,14 +43,7 @@ struct http {
 			handleResponseWithTransform; // TODO remove deprecated
 		struct transformBody transformBody;
 		int other; // TODO REMOVE
-				   // struct request_st         request;
-				   // struct copy               copy;
 	} clientState;
-	// /** estados para el origin_fd */
-	// union {
-	//     struct connecting         conn;
-	//     struct copy               copy;
-	// } orig;
 
 	// buffers to use: readBuffer and writeBuffer.
 	uint8_t raWRequest[MAX_FIRST_LINE_LENGTH],
@@ -235,6 +228,7 @@ static const struct state_definition clientStatbl[] = {
 		.on_arrival		= transformBodyInit,
 		.on_read_ready  = transformBodyRead,
 		.on_write_ready = transformBodyWrite,
+		.on_departure   = transformBodyDestroy,
 	},
 	{
 		.state			= ERROR_CLIENT,

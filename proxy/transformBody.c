@@ -22,7 +22,14 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	initializeChunkedBuffer(transformBody, length);
 	transformBody->commandStatus = executeTransformCommand(key);
 	transformBody->commandStatus = EXEC_ERROR;
-	printf("arrived to transform body state\n");
+	printf("arrived to transform body state\n"); // TODO remove
+}
+
+void transformBodyDestroy(const unsigned state, struct selector_key *key) {
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	if (transformBody->chunkedData != NULL) {
+		free(transformBody->chunkedData);
+	}
 }
 
 unsigned transformBodyRead(struct selector_key *key) {
