@@ -59,6 +59,12 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			if (l == '\n') {
 				header->state = HEADERS_START;
 			}
+			else if (header->isRequest) {
+				buffer_write(header->requestLineBuffer, l);
+			}
+			else {
+				buffer_write(header->responseLineBuffer, l);
+			}
 			buffer_write(&header->valueBuffer, l);
 			break;
 		case HEADERS_START:

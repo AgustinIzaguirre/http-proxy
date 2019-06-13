@@ -290,7 +290,7 @@ struct http *httpNew(int clientFd) {
 				ret->finishParserData);
 	buffer_init(&ret->requestLine, SIZE_OF_ARRAY(ret->raWRequest),
 				ret->raWRequest);
-	buffer_init(&ret->requestLine, SIZE_OF_ARRAY(ret->rawResponse),
+	buffer_init(&ret->responseLine, SIZE_OF_ARRAY(ret->rawResponse),
 				ret->rawResponse);
 
 	ret->errorTypeFound = DEFAULT;
