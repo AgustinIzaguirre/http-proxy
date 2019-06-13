@@ -69,6 +69,7 @@ unsigned responseWrite(struct selector_key *key) {
 
 	if (handleResponse->parseHeaders.state == BODY_START &&
 		getIsTransformationOn(getConfiguration()) &&
+		!buffer_can_read(writeBuffer) &&
 		1 /* Mime type is in filter list */) { // TODO add condition
 		return TRANSFORM_BODY;
 	}
