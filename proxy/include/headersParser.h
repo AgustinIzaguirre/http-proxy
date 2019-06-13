@@ -26,6 +26,9 @@ struct headersParser {
 	int state;
 	uint8_t censure;
 	uint8_t isMime;
+	buffer *requestLineBuffer;
+	buffer *responseLineBuffer;
+	uint8_t isRequest;
 };
 
 enum headersState {
@@ -55,7 +58,8 @@ void resetHeaderParser(struct headersParser *header);
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
 
-void headersParserInit(struct headersParser *header); // TODO
+void headersParserInit(struct headersParser *header, struct selector_key *key,
+					   uint8_t isRequest); // TODO comment
 
 /*
  * Adds header connection: close to either request or response

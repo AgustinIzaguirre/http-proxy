@@ -5,16 +5,23 @@
 #include <utilities.h>
 #include <string.h>
 #include <ctype.h>
+#include <http.h>
+#include <httpProxyADT.h>
 
 static void isCensureHeader(struct headersParser *header);
 
-void headersParserInit(struct headersParser *header) {
-	header->state		= FIRST_LINE;
-	header->headerIndex = 0;
-	header->valueIndex  = 0;
-	header->mimeIndex   = 0;
-	header->censure		= FALSE;
-	header->isMime		= FALSE;
+void headersParserInit(struct headersParser *header, struct selector_key *key,
+					   uint8_t isRequest) {
+	header->state			   = FIRST_LINE;
+	header->headerIndex		   = 0;
+	header->valueIndex		   = 0;
+	header->mimeIndex		   = 0;
+	header->censure			   = FALSE;
+	header->isMime			   = FALSE;
+	header->requestLineBuffer  = getRequestLineBuffer(GET_DATA(key));
+	header->responseLineBuffer = getResponseLineBuffer(GET_DATA(key));
+	header->isRequest		   = isRequest;
+
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer), 20 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
 				header->valueBuf); // TODO update with configuration buffer size

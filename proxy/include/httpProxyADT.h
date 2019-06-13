@@ -19,6 +19,7 @@
 #define MAX_POOL_SIZE 50
 #define BUFFER_SIZE 20
 #define MAX_PARSER 1000 // TODO: chech that number
+#define MAX_FIRST_LINE_LENGTH 2048
 
 typedef struct http *httpADT_t;
 
@@ -141,6 +142,16 @@ buffer *getReadBuffer(httpADT_t s);
  * Returns write buffer
  */
 buffer *getWriteBuffer(httpADT_t s);
+
+/*
+ * Returns requestLine buffer
+ */
+buffer *getRequestLineBuffer(httpADT_t s);
+
+/*
+ * Returns responseLine buffer
+ */
+buffer *getResponseLineBuffer(httpADT_t s);
 
 /*
  * Returns finish parser buffer
