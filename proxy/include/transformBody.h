@@ -33,5 +33,6 @@ unsigned writeToTransform(struct selector_key *key);
 unsigned writeToClient(struct selector_key *key);
 unsigned setStandardFdInterests(struct selector_key *key);
 unsigned setFdInterestsWithTransformerCommand(struct selector_key *key);
+unsigned setErrorDoneFd(struct selector_key *key);
 
 #endif

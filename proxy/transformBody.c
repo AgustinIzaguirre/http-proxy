@@ -31,6 +31,8 @@ unsigned transformBodyRead(struct selector_key *key) {
 		ret = readFromOrigin(key);
 	}
 	else {
+		setErrorDoneFd(key);
+		printf("error8:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 	return ret;
@@ -50,6 +52,8 @@ unsigned transformBodyWrite(struct selector_key *key) {
 		ret = writeToClient(key);
 	}
 	else {
+		setErrorDoneFd(key);
+		printf("error7:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 	return ret;
@@ -77,9 +81,12 @@ unsigned standardOriginRead(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		// if response is not chunked or is last chunk
+		setErrorDoneFd(key);
 		ret = DONE; // should send what is left on buffer TODO
 	}
 	else {
+		setErrorDoneFd(key);
+		printf("error6:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 
@@ -108,9 +115,12 @@ unsigned readFromTransform(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		// if response is not chunked or is last chunk
+		setErrorDoneFd(key);
 		ret = DONE; // should send what is left on buffer TODO
 	}
 	else {
+		setErrorDoneFd(key);
+		printf("error5:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 
@@ -139,9 +149,12 @@ unsigned readFromOrigin(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		// if response is not chunked or is last chunk
+		setErrorDoneFd(key);
 		ret = DONE; // should send what is left on buffer TODO
 	}
 	else {
+		setErrorDoneFd(key);
+		printf("error4:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 
@@ -169,6 +182,8 @@ unsigned standardClientWrite(struct selector_key *key) {
 		ret = setStandardFdInterests(key);
 	}
 	else {
+		setErrorDoneFd(key);
+		printf("error3:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 
@@ -196,7 +211,8 @@ unsigned writeToTransform(struct selector_key *key) {
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
-		printf("error:\n%s\n", strerror(errno));
+		setErrorDoneFd(key);
+		printf("error2:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
 
@@ -224,6 +240,10 @@ unsigned writeToClient(struct selector_key *key) {
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
+		setErrorDoneFd(key);
+
+		printf("error1:\n%s\n", strerror(errno));
+
 		ret = ERROR;
 	}
 
@@ -283,6 +303,32 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	if (buffer_can_write(writeBuffer)) {
 		originInterest |= OP_READ;
 	}
+
+	if (SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getOriginFd(state), originInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, transformBody->readFromTransformFd,
+								  transformReadInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, transformBody->writeToTransformFd,
+								  transformWriteInterest)) {
+		return ERROR;
+	}
+
+	return ret;
+}
+
+unsigned setErrorDoneFd(struct selector_key *key) {
+	httpADT_t state						= GET_DATA(key);
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+
+	unsigned ret			   = TRANSFORM_BODY;
+	int clientInterest		   = OP_NOOP;
+	int originInterest		   = OP_NOOP;
+	int transformReadInterest  = OP_NOOP;
+	int transformWriteInterest = OP_NOOP;
 
 	if (SELECTOR_SUCCESS !=
 			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
