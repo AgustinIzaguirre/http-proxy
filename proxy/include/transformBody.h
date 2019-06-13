@@ -6,6 +6,7 @@ enum transformCommandStatus {
 	PIPE_CREATION_ERROR,
 	FORK_ERROR,
 	EXEC_ERROR,
+	NONBLOCKING_ERROR,
 	SELECT_ERROR
 };
 

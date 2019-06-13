@@ -340,6 +340,10 @@ int executeTransformCommand(struct selector_key *key) {
 		// In father process
 		close(inputPipe[0]);  // closing read end of input pipe
 		close(outputPipe[1]); // closing write end of output pipe
+		if (selector_fd_set_nio(inputPipe[0]) == -1 ||
+			selector_fd_set_nio(outputPipe[1]) == -1) {
+			return NONBLOCKING_ERROR;
+		}
 		transformBody->writeToTransformFd  = inputPipe[1];
 		transformBody->readFromTransformFd = outputPipe[0];
 		if (SELECTOR_SUCCESS != selector_register(key->s, inputPipe[1],
