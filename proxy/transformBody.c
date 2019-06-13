@@ -5,12 +5,14 @@
 #include <configuration.h>
 #include <handleParsers.h>
 #include <http.h>
+#include <signal.h>
 
 // TODO REMOVE HEADER
 #include <stdio.h>
 #include <errno.h>
 
 void transformBodyInit(const unsigned state, struct selector_key *key) {
+	signal(SIGPIPE, SIG_IGN);
 	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
 	transformBody->commandStatus		= executeTransformCommand(key);
 	printf("arrived to transform body state\n");
