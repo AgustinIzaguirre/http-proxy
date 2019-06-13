@@ -15,7 +15,7 @@ struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
 	uint8_t headerBuf[MAX_HEADER_LENGTH];
 	uint8_t mimeValue[MAX_MIME_HEADER];
-	uint8_t valueBuf[20 + 20 +						// TODO: check the 20 addes
+	uint8_t valueBuf[20 + 30 + 20 +					// TODO: check the 20 addes
 					 MAX_HOP_BY_HOP_HEADER_LENGTH]; // TODO set length with BUFF
 													// size from configuration
 	buffer headerBuffer;
@@ -24,6 +24,7 @@ struct headersParser {
 	int mimeIndex;
 	int valueIndex;
 	int state;
+	int isResponce;
 	uint8_t censure;
 	uint8_t isMime;
 };
@@ -55,12 +56,12 @@ void resetHeaderParser(struct headersParser *header);
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
 
-void headersParserInit(struct headersParser *header); // TODO
+void headersParserInit(struct headersParser *header, int isResponce); // TODO
 
 /*
  * Adds header connection: close to either request or response
  */
-void addConnectionClose(struct headersParser *header);
+void addLastHeaders(struct headersParser *header);
 
 /*
  * Copies current headerBuf into headerBuffer

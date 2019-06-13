@@ -11,7 +11,7 @@ static buffer *getCurrentResponseBuffer(httpADT_t state);
 void responseWithTransformInit(const unsigned state, struct selector_key *key) {
 	struct handleResponseWithTransform *handleResponseWithTransform =
 		getHandleResponseWithTransformState(GET_DATA(key));
-	headersParserInit(&(handleResponseWithTransform->parseHeaders));
+	headersParserInit(&(handleResponseWithTransform->parseHeaders), TRUE);
 }
 
 unsigned responseWithTransformRead(struct selector_key *key) {

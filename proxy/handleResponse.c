@@ -12,7 +12,7 @@ static buffer *getCurrentResponseBuffer(httpADT_t state);
 void responseInit(const unsigned state, struct selector_key *key) {
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
-	headersParserInit(&(handleResponse->parseHeaders));
+	headersParserInit(&(handleResponse->parseHeaders), TRUE);
 }
 
 unsigned responseRead(struct selector_key *key) {
