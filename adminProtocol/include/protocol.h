@@ -130,4 +130,6 @@ int recvRequest(int client, request_t *request);
 
 int recvResponse(int server, response_t *response);
 
+int sendResponse(int client, response_t response);
+
 #endif

@@ -52,22 +52,21 @@ int main(int argc, char const *argv[]) {
 	}
 
 	uint8_t byeRead;
-
-	int sentState;
-	int recvState;
+	int sent;
+	int read;
 
 	do {
-		sentState = parseAndSendRequests(server, &byeRead);
+		sent = parseAndSendRequests(server, &byeRead);
 
-		if (sentState < 0) {
+		if (sent < 0) {
 			printf("%s\n", getProtocolErrorMessage());
 			printf("Error while sending requests to server\n");
 			return -1;
 		}
 
-		recvState = recvAndPrintResponses(server);
+		read = recvAndPrintResponses(server);
 
-		if (recvState < 0) {
+		if (read < 0) {
 			printf("%s\n", getProtocolErrorMessage());
 			printf("Error while receiving responses from server\n");
 			return -1;
@@ -209,5 +208,26 @@ static void invalidCommandHandler() {
 }
 
 static int recvAndPrintResponses(int server) {
-	return 0;
+	int totalRead = 0;
+	// int read;
+	//
+	// response_t response;
+
+	// do {
+	// 	//TODO: Poll the next requestToRecv_t from the queue
+	//
+	// 	read = recvResponse(server, &response);
+	//
+	// 	if (read < 0) {
+	// 		return read;
+	// 	}
+	//
+	// 	//TODO: Manage one linkedList/queue for stream, to answer in order
+	//
+	// 	//TODO: When get the next in order, manage ttag and print it
+	//
+	// 	totalRead += read;
+	// } while(!isEmpty());
+
+	return totalRead;
 }
