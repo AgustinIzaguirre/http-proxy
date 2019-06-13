@@ -21,13 +21,13 @@ inline int getDigits(int number) {
 	return digits;
 }
 
-void writeNumber(buffer *chunkBuffer, int bytesRead) {
-	int size = getDigits(bytesRead);
+void writeNumber(buffer *buffer, int number) {
+	int size = getDigits(number);
 	char numberString[size];
 	int i;
-	sprintf(numberString, "%d", bytesRead);
+	sprintf(numberString, "%d", number);
 	printf("number: %s\ndigits: %d\n", numberString, size); // TODO remove
-	for (i = 0; i < bytesRead; i++) {
-		buffer_write(chunkBuffer, numberString[i]);
+	for (i = 0; i < size; i++) {
+		buffer_write(buffer, numberString[i]);
 	}
 }
