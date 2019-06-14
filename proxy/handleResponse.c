@@ -16,6 +16,14 @@ void responseInit(const unsigned state, struct selector_key *key) {
 	headersParserInit(&(handleResponse->parseHeaders), key, FALSE);
 }
 
+void responceDestroy(const unsigned state, struct selector_key *key) {
+	struct handleResponse *handleResponse =
+		getHandleResponseState(GET_DATA(key));
+	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
+	printf("XD%d\n", aux); // TODO
+	setTransformContent(GET_DATA(key), aux);
+}
+
 unsigned responseRead(struct selector_key *key) {
 	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
 	struct handleResponse *handleResponse =

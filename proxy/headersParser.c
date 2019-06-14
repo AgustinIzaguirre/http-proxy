@@ -8,6 +8,8 @@
 #include <http.h>
 #include <httpProxyADT.h>
 
+#define isOWS(a) (a == ' ' || a == '\t')
+
 static void isCensureHeader(struct headersParser *header);
 
 void headersParserInit(struct headersParser *header, struct selector_key *key,
@@ -21,6 +23,9 @@ void headersParserInit(struct headersParser *header, struct selector_key *key,
 	header->requestLineBuffer  = getRequestLineBuffer(GET_DATA(key));
 	header->responseLineBuffer = getResponseLineBuffer(GET_DATA(key));
 	header->isRequest		   = isRequest;
+	header->transformContent   = FALSE;
+	header->mediaRangeCurrent  = 0;
+	header->mediaRange		   = getMediaRangeHTTP(GET_DATA(key));
 
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer),
@@ -103,18 +108,19 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			break;
 		case HEADER_VALUE:
 			if (l == '\n') {
-				if (header->isMime) {
-					header->mimeValue[header->mimeIndex++] = 0;
-					printf("mimeType: %s\n", header->mimeValue); // TODO remove
-				}
 				header->state = HEADER_DONE;
 			}
 			else {
 				if (header->isMime && l != '\r') {
-					header->mimeValue[header->mimeIndex++] = l;
-				}
-				else if (header->isMime && l == '\r') {
-					header->mimeValue[header->mimeIndex++] = 0;
+					if (!isOWS(l) && l != ';' &&
+						header->mediaRangeCurrent != -1) {
+						header->transformContent =
+							doesMatchAt((header->mediaRangeCurrent)++, l,
+										header->mediaRange);
+					}
+					else if (header->mediaRangeCurrent != 0) {
+						header->mediaRangeCurrent = -1;
+					}
 				}
 			}
 			if (!header->censure) {
@@ -185,6 +191,10 @@ static void isCensureHeader(struct headersParser *header) {
 		buffer_write(&header->valueBuffer, ':');
 		header->censure = FALSE;
 	}
+}
+
+int getTransformContentParser(struct headersParser *header) {
+	return header->transformContent;
 }
 
 void addLastHeaders(struct headersParser *header) {

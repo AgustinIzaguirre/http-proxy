@@ -29,7 +29,8 @@ struct headersParser {
 	uint8_t isMime;
 
 	MediaRangePtr_t mediaRange;
-	int censureContent;
+	int mediaRangeCurrent;
+	int transformContent;
 	buffer *requestLineBuffer;
 	buffer *responseLineBuffer;
 	uint8_t isRequest;
@@ -79,5 +80,7 @@ void copyBuffer(struct headersParser *header);
  * Resets value index if necessary
  */
 void resetValueBuffer(struct headersParser *header);
+
+int getTransformContentParser(struct headersParser *header); // TODO
 
 #endif

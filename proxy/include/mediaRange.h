@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h> //TODO: for test
 
-enum matchResult { YES, NO, ALL };
+enum matchResult { NO, YES, ALL };
 #define BLOCK 10
 
 typedef struct MediaRanges *MediaRangePtr_t;

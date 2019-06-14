@@ -15,6 +15,11 @@ struct handleResponse {
 void responseInit(const unsigned state, struct selector_key *key);
 
 /*
+ * Destroy headers parser struct
+ */
+void responceDestroy(const unsigned state, struct selector_key *key);
+
+/*
  * Reads response from origin fd into writeBuffer
  */
 unsigned responseRead(struct selector_key *key);
