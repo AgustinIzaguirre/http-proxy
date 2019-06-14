@@ -84,10 +84,10 @@ typedef struct {
 	statusCode_t generalStatus;
 	statusCode_t versionStatus;
 	statusCode_t authenticationStatus;
-} versionStatus_t;
+} authStatus_t;
 
 typedef struct {
-	versionStatus_t status;
+	authStatus_t status;
 	uint64_t version;
 } authenticationResponse_t;
 
