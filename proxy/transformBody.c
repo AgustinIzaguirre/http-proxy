@@ -20,11 +20,13 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	buffer_reset(getReadBuffer(GET_DATA(key)));
 	int length = getLength(getReadBuffer(GET_DATA(key)));
 	initializeChunkedBuffer(transformBody, length);
-	transformBody->commandStatus			= executeTransformCommand(key);
+	if (getTransformContent(GET_DATA(key))) {
+		transformBody->commandStatus = executeTransformCommand(key);
+	}
 	transformBody->transformCommandExecuted = FALSE;
 	transformBody->transformFinished		= FALSE;
 	transformBody->responseFinished			= FALSE;
-	// transformBody->commandStatus = EXEC_ERROR; TODO remove
+	// transformBody->commandStatus = EXEC_ERROR;// TODO remove
 	printf("arrived to transform body state\n"); // TODO remove
 }
 
@@ -45,7 +47,8 @@ unsigned transformBodyRead(struct selector_key *key) {
 		printf("error9:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
-	else if (transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
+	else if (!getTransformContent(state) ||
+			 transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
 		ret = standardOriginRead(key);
 	}
 	else if (key->fd == transformBody->readFromTransformFd) {
@@ -113,9 +116,9 @@ unsigned standardOriginRead(struct selector_key *key) {
 		ret = setStandardFdInterests(key);
 	}
 	else if (bytesRead == 0) {
-		// if response is not chunked or is last chunk
-		setErrorDoneFd(key);
-		ret = DONE; // should send what is left on buffer TODO
+		transformBody->responseFinished = TRUE;
+		sentLastChunked(chunkBuffer);
+		ret = setStandardFdInterests(key);
 	}
 	else {
 		setErrorDoneFd(key);
@@ -230,6 +233,10 @@ unsigned standardClientWrite(struct selector_key *key) {
 		ret = ERROR;
 	}
 
+	if (transformBody->responseFinished && !buffer_can_read(writeBuffer)) {
+		ret = DONE;
+	}
+
 	return ret;
 }
 
@@ -326,21 +333,27 @@ unsigned setStandardFdInterests(struct selector_key *key) {
 		clientInterest |= OP_WRITE;
 	}
 
-	if (buffer_can_write(writeBuffer) && buffer_can_write(chunkBuffer)) {
+	if (buffer_can_write(writeBuffer) && buffer_can_write(chunkBuffer) &&
+		!transformBody->responseFinished) {
 		originInterest |= OP_READ;
 	}
 
 	if (SELECTOR_SUCCESS !=
 			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
 		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, getOriginFd(state), originInterest) ||
-		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, transformBody->readFromTransformFd,
-								  transformReadInterest) ||
-		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, transformBody->writeToTransformFd,
-								  transformWriteInterest)) {
+			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
 		return ERROR;
+	}
+
+	if (getTransformContent(state)) {
+		if (SELECTOR_SUCCESS != selector_set_interest(
+									key->s, transformBody->readFromTransformFd,
+									transformReadInterest) ||
+			SELECTOR_SUCCESS !=
+				selector_set_interest(key->s, transformBody->writeToTransformFd,
+									  transformWriteInterest)) {
+			return ERROR;
+		}
 	}
 
 	return ret;
