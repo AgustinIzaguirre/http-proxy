@@ -190,7 +190,6 @@ unsigned readFromOrigin(struct selector_key *key) {
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else if (bytesRead == 0) {
-		// if response is not chunked or is last chunk
 		if (close(transformBody->writeToTransformFd) == -1) {
 			printf("file already closed\n"); // TODO remove
 		}
@@ -457,6 +456,7 @@ int executeTransformCommand(struct selector_key *key) {
 		close(inputPipe[1]);  // closing write end of input pipe
 		close(outputPipe[0]); // closing read end of output pipe
 
+		putenv("HTTPD_VERSION=1.0.0");
 		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {
 			// closing other pipes end
 			printf("In son\n");
