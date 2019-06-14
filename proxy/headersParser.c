@@ -29,7 +29,7 @@ void headersParserInit(struct headersParser *header, struct selector_key *key,
 
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer),
-				20 + 30 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
+				BUFFER_SIZE + 30 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
 				header->valueBuf); // TODO update with configuration buffer size
 }
 
