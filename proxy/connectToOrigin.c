@@ -106,7 +106,7 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 						  &(serverAddr4.sin_addr)) <= 0) {
 				return ERROR_CLIENT;
 			}
-			serverAddr		 = &serverAddr4;
+			serverAddr		 = (struct sockaddr *) &serverAddr4;
 			serverAddrLenght = sizeof(serverAddr4);
 			break;
 		case AF_INET6:
@@ -117,7 +117,7 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 						  &(serverAddr6.sin6_addr)) <= 0) {
 				return ERROR_CLIENT;
 			}
-			serverAddr		 = &serverAddr6;
+			serverAddr		 = (struct sockaddr *) &serverAddr6;
 			serverAddrLenght = sizeof(serverAddr6);
 			break;
 	}
