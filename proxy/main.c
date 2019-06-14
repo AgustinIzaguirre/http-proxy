@@ -91,11 +91,10 @@ int main(const int argc, const char **argv) {
 		goto finally;
 	}
 
-	const struct fd_handler http = {
-		.handle_read  = httpPassiveAccept,
-		.handle_write = NULL,
-		.handle_close = NULL, /* nothing to free */
-	};
+	const struct fd_handler http = {.handle_read  = httpPassiveAccept,
+									.handle_write = NULL,
+									.handle_close = NULL, /* nothing to free */
+									.handle_block = NULL};
 
 	ss = selector_register(selector, serverSocket, &http, OP_READ, NULL);
 	if (ss != SELECTOR_SUCCESS) {
@@ -106,8 +105,8 @@ int main(const int argc, const char **argv) {
 	const struct fd_handler management = {
 		.handle_read  = managementPassiveAccept,
 		.handle_write = NULL,
-		.handle_close = NULL, /* TODO: nothing to free? */
-	};
+		.handle_close = NULL, /* nothing to free */
+		.handle_block = NULL};
 
 	ss = selector_register(selector, managementSocket, &management, OP_READ,
 						   NULL);
