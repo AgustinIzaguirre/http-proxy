@@ -6,8 +6,8 @@
 struct configuration {
 	unsigned short httpPort;
 	unsigned short managementPort;
-	char *httpInterfaces;
-	char *managementInterfaces;
+	char *httpInterfaces;		// TODO: use it
+	char *managementInterfaces; // TODO: use it
 	MediaRangePtr_t mediaRange;
 	char *command;
 	int isTransformationOn;
@@ -21,7 +21,7 @@ struct configuration {
 static struct configuration config = {
 	.httpPort			  = DEFAULT_PROXY_HTTP_PORT,
 	.managementPort		  = DEFAULT_MANAGEMENT_PORT,
-	.httpInterfaces		  = NULL,
+	.httpInterfaces		  = "0.0.0.0",
 	.managementInterfaces = "127.0.0.1", /* Default: only localhost */
 	.mediaRange			  = NULL,
 	.command			  = NULL,
@@ -92,8 +92,13 @@ void setManagementInterfaces(configurationADT config,
 }
 
 void setCommand(configurationADT config, char *command) {
-	config->command			   = command;
-	config->isTransformationOn = TRUE;
+	if (command != NULL) {
+		config->command			   = command;
+		config->isTransformationOn = TRUE;
+	}
+	else {
+		config->isTransformationOn = FALSE;
+	}
 }
 
 char *getCommand(configurationADT config) {

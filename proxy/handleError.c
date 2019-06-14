@@ -43,7 +43,18 @@ Content-Type: text/html; charset=UTF-8\n\
   <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n\
   <title>Error 400 (Bad Request)!!1</title>\n\
   <p><b>400.</b> <ins>That is the error.</ins>\n\
-  <p>Your client has issued a malformed host or the host header was not the first header from the request.  <ins>That’s all we know.</ins>\n"};
+  <p>Your client has issued a malformed host or the host header was not the first header from the request.  <ins>That’s all we know.</ins>\n",
+
+						 "HTTP/1.0 502 Bad Gateway\n\
+  Content-Type: text/html; charset=UTF-8\n\
+  \n\
+  <!DOCTYPE html>\n\
+    <html lang=en>\n\
+    <meta charset=utf-8>\n\
+    <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n\
+    <title>Error 502 (Bad Gateway)!!1</title>\n\
+    <p><b>502.</b> <ins>That is the error.</ins>\n\
+    <p>Invalid host or port <ins>That’s all we know.</ins>\n"};
 
 void errorInit(const unsigned state, struct selector_key *key) {
 	enum errorType errorTypeFound = getErrorType(GET_DATA(key));

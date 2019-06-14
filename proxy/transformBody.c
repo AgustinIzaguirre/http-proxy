@@ -20,11 +20,13 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	buffer_reset(getReadBuffer(GET_DATA(key)));
 	int length = getLength(getReadBuffer(GET_DATA(key)));
 	initializeChunkedBuffer(transformBody, length);
-	transformBody->commandStatus			= executeTransformCommand(key);
+	if (getTransformContent(GET_DATA(key))) {
+		transformBody->commandStatus = executeTransformCommand(key);
+	}
 	transformBody->transformCommandExecuted = FALSE;
 	transformBody->transformFinished		= FALSE;
 	transformBody->responseFinished			= FALSE;
-	// transformBody->commandStatus = EXEC_ERROR; TODO remove
+	// transformBody->commandStatus = EXEC_ERROR;// TODO remove
 	printf("arrived to transform body state\n"); // TODO remove
 }
 
@@ -45,7 +47,8 @@ unsigned transformBodyRead(struct selector_key *key) {
 		printf("error9:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
-	else if (transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
+	else if (!getTransformContent(state) ||
+			 transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
 		ret = standardOriginRead(key);
 	}
 	else if (key->fd == transformBody->readFromTransformFd) {
@@ -113,9 +116,9 @@ unsigned standardOriginRead(struct selector_key *key) {
 		ret = setStandardFdInterests(key);
 	}
 	else if (bytesRead == 0) {
-		// if response is not chunked or is last chunk
-		setErrorDoneFd(key);
-		ret = DONE; // should send what is left on buffer TODO
+		transformBody->responseFinished = TRUE;
+		sentLastChunked(chunkBuffer);
+		ret = setStandardFdInterests(key);
 	}
 	else {
 		setErrorDoneFd(key);
@@ -187,7 +190,6 @@ unsigned readFromOrigin(struct selector_key *key) {
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else if (bytesRead == 0) {
-		// if response is not chunked or is last chunk
 		if (close(transformBody->writeToTransformFd) == -1) {
 			printf("file already closed\n"); // TODO remove
 		}
@@ -222,12 +224,17 @@ unsigned standardClientWrite(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setStandardFdInterests(key);
 	}
 	else {
 		setErrorDoneFd(key);
 		printf("error3:\n%s\n", strerror(errno)); // TODO REMOVE
 		ret = ERROR;
+	}
+
+	if (transformBody->responseFinished && !buffer_can_read(writeBuffer)) {
+		ret = DONE;
 	}
 
 	return ret;
@@ -293,6 +300,7 @@ unsigned writeToClient(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(buffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
@@ -326,21 +334,27 @@ unsigned setStandardFdInterests(struct selector_key *key) {
 		clientInterest |= OP_WRITE;
 	}
 
-	if (buffer_can_write(writeBuffer) && buffer_can_write(chunkBuffer)) {
+	if (buffer_can_write(writeBuffer) && buffer_can_write(chunkBuffer) &&
+		!transformBody->responseFinished) {
 		originInterest |= OP_READ;
 	}
 
 	if (SELECTOR_SUCCESS !=
 			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
 		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, getOriginFd(state), originInterest) ||
-		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, transformBody->readFromTransformFd,
-								  transformReadInterest) ||
-		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, transformBody->writeToTransformFd,
-								  transformWriteInterest)) {
+			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
 		return ERROR;
+	}
+
+	if (getTransformContent(state)) {
+		if (SELECTOR_SUCCESS != selector_set_interest(
+									key->s, transformBody->readFromTransformFd,
+									transformReadInterest) ||
+			SELECTOR_SUCCESS !=
+				selector_set_interest(key->s, transformBody->writeToTransformFd,
+									  transformWriteInterest)) {
+			return ERROR;
+		}
 	}
 
 	return ret;
@@ -422,8 +436,8 @@ int executeTransformCommand(struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(state);
 	int inputPipe[]						= {-1, -1};
 	int outputPipe[]					= {-1, -1};
-	// int errorFd =
-	//	open(getCommandStderrPath(getConfiguration()), OP_WRITE | OP_READ); TODO
+	int errorFd = open(getCommandStderrPath(getConfiguration()),
+					   OP_WRITE | OP_READ); // TODO
 	// initializae and dup to stderr
 	char *commandPath = getCommand(getConfiguration());
 	pid_t commandPid;
@@ -439,11 +453,13 @@ int executeTransformCommand(struct selector_key *key) {
 	else if (commandPid == 0) {
 		dup2(inputPipe[0], 0);  // setting pipe as stdin
 		dup2(outputPipe[1], 1); // setting pipe as stdout
+		dup2(errorFd, 2);		// setting errorFd as stderr
 		// close(inputPipe[0]);	// closing unused copy of pipe
 		// close(outputPipe[1]);   // closing unused copy o pipe
 		close(inputPipe[1]);  // closing write end of input pipe
 		close(outputPipe[0]); // closing read end of output pipe
 
+		putenv("HTTPD_VERSION=1.0.0");
 		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {
 			// closing other pipes end
 			printf("In son\n");
