@@ -43,6 +43,11 @@ enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,
  */
 void resetMediaRange(MediaRangePtr_t mediaRange);
 
+/*
+ * Free the media range structure
+ */
+void freeMediaRange(MediaRangePtr_t mrp);
+
 void printMediaRange(MediaRangePtr_t mediaRange); // TODO: for test
 
 #endif
