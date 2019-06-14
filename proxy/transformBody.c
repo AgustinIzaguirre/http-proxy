@@ -397,8 +397,7 @@ int executeTransformCommand(struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(state);
 	int inputPipe[]						= {-1, -1};
 	int outputPipe[]					= {-1, -1};
-	int errorFd =
-		-1; // TODO open /dev/null or the setted in config and dup2 stderr
+	int errorFd		  = open(getCommandStderrFd(getConfiguration()));
 	char *commandPath = getCommand(getConfiguration());
 	pid_t commandPid;
 

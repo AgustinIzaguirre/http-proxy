@@ -14,6 +14,7 @@ struct configuration {
 	int commandStderrFd;
 	char *filterHttp;
 	char *filterAdmin;
+	char *commandStderrPath;
 };
 
 static struct configuration config = {
@@ -24,9 +25,11 @@ static struct configuration config = {
 	.mediaRange			  = NULL,
 	.command			  = NULL,
 	.commandStderrFd	  = INVALID_FD,
+	.commandStderrPath	= NULL,
 	.isTransformationOn   = FALSE,
 	.filterHttp			  = NULL,
 	.filterAdmin		  = NULL,
+
 };
 
 void initializeConfigBaseValues(configurationADT config) {
