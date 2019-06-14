@@ -319,6 +319,7 @@ void httpDestroyData(struct http *s) {
 		s->originResolution = 0;
 	}
 
+	freeMediaRange(s->mediaRanges);
 	free(s);
 }
 

@@ -118,6 +118,16 @@ void resetMediaRange(MediaRangePtr_t mediaRange) {
 	return;
 }
 
+void freeMediaRange(MediaRangePtr_t mrp) {
+	int j = 0;
+	while (j < mrp->length) {
+		free(mrp->listMediaTypes[j]);
+	}
+	free(mrp->listMediaTypes);
+	free(mrp->canBeMatch);
+	free(mrp);
+}
+
 void printMediaRange(MediaRangePtr_t mediaRange) {
 	int i = 0;
 	while (i < mediaRange->length) {
