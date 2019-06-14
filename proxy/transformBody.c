@@ -107,7 +107,11 @@ unsigned standardOriginRead(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_write_adv(inBuffer, bytesRead);
-		prepareChunkedBuffer(chunkBuffer, inBuffer, bytesRead);
+		uint8_t  *writePointer, *readPointer;
+		writePointer = buffer_write_ptr(inBuffer, &count);
+		readPointer = buffer_read_ptr(inBuffer, &count);
+		ssize_t bytes = writePointer-readPointer;
+		prepareChunkedBuffer(chunkBuffer, inBuffer, bytes);
 		ret = setStandardFdInterests(key);
 	}
 	else if (bytesRead == 0) {
