@@ -58,7 +58,7 @@
 enum operation_t { BYE_OP, GET_OP, SET_OP };
 typedef enum operation_t operation_t;
 
-enum statusCode_t { OK, ERROR };
+enum statusCode_t { OK_STATUS, ERROR_STATUS };
 typedef enum statusCode_t statusCode_t;
 
 typedef uint64_t timeTag_t;
@@ -131,5 +131,8 @@ int recvRequest(int client, request_t *request);
 int recvResponse(int server, response_t *response);
 
 int sendResponse(int client, response_t response);
+
+int bindAndGetServerSocket(uint16_t port, char *ipFilter,
+						   uint16_t streamQuantity);
 
 #endif

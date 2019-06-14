@@ -324,6 +324,7 @@ void httpDestroyData(struct http *s) {
 }
 
 void httpDestroy(struct http *s) {
+	decreaseConcurrentConections();
 	if (s != NULL) {
 		if (s->references == 1) {
 			if (poolSize < maxPool) {

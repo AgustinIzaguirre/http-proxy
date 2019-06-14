@@ -119,17 +119,17 @@ static int authenticate(int server) {
 			return -1;
 		}
 
-		if (response.status.generalStatus != OK) {
-			if (response.status.versionStatus != OK) {
+		if (response.status.generalStatus != OK_STATUS) {
+			if (response.status.versionStatus != OK_STATUS) {
 				printf("Server manages another version of the protocol\n");
 				printf("Server version = v%ld\n", response.version);
 				return -1;
 			}
-			else if (response.status.authenticationStatus != OK) {
+			else if (response.status.authenticationStatus != OK_STATUS) {
 				printf("Incorrect username or password. Please, try again\n");
 			}
 		}
-	} while (response.status.generalStatus != OK);
+	} while (response.status.generalStatus != OK_STATUS);
 
 	return 0;
 }

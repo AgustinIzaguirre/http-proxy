@@ -22,8 +22,7 @@ int readOptions(const int argc, char *const *argv) {
 	while (i < argc && (option = getopt(argc, argv, validOptions)) != -1) {
 		switch (option) {
 			case 'e':
-				// redirects execv program stderr to fd
-				printfDefaultMessage(option, optarg);
+				setCommandStderrFd(getConfiguration(), open(optarg, O_WRONLY));
 				params++;
 				break;
 
@@ -32,12 +31,12 @@ int readOptions(const int argc, char *const *argv) {
 				break;
 
 			case 'l':
-				printfDefaultMessage(option, optarg);
+				setHttpInterfaces(getConfiguration(), optarg);
 				params++;
 				break;
 
 			case 'L':
-				printfDefaultMessage(option, optarg);
+				setManagementInterfaces(getConfiguration(), optarg);
 				params++;
 				break;
 

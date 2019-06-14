@@ -8,6 +8,7 @@
 #include <netinet/tcp.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <metric.h>
 
 /*
  * Connects to origin server
