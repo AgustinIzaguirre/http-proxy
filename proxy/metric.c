@@ -24,8 +24,8 @@ void increaseHistoricAccess() {
 	metricSingleton.historicAccess++;
 }
 
-void increaseTransferBytes() {
-	metricSingleton.transferBytes++;
+void increaseTransferBytes(uint64_t n) {
+	metricSingleton.transferBytes += n;
 }
 
 uint64_t getConcurrentConections() {
