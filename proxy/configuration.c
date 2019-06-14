@@ -92,8 +92,13 @@ void setManagementInterfaces(configurationADT config,
 }
 
 void setCommand(configurationADT config, char *command) {
-	config->command			   = command;
-	config->isTransformationOn = TRUE;
+	if (command != NULL) {
+		config->command			   = command;
+		config->isTransformationOn = TRUE;
+	}
+	else {
+		config->isTransformationOn = FALSE;
+	}
 }
 
 char *getCommand(configurationADT config) {

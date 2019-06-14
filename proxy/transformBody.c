@@ -224,6 +224,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setStandardFdInterests(key);
 	}
 	else {
@@ -299,6 +300,7 @@ unsigned writeToClient(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(buffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
@@ -434,8 +436,8 @@ int executeTransformCommand(struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(state);
 	int inputPipe[]						= {-1, -1};
 	int outputPipe[]					= {-1, -1};
-	// int errorFd =
-	//	open(getCommandStderrPath(getConfiguration()), OP_WRITE | OP_READ); TODO
+	int errorFd = open(getCommandStderrPath(getConfiguration()),
+					   OP_WRITE | OP_READ); // TODO
 	// initializae and dup to stderr
 	char *commandPath = getCommand(getConfiguration());
 	pid_t commandPid;
@@ -451,6 +453,7 @@ int executeTransformCommand(struct selector_key *key) {
 	else if (commandPid == 0) {
 		dup2(inputPipe[0], 0);  // setting pipe as stdin
 		dup2(outputPipe[1], 1); // setting pipe as stdout
+		dup2(errorFd, 2);		// setting errorFd as stderr
 		// close(inputPipe[0]);	// closing unused copy of pipe
 		// close(outputPipe[1]);   // closing unused copy o pipe
 		close(inputPipe[1]);  // closing write end of input pipe
