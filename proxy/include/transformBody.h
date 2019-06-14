@@ -18,6 +18,7 @@ struct transformBody {
 	unsigned commandStatus;
 	char *chunkedData;
 	buffer chunkedBuffer;
+	uint8_t transformCommandExecuted;
 	pid_t commandPid;
 };
 

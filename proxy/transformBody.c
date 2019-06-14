@@ -20,7 +20,8 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	buffer_reset(getReadBuffer(GET_DATA(key)));
 	int length = getLength(getReadBuffer(GET_DATA(key)));
 	initializeChunkedBuffer(transformBody, length);
-	transformBody->commandStatus = executeTransformCommand(key);
+	transformBody->commandStatus			= executeTransformCommand(key);
+	transformBody->transformCommandExecuted = FALSE;
 	// transformBody->commandStatus = EXEC_ERROR;
 	printf("arrived to transform body state\n"); // TODO remove
 }
@@ -225,8 +226,9 @@ unsigned standardClientWrite(struct selector_key *key) {
 }
 
 unsigned writeToTransform(struct selector_key *key) {
-	buffer *buffer = getWriteBuffer(GET_DATA(key));
-	unsigned ret   = TRANSFORM_BODY;
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	buffer *buffer						= getWriteBuffer(GET_DATA(key));
+	unsigned ret						= TRANSFORM_BODY;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
@@ -241,13 +243,22 @@ unsigned writeToTransform(struct selector_key *key) {
 	bytesRead = write(key->fd, pointer, count);
 
 	if (bytesRead > 0) {
+		if (transformBody->transformCommandExecuted = FALSE) {
+			transformBody->transformCommandExecuted = TRUE;
+		}
 		buffer_read_adv(buffer, bytesRead);
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
-		setErrorDoneFd(key);
-		printf("error2:\n%s\n", strerror(errno));
-		ret = ERROR;
+		if (transformBody->transformCommandExecuted == TRUE) {
+			setErrorDoneFd(key);
+			printf("error2:\n%s\n", strerror(errno));
+			ret = ERROR;
+		}
+		else {
+			transformBody->commandStatus = EXEC_ERROR;
+			ret							 = setStandardFdInterests(key);
+		}
 	}
 
 	return ret;
