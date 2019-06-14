@@ -95,6 +95,9 @@ struct buffer {
 
 	/** puntero de escritura */
 	uint8_t *write;
+
+	/** puntero de progreso */
+	uint8_t *progress;
 };
 
 /**
@@ -113,6 +116,12 @@ void buffer_write_adv(buffer *b, const ssize_t bytes);
 uint8_t *buffer_read_ptr(buffer *b, size_t *nbyte);
 
 void buffer_read_adv(buffer *b, const ssize_t bytes);
+
+bool buffer_can_progress(buffer *b);
+
+uint8_t *buffer_progress_ptr(buffer *b, size_t *nbyte);
+
+void buffer_progress_adv(buffer *b, const ssize_t bytes);
 
 /**
  * obtiene un byte

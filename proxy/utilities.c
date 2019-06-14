@@ -14,6 +14,11 @@ char *addCharToString(char *string, unsigned int *sizeString, char c) {
 inline int getDigits(int number, int base) {
 	int digits	 = 0;
 	int currNumber = number;
+
+	if (number == 0) {
+		return 1;
+	}
+
 	while (currNumber) {
 		currNumber /= base;
 		digits++;
