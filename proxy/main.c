@@ -182,7 +182,7 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 		errorMessage = "unable to bind socket";
 		return ERROR;
 	}
-	// evans I Think here we should filter IP not where we do filter IP
+	// TODO: I Think here we should filter IP not where we do filter IP
 
 	if (listen(currentSocket, BACKLOG_QTY) < 0) {
 		errorMessage = "unable to listen";

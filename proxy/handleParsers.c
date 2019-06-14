@@ -276,7 +276,7 @@ int handleExitToConnect(struct selector_key *key,
 		ret = ERROR_CLIENT;
 	}
 	else {
-		ret = blockingToResolvName(key, key->fd); // evans TODO
+		ret = blockingToResolvName(key, key->fd); // TODO
 	}
 	return ret;
 }
