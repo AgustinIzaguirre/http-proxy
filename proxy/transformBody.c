@@ -22,7 +22,9 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	initializeChunkedBuffer(transformBody, length);
 	transformBody->commandStatus			= executeTransformCommand(key);
 	transformBody->transformCommandExecuted = FALSE;
-	// transformBody->commandStatus = EXEC_ERROR;
+	transformBody->transformFinished		= FALSE;
+	transformBody->responseFinished			= FALSE;
+	// transformBody->commandStatus = EXEC_ERROR; TODO remove
 	printf("arrived to transform body state\n"); // TODO remove
 }
 
@@ -149,12 +151,14 @@ unsigned readFromTransform(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		// if response is not chunked or is last chunk
-		setErrorDoneFd(key);
-		ret = DONE; // should send what is left on buffer TODO
+		printf("termino1\n"); // TODO REMOVE
+		transformBody->transformFinished = TRUE;
+		sentLastChunked(chunkBuffer);
+		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error5:\n%s\n", strerror(errno));
+		printf("error5:\n%s\n", strerror(errno)); // TODO REMOVE
 		ret = ERROR;
 	}
 
@@ -162,7 +166,8 @@ unsigned readFromTransform(struct selector_key *key) {
 }
 
 unsigned readFromOrigin(struct selector_key *key) {
-	buffer *writeBuffer = getWriteBuffer(GET_DATA(key));
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
@@ -183,12 +188,15 @@ unsigned readFromOrigin(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		// if response is not chunked or is last chunk
-		setErrorDoneFd(key);
-		ret = DONE; // should send what is left on buffer TODO
+		if (close(transformBody->writeToTransformFd) == -1) {
+			printf("file already closed\n"); // TODO remove
+		}
+		transformBody->responseFinished = TRUE;
+		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error4:\n%s\n", strerror(errno));
+		printf("error4:\n%s\n", strerror(errno)); // TODO REMOVE
 		ret = ERROR;
 	}
 
@@ -218,7 +226,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error3:\n%s\n", strerror(errno));
+		printf("error3:\n%s\n", strerror(errno)); // TODO REMOVE
 		ret = ERROR;
 	}
 
@@ -253,7 +261,7 @@ unsigned writeToTransform(struct selector_key *key) {
 	else {
 		if (transformBody->transformCommandExecuted == TRUE) {
 			setErrorDoneFd(key);
-			printf("error2:\n%s\n", strerror(errno));
+			printf("error2:\n%s\n", strerror(errno)); // TODO REMOVE
 			ret = ERROR;
 		}
 		else {
@@ -290,9 +298,13 @@ unsigned writeToClient(struct selector_key *key) {
 	else {
 		setErrorDoneFd(key);
 
-		printf("error1:\n%s\n", strerror(errno));
+		printf("error1:\n%s\n", strerror(errno)); // TODO REMOVE
 
 		ret = ERROR;
+	}
+
+	if (transformBody->responseFinished && !buffer_can_read(buffer)) {
+		ret = DONE;
 	}
 
 	return ret;
@@ -355,11 +367,11 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 		clientInterest |= OP_WRITE;
 	}
 
-	if (buffer_can_write(readBuffer)) {
+	if (buffer_can_write(readBuffer) && !transformBody->transformFinished) {
 		transformReadInterest |= OP_READ;
 	}
 
-	if (buffer_can_write(writeBuffer)) {
+	if (buffer_can_write(writeBuffer) && !transformBody->responseFinished) {
 		originInterest |= OP_READ;
 	}
 
@@ -506,6 +518,12 @@ void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer) {
 		bytes--;
 	}
 
+	buffer_write(chunkBuffer, '\r');
+	buffer_write(chunkBuffer, '\n');
+}
+
+void sentLastChunked(buffer *chunkBuffer) {
+	writeNumber(chunkBuffer, 0);
 	buffer_write(chunkBuffer, '\r');
 	buffer_write(chunkBuffer, '\n');
 }

@@ -19,6 +19,8 @@ struct transformBody {
 	char *chunkedData;
 	buffer chunkedBuffer;
 	uint8_t transformCommandExecuted;
+	uint8_t transformFinished;
+	uint8_t responseFinished;
 	pid_t commandPid;
 };
 
@@ -42,6 +44,7 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key);
 unsigned setErrorDoneFd(struct selector_key *key);
 void initializeChunkedBuffer(struct transformBody *transformBody, int length);
 void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer);
+void sentLastChunked(buffer *chunkBuffer);
 void transformBodyDestroy(const unsigned state, struct selector_key *key);
 
 // TODO comment all methods
