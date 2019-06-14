@@ -87,23 +87,43 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	inet_ntop(ipEntry->ai_family, ptr, serverIP, 100);
 
 	unsigned short originPort = getOriginPort(currentState);
-	int socketFd			  = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	int socketFd = socket(ipEntry->ai_family, SOCK_STREAM, IPPROTO_TCP);
 
 	if (socketFd < 0) {
 		return ERROR_CLIENT;
 	}
 
-	struct sockaddr_in serverAddr;
-	memset(&serverAddr, 0, sizeof(serverAddr)); // Empty structure
-	serverAddr.sin_family = AF_INET;
-	serverAddr.sin_port   = htons(originPort);
-
-	if (inet_pton(AF_INET, serverIP, &(serverAddr.sin_addr)) <= 0) {
-		return ERROR_CLIENT;
+	struct sockaddr *serverAddr;
+	uint8_t serverAddrLenght;
+	struct sockaddr_in6 serverAddr6;
+	struct sockaddr_in serverAddr4;
+	switch (ipEntry->ai_family) {
+		case AF_INET:
+			memset(&serverAddr4, 0, sizeof(serverAddr4));
+			serverAddr4.sin_family = ipEntry->ai_family;
+			serverAddr4.sin_port   = htons(originPort);
+			if (inet_pton(ipEntry->ai_family, serverIP,
+						  &(serverAddr4.sin_addr)) <= 0) {
+				return ERROR_CLIENT;
+			}
+			serverAddr		 = &serverAddr4;
+			serverAddrLenght = sizeof(serverAddr4);
+			break;
+		case AF_INET6:
+			memset(&serverAddr6, 0, sizeof(serverAddr6));
+			serverAddr6.sin6_family = ipEntry->ai_family;
+			serverAddr6.sin6_port   = htons(originPort);
+			if (inet_pton(ipEntry->ai_family, serverIP,
+						  &(serverAddr6.sin6_addr)) <= 0) {
+				return ERROR_CLIENT;
+			}
+			serverAddr		 = &serverAddr6;
+			serverAddrLenght = sizeof(serverAddr6);
+			break;
 	}
 
-	if (connect(socketFd, (const struct sockaddr *) (&serverAddr),
-				sizeof(serverAddr)) < 0) {
+	if (connect(socketFd, (const struct sockaddr *) (serverAddr),
+				serverAddrLenght) < 0) {
 		return ERROR_CLIENT;
 	}
 
