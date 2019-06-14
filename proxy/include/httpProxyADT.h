@@ -14,11 +14,14 @@
 #include <hostHeaderParser.h>
 #include <handleParsers.h>
 #include <handleError.h>
+#include <mediaRange.h>
+#include <configuration.h>
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
 #define BUFFER_SIZE 20
 #define MAX_PARSER 1000 // TODO: chech that number
+#define MAX_FIRST_LINE_LENGTH 2048
 
 typedef struct http *httpADT_t;
 
@@ -143,6 +146,16 @@ buffer *getReadBuffer(httpADT_t s);
 buffer *getWriteBuffer(httpADT_t s);
 
 /*
+ * Returns requestLine buffer
+ */
+buffer *getRequestLineBuffer(httpADT_t s);
+
+/*
+ * Returns responseLine buffer
+ */
+buffer *getResponseLineBuffer(httpADT_t s);
+
+/*
  * Returns finish parser buffer
  */
 buffer *getFinishParserBuffer(httpADT_t s);
@@ -229,7 +242,11 @@ void setErrorType(struct http *s, int errorTypeFound);
  */
 int getErrorType(struct http *s);
 
+// TODO
 struct addrinfo *getOriginResolutions(struct http *s);
 void setOriginResolutions(struct http *s, struct addrinfo *originResolution);
+int getTransformContent(struct http *s);
+void setTransformContent(struct http *s, int transformContent);
+MediaRangePtr_t getMediaRangeHTTP(struct http *s);
 
 #endif

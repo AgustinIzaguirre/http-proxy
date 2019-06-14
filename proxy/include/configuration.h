@@ -5,6 +5,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <utilities.h>
+#include <mediaRange.h>
 
 #define DEFAULT_PROXY_HTTP_PORT 8080
 #define DEFAULT_MANAGEMENT_PORT 9090
@@ -59,5 +60,11 @@ char *getCommand(configurationADT config);
 
 /* Returns TRUE if transformations are enabled or FALSE otherwise */
 int getIsTransformationOn(configurationADT config);
+
+/* set media range*/
+void setMediaRange(configurationADT config, MediaRangePtr_t mediaRange);
+
+/* return media range*/
+MediaRangePtr_t getMediaRange(configurationADT config);
 
 #endif

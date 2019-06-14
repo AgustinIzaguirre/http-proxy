@@ -6,13 +6,21 @@
 #include <selector.h>
 #include <transformBody.h>
 #include <configuration.h>
+#include <utilities.h>
 
 static buffer *getCurrentResponseBuffer(httpADT_t state);
 
 void responseInit(const unsigned state, struct selector_key *key) {
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
-	headersParserInit(&(handleResponse->parseHeaders));
+	headersParserInit(&(handleResponse->parseHeaders), key, FALSE);
+}
+
+void responceDestroy(const unsigned state, struct selector_key *key) {
+	struct handleResponse *handleResponse =
+		getHandleResponseState(GET_DATA(key));
+	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
+	setTransformContent(GET_DATA(key), aux);
 }
 
 unsigned responseRead(struct selector_key *key) {

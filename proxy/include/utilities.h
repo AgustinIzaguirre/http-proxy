@@ -2,6 +2,8 @@
 #define UTILITIES_H
 
 #include <stdlib.h>
+#include <stdint.h>
+#include <buffer.h>
 
 enum boolean { FALSE = 0, TRUE };
 
@@ -13,5 +15,11 @@ enum boolean { FALSE = 0, TRUE };
  * adds 1 to the string size
  */
 char *addCharToString(char *string, unsigned int *sizeString, char c);
+
+/*
+ * Receives a buffer and a int and write the int in the buffer as a string
+ */
+void writeNumber(buffer *chunkBuffer, int bytesRead);
+int getDigits(int number);
 
 #endif

@@ -42,7 +42,7 @@ int readOptions(const int argc, char *const *argv) {
 				break;
 
 			case 'M':
-				printfDefaultMessage(option, optarg);
+				setMediaRange(getConfiguration(), createMediaRange(optarg));
 				params++;
 				break;
 
