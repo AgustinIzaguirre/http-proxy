@@ -20,7 +20,6 @@ void responceDestroy(const unsigned state, struct selector_key *key) {
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
-	printf("XD%d\n", aux); // TODO
 	setTransformContent(GET_DATA(key), aux);
 }
 

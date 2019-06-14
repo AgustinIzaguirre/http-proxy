@@ -62,7 +62,7 @@ struct http {
 	unsigned references;
 
 	int transformContent;
-	MediaRangePtr_t mediaRanges;
+	MediaRangePtr_t mediaRanges; // TODO:free
 
 	// Next in pool
 	struct http *next;

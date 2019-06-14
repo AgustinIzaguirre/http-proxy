@@ -2,6 +2,7 @@
 #define MEDIA_RANGE_H
 
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h> //TODO: for test
 
 enum matchResult { NO, YES, ALL };

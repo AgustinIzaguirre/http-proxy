@@ -13,18 +13,21 @@ createMediaRangeFromListOfMediaType(MediaRangePtr_t mediaRange) {
 	char **listOfMediaTypes = mediaRange->listMediaTypes;
 	int length				= mediaRange->length;
 	MediaRangePtr_t mrp		= calloc(1, sizeof(MediaRange_t));
-	mrp->listMediaTypes		= calloc(1, sizeof(char *));
 
 	int i, j = 0;
 	while (j < length) {
 		i = -1;
 		if (j % BLOCK == 0) {
-			mrp->listMediaTypes = malloc(j + BLOCK * sizeof(char *));
+			mrp->listMediaTypes =
+				realloc(mrp->listMediaTypes, j + BLOCK * sizeof(char *));
+			memset(mrp->listMediaTypes + j * sizeof(char *), 0,
+				   BLOCK * sizeof(char *));
 		}
 		do {
 			i++;
 			if (i % BLOCK == 0) {
-				mrp->listMediaTypes[j] = malloc(i + BLOCK * sizeof(char *));
+				mrp->listMediaTypes[j] =
+					realloc(mrp->listMediaTypes[j], i + BLOCK * sizeof(char));
 			}
 			mrp->listMediaTypes[j][i] = listOfMediaTypes[j][i];
 		} while (listOfMediaTypes[j][i] != '\0');
