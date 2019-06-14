@@ -3,6 +3,7 @@
 #include <connectToOrigin.h>
 #include <stdio.h>
 #include <selector.h>
+#include <errno.h>
 
 int blockingToResolvName(struct selector_key *key, int fdClient) {
 	if (SELECTOR_SUCCESS != selector_set_interest(key->s, fdClient, OP_NOOP)) {
@@ -62,7 +63,7 @@ unsigned addressResolvNameDone(struct selector_key *key) {
 	}
 
 	if (flag == ERROR_CLIENT) {
-		setErrorType(GET_DATA(key), NOT_FOUND_HOST);
+		setErrorType(GET_DATA(key), FAIL_TO_CONNECT);
 	}
 
 	return flag;

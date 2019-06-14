@@ -21,7 +21,6 @@ void responceDestroy(const unsigned state, struct selector_key *key) {
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
 	setTransformContent(GET_DATA(key), aux);
-	setTransformContent(GET_DATA(key), TRUE); // TODO remove
 }
 
 unsigned responseRead(struct selector_key *key) {
