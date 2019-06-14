@@ -93,6 +93,7 @@ unsigned responseWrite(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setResponseFdInterests(key);
 	}
 	else {

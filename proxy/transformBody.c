@@ -224,6 +224,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setStandardFdInterests(key);
 	}
 	else {
@@ -299,6 +300,7 @@ unsigned writeToClient(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_read_adv(buffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {

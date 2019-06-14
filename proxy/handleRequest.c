@@ -83,6 +83,7 @@ unsigned requestWrite(struct selector_key *key) {
 	if (bytesRead > 0) {
 		// parseRead
 		buffer_read_adv(readBuffer, bytesRead);
+		increaseTransferBytes(bytesRead);
 		ret = setAdecuateFdInterests(key);
 	}
 	else {
