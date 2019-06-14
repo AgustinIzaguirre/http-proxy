@@ -11,8 +11,9 @@
 #include <buffer.h>
 
 inline void buffer_reset(buffer *b) {
-	b->read  = b->data;
-	b->write = b->data;
+	b->read		= b->data;
+	b->write	= b->data;
+	b->progress = b->data;
 }
 
 void buffer_init(buffer *b, const size_t n, uint8_t *data) {
@@ -39,6 +40,23 @@ inline uint8_t *buffer_read_ptr(buffer *b, size_t *nbyte) {
 	assert(b->read <= b->write);
 	*nbyte = b->write - b->read;
 	return b->read;
+}
+
+inline bool buffer_can_progress(buffer *b) {
+	return b->write - b->progress > 0;
+}
+
+inline uint8_t *buffer_progress_ptr(buffer *b, size_t *nbyte) {
+	assert(b->progress <= b->limit);
+	*nbyte = b->limit - b->progress;
+	return b->progress;
+}
+
+inline void buffer_progress_adv(buffer *b, const ssize_t bytes) {
+	if (bytes > -1) {
+		b->progress += (size_t) bytes;
+		assert(b->progress <= b->limit);
+	}
 }
 
 inline void buffer_write_adv(buffer *b, const ssize_t bytes) {
