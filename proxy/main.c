@@ -11,8 +11,8 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include <sys/socket.h> /* Socket */
-#include <sys/types.h>  /* Socket */
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <unistd.h>
 
 #include <http.h>
@@ -106,7 +106,7 @@ int main(const int argc, const char **argv) {
 	const struct fd_handler management = {
 		.handle_read  = managementPassiveAccept,
 		.handle_write = NULL,
-		.handle_close = NULL, /* nothing to free */
+		.handle_close = NULL, /* TODO: nothing to free? */
 	};
 
 	ss = selector_register(selector, managementSocket, &management, OP_READ,
