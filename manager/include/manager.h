@@ -1,5 +1,5 @@
-#ifndef ADMIN_H
-#define ADMIN_H
+#ifndef MANAGER_H
+#define MANAGER_H
 #include <stdlib.h>
 #include <protocol.h>
 

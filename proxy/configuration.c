@@ -15,6 +15,7 @@ struct configuration {
 	char *filterHttp;
 	char *filterAdmin;
 	char *commandStderrPath;
+	char *filterManagement;
 };
 
 static struct configuration config = {
@@ -29,7 +30,7 @@ static struct configuration config = {
 	.isTransformationOn   = FALSE,
 	.filterHttp			  = NULL,
 	.filterAdmin		  = NULL,
-
+	.filterManagement	 = NULL,
 };
 
 void initializeConfigBaseValues(configurationADT config) {
