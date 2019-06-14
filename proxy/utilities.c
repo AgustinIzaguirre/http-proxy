@@ -11,22 +11,22 @@ char *addCharToString(char *string, unsigned int *sizeString, char c) {
 	return ret;
 }
 
-inline int getDigits(int number) {
+inline int getDigits(int number, int base) {
 	int digits	 = 0;
 	int currNumber = number;
 	while (currNumber) {
-		currNumber /= 10;
+		currNumber /= base;
 		digits++;
 	}
 	return digits;
 }
 
 void writeNumber(buffer *buffer, int number) {
-	int size = getDigits(number);
+	int size = getDigits(number, 16);
 	char numberString[size];
 	int i;
-	sprintf(numberString, "%d", number);
-	printf("number: %s\ndigits: %d\n", numberString, size); // TODO remove
+	sprintf(numberString, "%x", number);
+
 	for (i = 0; i < size; i++) {
 		buffer_write(buffer, numberString[i]);
 	}

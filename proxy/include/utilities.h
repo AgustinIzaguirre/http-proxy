@@ -20,6 +20,11 @@ char *addCharToString(char *string, unsigned int *sizeString, char c);
  * Receives a buffer and a int and write the int in the buffer as a string
  */
 void writeNumber(buffer *chunkBuffer, int bytesRead);
-int getDigits(int number);
+
+/*
+ * Returns the minimum ammount of digits needed to represent number in the
+ * received base
+ */
+int getDigits(int number, int base);
 
 #endif

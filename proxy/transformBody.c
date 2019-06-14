@@ -464,7 +464,7 @@ int executeTransformCommand(struct selector_key *key) {
 
 static int getLength(buffer *buffer) {
 	int bufferLength = buffer->limit - buffer->write;
-	int digits		 = getDigits(bufferLength);
+	int digits		 = getDigits(bufferLength, 10);
 
 	return digits + bufferLength + LIMITATING_CHARS;
 }
