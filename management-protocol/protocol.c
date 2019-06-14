@@ -43,6 +43,8 @@ static int recvHeadByteAndLoadRequestInfo(int fd, request_t *request);
 
 static char *allocateAndCopyString(char *source, size_t *length);
 
+static uint8_t getResponseHeadByte(responseStatus_t status);
+
 static char *errorMessage = NULL;
 /*****************************************************************************\
 \*****************************************************************************/
@@ -199,8 +201,8 @@ static void *formatData(void *data, size_t dataLength,
 		byteOffsetInBlock = 0;
 
 		formattedData[blockNumber * DATA_BLOCK_BYTES + byteOffsetInBlock] =
-			blockNumber == dataBlocksNeeded - 1 ? IS_FINAL_BYTE :
-												  NOT_FINAL_BYTE;
+			(blockNumber == dataBlocksNeeded - 1) ? IS_FINAL_BYTE :
+													NOT_FINAL_BYTE;
 		byteOffsetInBlock++;
 
 		bytesToCopy = CONCRET_DATA_BLOCK_BYTES;
@@ -729,7 +731,7 @@ static char *allocateAndCopyString(char *source, size_t *length) {
 				return NULL;
 			}
 			else {
-				string = reallocString; // TODO alan check
+				string = reallocString;
 			}
 		}
 
@@ -755,4 +757,60 @@ static char *allocateAndCopyString(char *source, size_t *length) {
 	string[*length] = 0;
 
 	return string;
+}
+
+int sendResponse(int client, response_t response) {
+	uint8_t headByte		   = getResponseHeadByte(response.status);
+	size_t formattedDataLength = 0;
+	void *formattedData		   = NULL;
+	uint8_t needsTimeTag	   = FALSE;
+
+	switch (response.operation) {
+		case GET_OP:
+			if (response.status.idStatus != ERROR &&
+				response.status.operationStatus != ERROR &&
+				response.status.timeTagStatus != OK) {
+				needsTimeTag  = TRUE;
+				formattedData = formatData(response.data, response.dataLength,
+										   &formattedDataLength);
+			}
+			break;
+		case SET_OP:
+			if (response.status.idStatus != ERROR &&
+				response.status.operationStatus != ERROR &&
+				response.status.timeTagStatus == OK) {
+				needsTimeTag = TRUE;
+			}
+			break;
+		default:
+			break;
+	}
+
+	size_t length = sizeof(headByte) + (needsTimeTag ? sizeof(timeTag_t) : 0) +
+					formattedDataLength;
+
+	uint8_t *msg = malloc(length);
+
+	msg[0] = headByte;
+
+	memcpy(msg + sizeof(headByte), &response.timeTag,
+		   (needsTimeTag ? sizeof(timeTag_t) : 0));
+
+	if (formattedData != NULL) {
+		memcpy(msg + sizeof(headByte) + (needsTimeTag ? sizeof(timeTag_t) : 0),
+			   formattedData, formattedDataLength);
+	}
+
+	return sendSCTPMsg(client, (void *) msg, length, response.streamNumber);
+}
+
+static uint8_t getResponseHeadByte(responseStatus_t status) {
+	uint8_t headByte = 0x00;
+
+	headByte = headByte | (status.generalStatus & GENERAL_STATUS_MASK);
+	headByte = headByte | (status.operationStatus & OPCODE_STATUS_MASK);
+	headByte = headByte | (status.operationStatus & OPCODE_STATUS_MASK);
+	headByte = headByte | (status.operationStatus & OPCODE_STATUS_MASK);
+
+	return headByte;
 }

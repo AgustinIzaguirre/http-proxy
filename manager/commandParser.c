@@ -594,7 +594,7 @@ void parseAuthenticationData(char **username, size_t *usernameLength,
 // TODO: We can improve this to be more flexible...
 void parseIPAndPortFromArguments(const char **ip, uint16_t *port, int argc,
 								 char const *argv[]) {
-	/* We spect: * ./admin ip port *, for example * ./admin 127.0.0.1 80 **/
+	/* We spect: * ./manager ip port *, for example * ./manager 127.0.0.1 80 **/
 	if (argc == 3) {
 		*ip   = argv[1];
 		*port = atoi(argv[2]);

@@ -1,5 +1,5 @@
 # Custom http-proxy project executables
-/admin/admin
+/manager/manager
 
 # Prerequisites
 *.d

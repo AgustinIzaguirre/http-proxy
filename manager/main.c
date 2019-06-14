@@ -1,4 +1,4 @@
-#include <admin.h>
+#include <manager.h>
 #include <protocol.h>
 #include <commandParser.h>
 #include <linkedListADT.h>
@@ -9,12 +9,11 @@ timeTag_t timeTags[ID_QUANTITY] = {0};
 typedef struct {
 	returnCode_t code;
 	uint16_t streamNumber;
-} requestToRecv_t;
+} responseToRecv_t;
 
-queueADT_t requests;
-
-linkedListADT_t responsesRecvOnSetStream;
-linkedListADT_t responsesRecvOnGetStream;
+queueADT_t toRecv;
+linkedListADT_t recvFromSetStream;
+linkedListADT_t recvFromGetStream;
 
 static int authenticate(int server);
 
@@ -26,6 +25,14 @@ static int newCommandHandler(int server, operation_t operation, id_t id,
 static void invalidCommandHandler();
 
 static int recvAndPrintResponses(int server);
+
+static void setRecvFrom(uint16_t currentStreamNumber,
+						linkedListADT_t *recvFromCurrentStream,
+						linkedListADT_t *recvFromOtherStream);
+
+static void printInvalidCommand();
+
+static void manageAndPrintResponse(response_t response);
 
 /*****************************************************************************\
 \*****************************************************************************/
@@ -52,22 +59,21 @@ int main(int argc, char const *argv[]) {
 	}
 
 	uint8_t byeRead;
-
-	int sentState;
-	int recvState;
+	int sent;
+	int read;
 
 	do {
-		sentState = parseAndSendRequests(server, &byeRead);
+		sent = parseAndSendRequests(server, &byeRead);
 
-		if (sentState < 0) {
+		if (sent < 0) {
 			printf("%s\n", getProtocolErrorMessage());
 			printf("Error while sending requests to server\n");
 			return -1;
 		}
 
-		recvState = recvAndPrintResponses(server);
+		read = recvAndPrintResponses(server);
 
-		if (recvState < 0) {
+		if (read < 0) {
 			printf("%s\n", getProtocolErrorMessage());
 			printf("Error while receiving responses from server\n");
 			return -1;
@@ -191,23 +197,90 @@ static int newCommandHandler(int server, operation_t operation, id_t id,
 	}
 
 	if (!byeRead) {
-		requestToRecv_t requestSent = {.code		 = NEW,
-									   .streamNumber = streamNumber};
-		enqueue(&requests, &requestSent, sizeof(requestSent));
+		responseToRecv_t requestSent = {.code		  = NEW,
+										.streamNumber = streamNumber};
+		enqueue(&toRecv, &requestSent, sizeof(requestSent));
 	}
 
 	return sent;
 }
 
 static void invalidCommandHandler() {
-	requestToRecv_t invalidCommand = {
+	responseToRecv_t invalidCommand = {
 		.code		  = INVALID,
 		.streamNumber = 0 /* Could be any stream number, will be ignored */
 	};
 
-	enqueue(&requests, &invalidCommand, sizeof(invalidCommand));
+	enqueue(&toRecv, &invalidCommand, sizeof(invalidCommand));
 }
 
 static int recvAndPrintResponses(int server) {
-	return 0;
+	int totalRead = 0;
+	int read;
+	response_t response;
+	/* The next response to receive, to print the command responses in order */
+	responseToRecv_t nextToRecv;
+	/* The nextToRecv.streamNumber stream */
+	linkedListADT_t recvFromCurrentStream;
+	/* The stream that not match the nextToRecv.streamNumber stream number */
+	linkedListADT_t recvFromOtherStream;
+
+	while (!isEmpty(&toRecv)) {
+		nextToRecv = *((responseToRecv_t *) getFirst(&toRecv));
+
+		if (nextToRecv.code == INVALID) {
+			printInvalidCommand();
+		}
+		else {
+			/* nextToRecv.code is NEW */
+			setRecvFrom(nextToRecv.streamNumber, &recvFromCurrentStream,
+						&recvFromOtherStream);
+
+			if (isEmpty(&recvFromCurrentStream)) {
+				do {
+					read = recvResponse(server, &response);
+
+					if (read < 0) {
+						return read;
+					}
+
+					totalRead += read;
+
+					if (response.streamNumber != nextToRecv.streamNumber) {
+						enqueue(&recvFromOtherStream, &response,
+								sizeof(response_t));
+					}
+				} while (response.streamNumber != nextToRecv.streamNumber);
+			}
+			else {
+				response = *((response_t *) getFirst(&recvFromCurrentStream));
+			}
+
+			manageAndPrintResponse(response);
+		}
+	}
+
+	return totalRead;
+}
+
+static void setRecvFrom(uint16_t currentStreamNumber,
+						linkedListADT_t *recvFromCurrentStream,
+						linkedListADT_t *recvFromOtherStream) {
+	if (currentStreamNumber == GET_STREAM) {
+		*recvFromCurrentStream = recvFromGetStream;
+		*recvFromOtherStream   = recvFromSetStream;
+	}
+	else {
+		*recvFromCurrentStream = recvFromSetStream;
+		*recvFromOtherStream   = recvFromGetStream;
+	}
+}
+
+static void printInvalidCommand() {
+	printf("Invalid command\n");
+}
+
+static void manageAndPrintResponse(response_t response) {
+	// TODO: manage this...
+	printf("New response OPCODE = %x\n", response.operation);
 }

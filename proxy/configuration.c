@@ -14,6 +14,8 @@ struct configuration {
 	int commandStderrFd;
 	char *filterHttp;
 	char *filterAdmin;
+	char *commandStderrPath;
+	char *filterManagement;
 };
 
 static struct configuration config = {
@@ -24,9 +26,11 @@ static struct configuration config = {
 	.mediaRange			  = NULL,
 	.command			  = NULL,
 	.commandStderrFd	  = INVALID_FD,
+	.commandStderrPath	= "/dev/null",
 	.isTransformationOn   = FALSE,
 	.filterHttp			  = NULL,
 	.filterAdmin		  = NULL,
+	.filterManagement	 = NULL,
 };
 
 void initializeConfigBaseValues(configurationADT config) {
@@ -44,6 +48,14 @@ int getCommandStderrFd(configurationADT config) {
 
 void setCommandStderrFd(configurationADT config, int errorFd) {
 	config->commandStderrFd = errorFd;
+}
+
+char *getCommandStderrPath(configurationADT config) {
+	return config->commandStderrPath;
+}
+
+void setCommandStderrPath(configurationADT config, char *errorPath) {
+	config->commandStderrPath = errorPath;
 }
 
 unsigned short getHttpPort(configurationADT config) {
