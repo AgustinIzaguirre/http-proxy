@@ -34,6 +34,7 @@ static struct configuration config = {
 
 void initializeConfigBaseValues(configurationADT config) {
 	config->commandStderrFd = open(STDERR_REDIRECT_DEFAULT, O_WRONLY);
+	config->mediaRange		= createMediaRange(";");
 }
 
 configurationADT getConfiguration() {
