@@ -107,11 +107,7 @@ unsigned standardOriginRead(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_write_adv(inBuffer, bytesRead);
-		uint8_t  *writePointer, *readPointer;
-		writePointer = buffer_write_ptr(inBuffer, &count);
-		readPointer = buffer_read_ptr(inBuffer, &count);
-		ssize_t bytes = writePointer-readPointer;
-		prepareChunkedBuffer(chunkBuffer, inBuffer, bytes);
+		prepareChunkedBuffer(chunkBuffer, inBuffer);
 		ret = setStandardFdInterests(key);
 	}
 	else if (bytesRead == 0) {
@@ -148,7 +144,7 @@ unsigned readFromTransform(struct selector_key *key) {
 
 	if (bytesRead > 0) {
 		buffer_write_adv(inbuffer, bytesRead);
-		prepareChunkedBuffer(chunkBuffer, inbuffer, bytesRead);
+		prepareChunkedBuffer(chunkBuffer, inbuffer);
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else if (bytesRead == 0) {
@@ -231,26 +227,27 @@ unsigned standardClientWrite(struct selector_key *key) {
 
 unsigned writeToTransform(struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
-	buffer *buffer						= getWriteBuffer(GET_DATA(key));
+	buffer *inbuffer					= getWriteBuffer(GET_DATA(key));
+	buffer *chunkBuffer					= &transformBody->chunkedBuffer;
 	unsigned ret						= TRANSFORM_BODY;
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
 
 	// if everything is read on buffer
-	if (!buffer_can_read(buffer)) {
+	if (!buffer_can_read(inbuffer)) {
 		// set interest no op on fd an read on client fd
 		return setFdInterestsWithTransformerCommand(key);
 	}
 
-	pointer   = buffer_read_ptr(buffer, &count);
+	pointer   = buffer_read_ptr(inbuffer, &count);
 	bytesRead = write(key->fd, pointer, count);
 
 	if (bytesRead > 0) {
 		if (transformBody->transformCommandExecuted = FALSE) {
 			transformBody->transformCommandExecuted = TRUE;
 		}
-		buffer_read_adv(buffer, bytesRead);
+		buffer_read_adv(inbuffer, bytesRead);
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
@@ -261,7 +258,8 @@ unsigned writeToTransform(struct selector_key *key) {
 		}
 		else {
 			transformBody->commandStatus = EXEC_ERROR;
-			ret							 = setStandardFdInterests(key);
+			prepareChunkedBuffer(chunkBuffer, inbuffer);
+			ret = setStandardFdInterests(key);
 		}
 	}
 
@@ -492,15 +490,20 @@ void initializeChunkedBuffer(struct transformBody *transformBody, int length) {
 	}
 }
 
-void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer,
-						  int bytesRead) {
-	writeNumber(chunkBuffer, bytesRead);
+void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer) {
+	ssize_t count, bytes;
+	uint8_t *writePointer, *readPointer;
+	writePointer = buffer_write_ptr(inbuffer, &count);
+	readPointer  = buffer_read_ptr(inbuffer, &count);
+	bytes		 = writePointer - readPointer;
+
+	writeNumber(chunkBuffer, bytes);
 	buffer_write(chunkBuffer, '\r');
 	buffer_write(chunkBuffer, '\n');
 
-	while (bytesRead) {
+	while (bytes) {
 		buffer_write(chunkBuffer, buffer_read(inbuffer));
-		bytesRead--;
+		bytes--;
 	}
 
 	buffer_write(chunkBuffer, '\r');

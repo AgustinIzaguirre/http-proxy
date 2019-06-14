@@ -41,7 +41,7 @@ unsigned setStandardFdInterests(struct selector_key *key);
 unsigned setFdInterestsWithTransformerCommand(struct selector_key *key);
 unsigned setErrorDoneFd(struct selector_key *key);
 void initializeChunkedBuffer(struct transformBody *transformBody, int length);
-void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer, int bytesRead);
+void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer);
 void transformBodyDestroy(const unsigned state, struct selector_key *key);
 
 // TODO comment all methods
