@@ -13,7 +13,7 @@ struct configuration {
 	int isTransformationOn;
 	int commandStderrFd;
 	char *filterHttp;
-	char *filterAdmin;
+	char *filterManagement;
 };
 
 static struct configuration config = {
@@ -26,7 +26,7 @@ static struct configuration config = {
 	.commandStderrFd	  = INVALID_FD,
 	.isTransformationOn   = FALSE,
 	.filterHttp			  = NULL,
-	.filterAdmin		  = NULL,
+	.filterManagement	 = NULL,
 };
 
 void initializeConfigBaseValues(configurationADT config) {
