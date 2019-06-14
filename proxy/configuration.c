@@ -25,7 +25,7 @@ static struct configuration config = {
 	.mediaRange			  = NULL,
 	.command			  = NULL,
 	.commandStderrFd	  = INVALID_FD,
-	.commandStderrPath	= NULL,
+	.commandStderrPath	= "/dev/null",
 	.isTransformationOn   = FALSE,
 	.filterHttp			  = NULL,
 	.filterAdmin		  = NULL,
@@ -47,6 +47,14 @@ int getCommandStderrFd(configurationADT config) {
 
 void setCommandStderrFd(configurationADT config, int errorFd) {
 	config->commandStderrFd = errorFd;
+}
+
+char *getCommandStderrPath(configurationADT config) {
+	return config->commandStderrPath;
+}
+
+void setCommandStderrPath(configurationADT config, char *errorPath) {
+	config->commandStderrPath = errorPath;
 }
 
 unsigned short getHttpPort(configurationADT config) {

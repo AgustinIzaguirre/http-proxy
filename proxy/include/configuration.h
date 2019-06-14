@@ -27,6 +27,14 @@ int getCommandStderrFd(configurationADT config);
 /* Sets the fd where stderr should be redirected for the executed program */
 void setCommandStderrFd(configurationADT config, int errorFd);
 
+/* Returns the path to the file where stderr should be redirected for the
+ * executed program */
+char *getCommandStderrPath(configurationADT config);
+
+/* Sets the path to the file where stderr should be redirected for the executed
+ * program */
+void setCommandStderrPath(configurationADT config, char *errorPath);
+
 /* Returs http proxy server port */
 unsigned short getHttpPort(configurationADT config);
 
