@@ -16,7 +16,7 @@ struct transformBody {
 	int writeToTransformFd;
 	int readFromTransformFd;
 	unsigned commandStatus;
-	char *chunkedData;
+	uint8_t *chunkedData;
 	buffer chunkedBuffer;
 	uint8_t transformCommandExecuted;
 	uint8_t transformFinished;

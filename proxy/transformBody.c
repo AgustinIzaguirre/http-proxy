@@ -252,7 +252,7 @@ unsigned writeToTransform(struct selector_key *key) {
 	bytesRead = write(key->fd, pointer, count);
 
 	if (bytesRead > 0) {
-		if (transformBody->transformCommandExecuted = FALSE) {
+		if (transformBody->transformCommandExecuted == FALSE) {
 			transformBody->transformCommandExecuted = TRUE;
 		}
 		buffer_read_adv(inbuffer, bytesRead);
@@ -422,8 +422,9 @@ int executeTransformCommand(struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(state);
 	int inputPipe[]						= {-1, -1};
 	int outputPipe[]					= {-1, -1};
-	int errorFd =
-		open(getCommandStderrPath(getConfiguration()), OP_WRITE | OP_READ);
+	// int errorFd =
+	//	open(getCommandStderrPath(getConfiguration()), OP_WRITE | OP_READ); TODO
+	// initializae and dup to stderr
 	char *commandPath = getCommand(getConfiguration());
 	pid_t commandPid;
 
@@ -503,7 +504,7 @@ void initializeChunkedBuffer(struct transformBody *transformBody, int length) {
 }
 
 void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer) {
-	ssize_t count, bytes;
+	size_t count, bytes;
 	uint8_t *writePointer, *readPointer;
 	writePointer = buffer_write_ptr(inbuffer, &count);
 	readPointer  = buffer_read_ptr(inbuffer, &count);
