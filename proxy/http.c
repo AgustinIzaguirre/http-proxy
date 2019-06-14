@@ -6,14 +6,14 @@
 #include <connectToOrigin.h>
 #include <handleRequest.h>
 
-#include <assert.h> // assert
+#include <assert.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdio.h>
-#include <stdlib.h> // malloc
-#include <string.h> // memset
+#include <stdlib.h>
+#include <string.h>
 #include <time.h>
-#include <unistd.h> // close
+#include <unistd.h>
 
 #include <arpa/inet.h>
 
@@ -53,9 +53,8 @@ void httpPassiveAccept(struct selector_key *key) {
 	state = httpNew(client);
 
 	if (state == NULL) {
-		// sin un estado, nos es imposible manejaro.
-		// tal vez deberiamos apagar accept() hasta que detectemos
-		// que se liberó alguna conexión.
+		/* Without state, can't handle */
+		// TODO: should turn off accept() until detect a free-conection?
 		goto fail;
 	}
 
@@ -80,8 +79,7 @@ fail:
 
 static void httpRead(struct selector_key *key) {
 	struct state_machine *stm = getStateMachine(GET_DATA(key));
-	// struct state_machine *stm   = &(GET_DATA(key)->stm); without ADT
-	const enum httpState st = stm_handler_read(stm, key);
+	const enum httpState st   = stm_handler_read(stm, key);
 
 	if (ERROR == st || DONE == st) {
 		httpDone(key);
@@ -112,9 +110,8 @@ static void httpClose(struct selector_key *key) {
 
 static void httpDone(struct selector_key *key) {
 	const int fds[] = {
-		getClientFd(GET_DATA(key)), getOriginFd(GET_DATA(key)),
-		// GET_DATA(key)->clientFd, without ADT
-		// GET_DATA(key)->originFd, without ADT
+		getClientFd(GET_DATA(key)),
+		getOriginFd(GET_DATA(key)),
 	};
 
 	for (unsigned i = 0; i < SIZE_OF_ARRAY(fds); i++) {

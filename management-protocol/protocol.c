@@ -45,6 +45,9 @@ static char *allocateAndCopyString(char *source, size_t *length);
 
 static uint8_t getResponseHeadByte(responseStatus_t status);
 
+static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter,
+									uint16_t streamQuantity);
+
 static char *errorMessage = NULL;
 /*****************************************************************************\
 \*****************************************************************************/
@@ -117,10 +120,13 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 	serverAddress.sin_family = AF_INET;
 	serverAddress.sin_port   = htons(serverPort);
 
-	/* Convert IPv4 and IPv6 addresses from text to binary form */
+	/* Convert IPv4 and (TODO: IPv6) addresses from text to binary form */
 	int convert = inet_pton(AF_INET, serverIP, &serverAddress.sin_addr.s_addr);
 
-	CHECK_FOR_ERROR(convert);
+	if (convert <= 0) {
+		errorMessage = "Invalid Server IP, fails to convert it";
+		return -1;
+	}
 
 	int connection = connect(server, (struct sockaddr *) &serverAddress,
 							 sizeof(serverAddress));
@@ -137,6 +143,62 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 			   sizeof(events));
 
 	return server;
+}
+
+int bindAndGetServerSocket(uint16_t port, char *ipFilter,
+						   uint16_t streamQuantity) {
+	return prepareAndBindSCTPSocket(port, ipFilter, streamQuantity);
+}
+
+// TODO: do for ipv6 too
+static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter,
+									uint16_t streamQuantity) {
+	struct sockaddr_in addr;
+	struct sctp_initmsg initMsg;
+
+	memset(&addr, 0, sizeof(addr));
+
+	addr.sin_family = AF_INET;
+	addr.sin_port   = htons(port);
+
+	int convert = inet_pton(AF_INET, ipFilter, &addr.sin_addr.s_addr);
+
+	if (convert <= 0) {
+		errorMessage = "Invalid IP filter, fails to convert it";
+		return -1;
+	}
+
+	int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
+
+	CHECK_FOR_ERROR(fd);
+
+	/* If server fails doesn't have to wait to reuse address */
+	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
+
+	int binded = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
+
+	CHECK_FOR_ERROR(binded);
+
+	memset(&initMsg, 0, sizeof(initMsg));
+
+	initMsg.sinit_num_ostreams  = streamQuantity;
+	initMsg.sinit_max_instreams = streamQuantity;
+	initMsg.sinit_max_attempts  = MAX_ATTEMPTS;
+
+	setsockopt(fd, IPPROTO_SCTP, SCTP_INITMSG, &initMsg, sizeof(initMsg));
+
+	struct sctp_event_subscribe events;
+
+	memset((void *) &events, 0, sizeof(events));
+
+	/*	By default returns only the data read.
+		To know which stream the data came we enable the data_io_event
+		The info will be in sinfo_stream in sctp_sndrcvinfo struct */
+	events.sctp_data_io_event = 1;
+	setsockopt(fd, SOL_SCTP, SCTP_EVENTS, (const void *) &events,
+			   sizeof(events));
+
+	return fd;
 }
 
 static void setVersionBytes(void *data) {
@@ -300,20 +362,20 @@ static void loadRecvAuthenticationResponse(
 	firstByte = *response;
 
 	if (firstByte & GENERAL_STATUS_MASK) {
-		authenticationResponse->status.generalStatus = ERROR;
+		authenticationResponse->status.generalStatus = ERROR_STATUS;
 
 		if (firstByte & VERSION_STATUS_MASK) {
-			authenticationResponse->status.versionStatus = ERROR;
+			authenticationResponse->status.versionStatus = ERROR_STATUS;
 			authenticationResponse->version				 = getVersion(response);
 		}
 		if (firstByte & AUTH_STATUS_MASK) {
-			authenticationResponse->status.authenticationStatus = ERROR;
+			authenticationResponse->status.authenticationStatus = ERROR_STATUS;
 		}
 	}
 	else {
-		authenticationResponse->status.generalStatus		= OK;
-		authenticationResponse->status.versionStatus		= OK;
-		authenticationResponse->status.authenticationStatus = OK;
+		authenticationResponse->status.generalStatus		= OK_STATUS;
+		authenticationResponse->status.versionStatus		= OK_STATUS;
+		authenticationResponse->status.authenticationStatus = OK_STATUS;
 		authenticationResponse->version						= VERSION;
 	}
 }
@@ -412,8 +474,8 @@ int recvResponse(int server, response_t *response) {
 	response->data		 = NULL;
 	response->dataLength = 0;
 
-	if (response->status.operationStatus == OK &&
-		response->status.idStatus == OK) {
+	if (response->status.operationStatus == OK_STATUS &&
+		response->status.idStatus == OK_STATUS) {
 		switch (response->operation) {
 			case GET_OP:
 				read = recvGetResponse(server, response);
@@ -437,8 +499,9 @@ int recvResponse(int server, response_t *response) {
 }
 
 static int recvGetResponse(int server, response_t *response) {
-	/* If timeTagStatus = OK you already had the last version of the resource */
-	if (response->status.timeTagStatus == OK) {
+	/* If timeTagStatus = OK_STATUS you already had the last version of the
+	 * resource */
+	if (response->status.timeTagStatus == OK_STATUS) {
 		response->data		 = NULL;
 		response->dataLength = 0;
 		return 0;
@@ -474,7 +537,7 @@ static int recvSetResponse(int server, response_t *response) {
 	int read = 0;
 
 	/* If timeTagStatus is OK, you could override resource */
-	if (response->status.timeTagStatus == OK) {
+	if (response->status.timeTagStatus == OK_STATUS) {
 		read = recvTimeTag(server, &response->timeTag);
 	}
 
@@ -527,11 +590,16 @@ static int recvHeadByteAndLoadResponseInfo(int fd, response_t *response) {
 	}
 
 	response->status.generalStatus =
-		headByte & GENERAL_STATUS_MASK ? ERROR : OK;
+		headByte & GENERAL_STATUS_MASK ? ERROR_STATUS : OK_STATUS;
+
 	response->status.operationStatus =
-		headByte & OPCODE_STATUS_MASK ? ERROR : OK;
-	response->status.idStatus	  = headByte & ID_STATUS_MASK ? ERROR : OK;
-	response->status.timeTagStatus = headByte & TTAG_STATUS_MASK ? ERROR : OK;
+		headByte & OPCODE_STATUS_MASK ? ERROR_STATUS : OK_STATUS;
+
+	response->status.idStatus =
+		headByte & ID_STATUS_MASK ? ERROR_STATUS : OK_STATUS;
+
+	response->status.timeTagStatus =
+		headByte & TTAG_STATUS_MASK ? ERROR_STATUS : OK_STATUS;
 
 	switch (headByte & OPCODE_MASK) {
 		case GET_MASK:
@@ -562,7 +630,7 @@ int recvRequest(int client, request_t *request) {
 
 	totalRead += read;
 
-	if (request->operationStatus == OK) {
+	if (request->operationStatus == OK_STATUS) {
 		switch (request->operation) {
 			case BYE_OP:
 				/* Nothing extra to recv */
@@ -668,7 +736,7 @@ static int recvHeadByteAndLoadRequestInfo(int fd, request_t *request) {
 		return read;
 	}
 
-	request->operationStatus = OK;
+	request->operationStatus = OK_STATUS;
 
 	switch (headByte & OPCODE_MASK) {
 		case GET_MASK:
@@ -681,7 +749,7 @@ static int recvHeadByteAndLoadRequestInfo(int fd, request_t *request) {
 			request->operation = BYE_OP;
 			break;
 		default:
-			request->operationStatus = ERROR;
+			request->operationStatus = ERROR_STATUS;
 			break;
 	}
 
@@ -694,17 +762,17 @@ int sendAuthenticationResponse(
 	int client, authenticationResponse_t authenticationResponse) {
 	uint8_t response = 0x00;
 
-	if (authenticationResponse.status.generalStatus != OK) {
+	if (authenticationResponse.status.generalStatus != OK_STATUS) {
 		response = response | GENERAL_STATUS_MASK;
 
-		if (authenticationResponse.status.versionStatus != OK) {
+		if (authenticationResponse.status.versionStatus != OK_STATUS) {
 			response = response | VERSION_STATUS_MASK;
 
 			/* >> 3 because one shift per status bit */
 			response = response | (VERSION_BYTE >> 3);
 		}
 
-		if (authenticationResponse.status.authenticationStatus != OK) {
+		if (authenticationResponse.status.authenticationStatus != OK_STATUS) {
 			response = response | AUTH_STATUS_MASK;
 		}
 	}
@@ -767,18 +835,18 @@ int sendResponse(int client, response_t response) {
 
 	switch (response.operation) {
 		case GET_OP:
-			if (response.status.idStatus != ERROR &&
-				response.status.operationStatus != ERROR &&
-				response.status.timeTagStatus != OK) {
+			if (response.status.idStatus != ERROR_STATUS &&
+				response.status.operationStatus != ERROR_STATUS &&
+				response.status.timeTagStatus != OK_STATUS) {
 				needsTimeTag  = TRUE;
 				formattedData = formatData(response.data, response.dataLength,
 										   &formattedDataLength);
 			}
 			break;
 		case SET_OP:
-			if (response.status.idStatus != ERROR &&
-				response.status.operationStatus != ERROR &&
-				response.status.timeTagStatus == OK) {
+			if (response.status.idStatus != ERROR_STATUS &&
+				response.status.operationStatus != ERROR_STATUS &&
+				response.status.timeTagStatus == OK_STATUS) {
 				needsTimeTag = TRUE;
 			}
 			break;
