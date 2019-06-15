@@ -75,7 +75,8 @@ unsigned transformBodyWrite(struct selector_key *key) {
 		printf("error10:\n%s\n", strerror(errno));
 		ret = ERROR;
 	}
-	else if (transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
+	else if (!getTransformContent(state) ||
+			 transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
 		ret = standardClientWrite(key);
 	}
 	else if (key->fd == transformBody->writeToTransformFd) {
@@ -334,8 +335,8 @@ unsigned setStandardFdInterests(struct selector_key *key) {
 		clientInterest |= OP_WRITE;
 	}
 
-	if (buffer_can_write(writeBuffer) && buffer_can_write(chunkBuffer) &&
-		!transformBody->responseFinished) {
+	if ((buffer_can_write(writeBuffer) || buffer_can_read(writeBuffer)) &&
+		buffer_can_write(chunkBuffer) && !transformBody->responseFinished) {
 		originInterest |= OP_READ;
 	}
 
