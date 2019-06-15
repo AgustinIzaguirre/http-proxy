@@ -112,11 +112,13 @@ static void handleRead(struct selector_key *key) {
 		read = handleNonAuthenticatedRead(key);
 	}
 
-	if (read < 0) {
-		// TODO: destroy if fails?
+	if (read <= 0) {
+		// TODO: destroy?
+		selector_unregister_fd(key->s, key->fd);
 	}
-
-	selector_set_interest(key->s, key->fd, OP_WRITE);
+	else {
+		selector_set_interest(key->s, key->fd, OP_WRITE);
+	}
 }
 
 static int handleAuthenticatedRead(struct selector_key *key) {
@@ -124,9 +126,10 @@ static int handleAuthenticatedRead(struct selector_key *key) {
 
 	int read = recvRequest(key->fd, &client->request);
 
-	if (read < 0) {
+	if (read <= 0) {
 		errorMessage = getProtocolErrorMessage();
 		// TODO: destroy?
+		return read;
 	}
 
 	client->response.streamNumber = client->request.streamNumber;
@@ -186,22 +189,19 @@ static void manageGetRequest(manager_t *client) {
 		case CMD_ID:
 			break;
 		case MTR_CN_ID:
-			// printf(
-			// 	"[management.c][manageGetRequest] ID = MTR_CN_ID\n\n"); // TODO
-			*metric = getConcurrentConections();
-			// printf("data (no-format) = %lx\n", *metric); TODO
+			*metric						= getConcurrentConections();
 			client->response.data		= (void *) metric;
 			client->response.dataLength = sizeof(uint64_t);
 			break;
 		case MTR_HS_ID:
-			metric						= getHistoricAccess();
-			client->response.data		= (void *) &metric;
-			client->response.dataLength = sizeof(metric);
+			*metric						= getHistoricAccess();
+			client->response.data		= (void *) metric;
+			client->response.dataLength = sizeof(uint64_t);
 			break;
 		case MTR_BT_ID:
-			metric						= getTransferBytes();
-			client->response.data		= (void *) &metric;
-			client->response.dataLength = sizeof(metric);
+			*metric						= getTransferBytes();
+			client->response.data		= (void *) metric;
+			client->response.dataLength = sizeof(uint64_t);
 			break;
 		case MTR_ID:
 			break;
@@ -268,9 +268,10 @@ static int handleNonAuthenticatedRead(struct selector_key *key) {
 	int read = recvAuthenticationRequest(key->fd, &username, &password,
 										 &hasSameVersion);
 
-	if (read < 0) {
+	if (read <= 0) {
 		errorMessage = getProtocolErrorMessage();
 		// TODO: destroy?
+		return read;
 	}
 
 	if (hasSameVersion) {

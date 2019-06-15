@@ -70,6 +70,8 @@ int main(const int argc, const char **argv) {
 		goto finally;
 	}
 
+	fprintf(stdout, "Listening on STCP port %d\n", managementPort);
+
 	const struct selector_init conf = {
 		.signal = SIGALRM,
 		.select_timeout =
@@ -180,7 +182,7 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 		return ERROR;
 	}
 
-	fprintf(stdout, "Listening on TCP port %d\n", port);
+	fprintf(stdout, "Listening on TCP  port %d\n", port);
 
 	/* If server fails doesn't have to wait to reuse address */
 	setsockopt(currentSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));

@@ -3,6 +3,7 @@
 #include <commandParser.h>
 #include <linkedListADT.h>
 #include <time.h>
+#include <unistd.h>
 
 /* Initialize in zero all time-tags */
 timeTag_t timeTags[ID_QUANTITY] = {0};
@@ -67,14 +68,14 @@ int main(int argc, char const *argv[]) {
 		return -1;
 	}
 
-	printf("Welcome to HTTP Proxy Manager!\n\n");
+	printf("\n\nWelcome to HTTP Proxy Manager!\n\n");
 
 	uint8_t byeRead;
 	int sent;
 	int read;
 
 	do {
-		printf("------ Enter commands ------\n\n");
+		printf("\n\n\n\n\n------ Enter commands ------\n\n");
 
 		sent = parseAndSendRequests(server, &byeRead);
 
@@ -93,6 +94,7 @@ int main(int argc, char const *argv[]) {
 		}
 	} while (!byeRead);
 
+	close(server);
 	// TODO: read all bytes in socket to clean its buffer? close it?
 
 	return 0;
@@ -299,13 +301,13 @@ static void setRecvFrom(uint16_t currentStreamNumber,
 }
 
 static void printInvalidCommand() {
-	printf("\n\n\n---------->> Response <<----------\n\n");
+	printf("\n---------->> Response <<----------\n\n");
 
 	printf("Invalid command\n");
 }
 
 static void manageAndPrintResponse(response_t response) {
-	printf("\n\n\n---------->> Response <<----------\n\n");
+	printf("\n---------->> Response <<----------\n\n");
 
 	if (response.status.generalStatus == ERROR_STATUS) {
 		if (response.status.operationStatus == ERROR_STATUS) {
