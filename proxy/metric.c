@@ -14,18 +14,22 @@ static struct metrics metricSingleton = {
 
 void increaseConcurrentConections() {
 	metricSingleton.concurrentConections++;
+	generateAndUpdateTimeTag(MTR_CN_ID);
 }
 
 void decreaseConcurrentConections() {
 	metricSingleton.concurrentConections--;
+	generateAndUpdateTimeTag(MTR_CN_ID);
 }
 
 void increaseHistoricAccess() {
 	metricSingleton.historicAccess++;
+	generateAndUpdateTimeTag(MTR_HS_ID);
 }
 
 void increaseTransferBytes(uint64_t n) {
 	metricSingleton.transferBytes += n;
+	generateAndUpdateTimeTag(MTR_BT_ID);
 }
 
 uint64_t getConcurrentConections() {

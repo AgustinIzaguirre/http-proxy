@@ -22,6 +22,14 @@ static const struct fd_handler managementHandler = {.handle_read  = handleRead,
 													.handle_close = handleClose,
 													.handle_block = NULL};
 
+timeTag_t generateAndUpdateTimeTag(uint8_t id) {
+	timeTag_t timeTag = time(NULL);
+
+	timeTags[id] = timeTag;
+
+	return timeTag;
+}
+
 static manager_t *newManager() {
 	manager_t *manager = calloc(sizeof(manager_t), 1);
 
@@ -167,10 +175,8 @@ static void manageGetRequest(manager_t *client) {
 	/* Valid ID & Different TIME-TAG: Response with data */
 	client->response.status.generalStatus = ERROR_STATUS;
 	client->response.status.timeTagStatus = ERROR_STATUS;
-	uint64_t *metric					  = malloc(sizeof(uint64_t));
-	// uint8_t *data;
-	// uint8_t transformState;
-	// uint32_t bufferSize; //TODO: discuss about this type
+
+	uint64_t *metric = malloc(sizeof(uint64_t));
 
 	switch (id) {
 		case MIME_ID:
@@ -180,10 +186,10 @@ static void manageGetRequest(manager_t *client) {
 		case CMD_ID:
 			break;
 		case MTR_CN_ID:
-			printf(
-				"[management.c][manageGetRequest] ID = MTR_CN_ID\n\n"); // TODO
+			// printf(
+			// 	"[management.c][manageGetRequest] ID = MTR_CN_ID\n\n"); // TODO
 			*metric = getConcurrentConections();
-			printf("data (no-format) = %lx\n", *metric);
+			// printf("data (no-format) = %lx\n", *metric); TODO
 			client->response.data		= (void *) metric;
 			client->response.dataLength = sizeof(uint64_t);
 			break;

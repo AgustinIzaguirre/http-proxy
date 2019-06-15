@@ -7,6 +7,8 @@
 /* Initialize in zero all time-tags */
 timeTag_t timeTags[ID_QUANTITY] = {0};
 
+void *storedData[ID_QUANTITY] = {0};
+
 typedef struct {
 	returnCode_t code;
 	operation_t operation;
@@ -37,6 +39,10 @@ static void printInvalidCommand();
 
 static void manageAndPrintResponse(response_t response);
 
+static void manageAndPrintGetResponse(response_t response);
+
+static void manageAndPrintSetResponse(response_t response);
+
 /*****************************************************************************\
 \*****************************************************************************/
 
@@ -61,11 +67,15 @@ int main(int argc, char const *argv[]) {
 		return -1;
 	}
 
+	printf("Welcome to HTTP Proxy Manager!\n\n");
+
 	uint8_t byeRead;
 	int sent;
 	int read;
 
 	do {
+		printf("------ Enter commands ------\n\n");
+
 		sent = parseAndSendRequests(server, &byeRead);
 
 		if (sent < 0) {
@@ -94,6 +104,8 @@ static int authenticate(int server) {
 	size_t usernameLength;
 	size_t passwordLength;
 	authenticationResponse_t response;
+
+	printf("\n\n-------- Authentication --------\n\n");
 
 	do {
 		username	   = NULL;
@@ -128,8 +140,10 @@ static int authenticate(int server) {
 				printf("Server version = v%ld\n", response.version);
 				return -1;
 			}
-			else if (response.status.authenticationStatus != OK_STATUS) {
-				printf("Incorrect username or password. Please, try again\n");
+
+			if (response.status.authenticationStatus != OK_STATUS) {
+				printf(
+					"Incorrect username or password. Please, try again\n\n\n");
 			}
 		}
 	} while (response.status.generalStatus != OK_STATUS);
@@ -285,6 +299,8 @@ static void setRecvFrom(uint16_t currentStreamNumber,
 }
 
 static void printInvalidCommand() {
+	printf("\n\n\n---------->> Response <<----------\n\n");
+
 	printf("Invalid command\n");
 }
 
@@ -305,28 +321,73 @@ static void manageAndPrintResponse(response_t response) {
 
 	switch (response.operation) {
 		case GET_OP:
-			if (response.status.timeTagStatus == OK_STATUS) {
-				printf("You already had the last version\n");
-				printf("Last modified at: %s\n",
-					   ctime((const time_t *) &timeTags[response.id]));
-			}
-			else {
-				printf("New version gotten\n");
-				if (timeTags[response.id] == 0) {
-					printf("First time gotten\n");
-				}
-				else {
-					printf("You previous version modified date was: %s\n",
-						   ctime((const time_t *) &timeTags[response.id]));
-				}
-				printf("Last modified at: %s\n",
-					   ctime((const time_t *) &response.timeTag));
-				timeTags[response.id] = response.timeTag;
-			}
+			manageAndPrintGetResponse(response);
 			break;
 		case SET_OP:
+			manageAndPrintSetResponse(response);
 			break;
 		default:
 			break;
 	}
+}
+
+static void manageAndPrintGetResponse(response_t response) {
+	if (response.status.timeTagStatus == OK_STATUS) {
+		printf("You already had the last version\n");
+	}
+	else {
+		printf("New version gotten\n");
+		if (timeTags[response.id] == 0) {
+			printf("Resource gotten for first time\n");
+		}
+		else {
+			printf("You previous 'Last modified date' was: %s\n",
+				   ctime((const time_t *) &timeTags[response.id]));
+		}
+
+		storedData[response.id] = response.data;
+		timeTags[response.id]   = response.timeTag;
+	}
+
+	printf("Last modified at: %s\n",
+		   ctime((const time_t *) &timeTags[response.id]));
+
+	/* Print values */
+	switch (response.id) {
+		case MIME_ID:
+			// TODO: printf("MIME Media-types = %s\n", (char *)
+			// storedData[response.id]);
+			break;
+		case BF_ID:
+			// TODO: printf("Buffer size = %d\n", *((uint32_t *)
+			// storedData[response.id]));
+			break;
+		case CMD_ID:
+			// TODO: printf("Command = %s\n", (char *) storedData[response.id]);
+			break;
+		case MTR_CN_ID:
+			printf("Concurrent connections = %ld\n",
+				   *((uint64_t *) storedData[response.id]));
+			break;
+		case MTR_HS_ID:
+			printf("Historic connections = %ld\n",
+				   *((uint64_t *) storedData[response.id]));
+			break;
+		case MTR_BT_ID:
+			printf("Bytes transfered = %ld\n",
+				   *((uint64_t *) storedData[response.id]));
+			break;
+		case MTR_ID:
+			// TODO: Send and receive in a particular order... all the metrics
+			break;
+		case TF_ID:
+			// TODO: printf("Transformations state = %s\n", *((uint8_t *)
+			// response.data) ? "ON", "OFF");
+			break;
+		default:
+			break;
+	}
+}
+
+static void manageAndPrintSetResponse(response_t response) {
 }

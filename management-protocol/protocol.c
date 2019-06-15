@@ -278,11 +278,11 @@ static void *formatData(void *data, size_t dataLength,
 		dataIndex += bytesToCopy;
 	}
 
-	printf("[protocol.c][formatData] FORMATTED-DATA = "); // TODO
-	for (int i = 0; i < *formattedDataLength; i++) {
-		printf(" 0x%02X ", formattedData[i]);
-	}
-	printf("\n\n");
+	// printf("[protocol.c][formatData] FORMATTED-DATA = "); // TODO LOGGER
+	// for (int i = 0; i < *formattedDataLength; i++) {
+	// 	printf(" 0x%02X ", formattedData[i]);
+	// }
+	// printf("\n\n");
 
 	return (void *) formattedData;
 }
@@ -358,8 +358,12 @@ int recvAuthenticationResponse(
 
 static void loadRecvAuthenticationResponse(
 	uint8_t *response, authenticationResponse_t *authenticationResponse) {
-	uint8_t firstByte;
-	firstByte = *response;
+	uint8_t firstByte = *response;
+
+	authenticationResponse->status.generalStatus		= OK_STATUS;
+	authenticationResponse->status.versionStatus		= OK_STATUS;
+	authenticationResponse->status.authenticationStatus = OK_STATUS;
+	authenticationResponse->version						= VERSION;
 
 	if (firstByte & GENERAL_STATUS_MASK) {
 		authenticationResponse->status.generalStatus = ERROR_STATUS;
@@ -371,12 +375,6 @@ static void loadRecvAuthenticationResponse(
 		if (firstByte & AUTH_STATUS_MASK) {
 			authenticationResponse->status.authenticationStatus = ERROR_STATUS;
 		}
-	}
-	else {
-		authenticationResponse->status.generalStatus		= OK_STATUS;
-		authenticationResponse->status.versionStatus		= OK_STATUS;
-		authenticationResponse->status.authenticationStatus = OK_STATUS;
-		authenticationResponse->version						= VERSION;
 	}
 }
 
@@ -431,11 +429,11 @@ int sendGetRequest(int server, uint8_t id, timeTag_t timeTag) {
 
 	int sent = sendSCTPMsg(server, (void *) getRequest, length, GET_STREAM);
 
-	printf("[protocol.c][sendGetRequest] GET-REQUEST = "); // TODO
-	for (int i = 0; i < length; i++) {
-		printf(" 0x%02X ", getRequest[i]);
-	}
-	printf("\n\n");
+	// printf("[protocol.c][sendGetRequest] GET-REQUEST = "); // TODO LOGGER
+	// for (int i = 0; i < length; i++) {
+	// 	printf(" 0x%02X ", getRequest[i]);
+	// }
+	// printf("\n\n");
 
 	free(getRequest);
 
@@ -457,11 +455,11 @@ int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
 
 	int sent = sendSCTPMsg(server, (void *) setRequest, length, SET_STREAM);
 
-	printf("[protocol.c][sendSetRequest] SET-REQUEST = "); // TODO
-	for (int i = 0; i < length; i++) {
-		printf(" 0x%02X ", setRequest[i]);
-	}
-	printf("\n\n");
+	// printf("[protocol.c][sendSetRequest] SET-REQUEST = "); // TODO LOGGER
+	// for (int i = 0; i < length; i++) {
+	// 	printf(" 0x%02X ", setRequest[i]);
+	// }
+	// printf("\n\n");
 
 	free(formattedData);
 	free(setRequest);
@@ -513,8 +511,6 @@ static int recvGetResponse(int server, response_t *response) {
 	/* If timeTagStatus = OK_STATUS you already had the last version of the
 	 * resource */
 	if (response->status.timeTagStatus == OK_STATUS) {
-		printf("[protocol.c][recvGetResponse] status.timeTagStatus is "
-			   "OK_STATUS, no need of recvTimeTag\n\n"); // TODO
 		response->data		 = NULL;
 		response->dataLength = 0;
 		return 0;
@@ -880,11 +876,11 @@ int sendResponse(int client, response_t response) {
 			   formattedData, formattedDataLength);
 	}
 
-	printf("[protocol.c][sendResponse] RESPONSE = "); // TODO
-	for (int i = 0; i < length; i++) {
-		printf(" 0x%02X ", msg[i]);
-	}
-	printf("\n\n");
+	// printf("[protocol.c][sendResponse] RESPONSE = "); // TODO LOGGER
+	// for (int i = 0; i < length; i++) {
+	// 	printf(" 0x%02X ", msg[i]);
+	// }
+	// printf("\n\n");
 
 	return sendSCTPMsg(client, (void *) msg, length, response.streamNumber);
 }
