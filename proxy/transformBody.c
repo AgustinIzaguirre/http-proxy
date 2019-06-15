@@ -126,6 +126,9 @@ unsigned standardOriginRead(struct selector_key *key) {
 	else if (bytesRead == 0) {
 		transformBody->responseFinished = TRUE;
 		sentLastChunked(chunkBuffer);
+		if (!buffer_can_read(inBuffer)) {
+			close(transformBody->writeToTransformFd);
+		}
 		ret = setStandardFdInterests(key);
 	}
 	else {
@@ -401,7 +404,7 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	}
 
 	if (buffer_can_write(writeBuffer) && !transformBody->responseFinished &&
-		!buffer_can_read(chunkBuffer)) {
+		!buffer_can_read(chunkBuffer) && !buffer_can_read(writeBuffer)) {
 		originInterest |= OP_READ;
 	}
 
