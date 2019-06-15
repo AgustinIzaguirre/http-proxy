@@ -198,8 +198,8 @@ unsigned readFromOrigin(struct selector_key *key) {
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else if (bytesRead == 0) {
-		if (close(transformBody->writeToTransformFd) == -1) {
-			printf("file already closed\n"); // TODO remove
+		if (!buffer_can_read(writeBuffer)) {
+			close(transformBody->writeToTransformFd);
 		}
 		transformBody->responseFinished = TRUE;
 		ret = setFdInterestsWithTransformerCommand(key);
@@ -272,6 +272,9 @@ unsigned writeToTransform(struct selector_key *key) {
 			transformBody->transformCommandExecuted = TRUE;
 		}
 		buffer_read_adv(inbuffer, bytesRead);
+		if (!buffer_can_read(inbuffer) && transformBody->responseFinished) {
+			close(transformBody->writeToTransformFd);
+		}
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
@@ -415,6 +418,12 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 		return ERROR;
 	}
 
+	if (clientInterest == OP_NOOP && originInterest == OP_NOOP &&
+		transformReadInterest == OP_NOOP && transformWriteInterest == OP_NOOP &&
+		transformBody->responseFinished) {
+		return DONE;
+	}
+
 	return ret;
 }
 
@@ -518,7 +527,6 @@ int executeTransformCommand(struct selector_key *key) {
 		incrementReferences(state);
 		incrementReferences(state);
 	}
-
 	return TRANSFORM_COMMAND_OK;
 }
 
