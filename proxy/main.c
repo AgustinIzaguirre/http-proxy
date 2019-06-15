@@ -170,32 +170,36 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 
 	ret = getaddrinfo(filterInterface, NULL, &hint, &res);
 
-	if (ret < 0) {
-		// TODO fails
+	if (ret != 0) {
+		errorMessage = "Can't get interface address info";
+		return -1;
 	}
 
 	struct sockaddr_storage *addr = calloc(1, sizeof(struct sockaddr_storage));
+	int convert;
 
 	switch (res->ai_family) {
 		case AF_INET:
 			addr->ss_family							  = AF_INET;
 			((struct sockaddr_in *) addr)->sin_family = AF_INET;
 			((struct sockaddr_in *) addr)->sin_port   = htons(port);
-			// TODO: chech return of inet_pton
-			inet_pton(addr->ss_family, filterInterface,
-					  &(((struct sockaddr_in *) addr)->sin_addr.s_addr));
+			convert =
+				inet_pton(addr->ss_family, filterInterface,
+						  &(((struct sockaddr_in *) addr)->sin_addr.s_addr));
 			break;
 		case AF_INET6:
 			addr->ss_family								= AF_INET6;
 			((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
 			((struct sockaddr_in6 *) addr)->sin6_port   = htons(port);
-			// TODO: chech return of inet_pton
-			inet_pton(addr->ss_family, filterInterface,
-					  &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr));
+			convert =
+				inet_pton(addr->ss_family, filterInterface,
+						  &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr));
 			break;
-		default:
-			// TODO: AF_UNSPEC
-			break;
+	}
+
+	if (convert <= 0) {
+		errorMessage = "Invalid IP interface, fails to convert it";
+		return -1;
 	}
 
 	const int currentSocket = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP);
@@ -209,7 +213,7 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 
 	if (addr->ss_family == AF_INET6) {
 		/* If AF_INET6 avoid  */
-		setsockopt(currentSocket, IPPROTO_IPV6, IPV6_V6ONLY, &(int){1},
+		setsockopt(currentSocket, IPPROTO_IPV6, IPV6_V6ONLY, &(int){0},
 				   sizeof(int));
 	}
 
@@ -221,14 +225,12 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 		return ERROR;
 	}
 
-	// TODO: I Think here we should filter IP not where we do filter IP
-
 	if (listen(currentSocket, BACKLOG_QTY) < 0) {
 		errorMessage = "Unable to listen";
 		return ERROR;
 	}
 
-	if (selector_fd_set_nio(currentSocket) == -1) { // TODO: maybe < 0?
+	if (selector_fd_set_nio(currentSocket) < 0) {
 		errorMessage = "Getting server socket flags";
 		return ERROR;
 	}

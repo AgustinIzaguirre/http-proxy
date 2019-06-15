@@ -145,31 +145,66 @@ int bindAndGetServerSocket(uint16_t port, char *ipFilter) {
 	return prepareAndBindSCTPSocket(port, ipFilter);
 }
 
-// TODO: do for ipv6 too
 static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter) {
-	struct sockaddr_in addr;
-	struct sctp_initmsg initMsg;
+	struct addrinfo hint;
+	struct addrinfo *res = NULL;
+	int ret;
 
-	memset(&addr, 0, sizeof(addr));
+	memset(&hint, 0, sizeof(hint));
 
-	addr.sin_family = AF_INET;
-	addr.sin_port   = htons(port);
+	hint.ai_family = PF_UNSPEC;
+	hint.ai_flags  = AI_NUMERICHOST;
 
-	int convert = inet_pton(AF_INET, ipFilter, &addr.sin_addr.s_addr);
+	ret = getaddrinfo(ipFilter, NULL, &hint, &res);
 
-	if (convert <= 0) {
-		errorMessage = "Invalid IP filter, fails to convert it";
+	if (ret != 0) {
+		errorMessage = "Can't get interface address info\n";
 		return -1;
 	}
 
-	int fd = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
+	struct sockaddr_storage *addr = calloc(1, sizeof(struct sockaddr_storage));
+	struct sctp_initmsg initMsg;
+	int convert;
+
+	switch (res->ai_family) {
+		case AF_INET:
+			addr->ss_family							  = AF_INET;
+			((struct sockaddr_in *) addr)->sin_family = AF_INET;
+			((struct sockaddr_in *) addr)->sin_port   = htons(port);
+			convert =
+				inet_pton(addr->ss_family, ipFilter,
+						  &(((struct sockaddr_in *) addr)->sin_addr.s_addr));
+			break;
+		case AF_INET6:
+			addr->ss_family								= AF_INET6;
+			((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
+			((struct sockaddr_in6 *) addr)->sin6_port   = htons(port);
+			convert =
+				inet_pton(addr->ss_family, ipFilter,
+						  &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr));
+			break;
+	}
+
+	if (convert == 0) {
+		errorMessage = "Invalid IP interface, fails to convert it";
+		return -1;
+	}
+
+	CHECK_FOR_ERROR(convert);
+
+	int fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_SCTP);
 
 	CHECK_FOR_ERROR(fd);
 
 	/* If server fails doesn't have to wait to reuse address */
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
-	int binded = bind(fd, (struct sockaddr *) &addr, sizeof(addr));
+	if (addr->ss_family == AF_INET6) {
+		/* If AF_INET6 avoid  */
+		setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &(int){0}, sizeof(int));
+	}
+
+	int binded = bind(fd, (struct sockaddr *) addr, sizeof(*addr));
 
 	CHECK_FOR_ERROR(binded);
 

@@ -21,8 +21,8 @@ struct configuration {
 static struct configuration config = {
 	.httpPort			  = DEFAULT_PROXY_HTTP_PORT,
 	.managementPort		  = DEFAULT_MANAGEMENT_PORT,
-	.httpInterfaces		  = "0.0.0.0",
-	.managementInterfaces = "127.0.0.1", /* Default: only localhost */
+	.httpInterfaces		  = "::",  /* Default: All interfaces, IPv6 and IPv4 */
+	.managementInterfaces = "::1", /* Default: only localhost, IPv6 and IPv4 */
 	.mediaRange			  = NULL,
 	.command			  = NULL,
 	.commandStderrFd	  = INVALID_FD,

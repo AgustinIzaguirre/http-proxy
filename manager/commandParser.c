@@ -1,6 +1,6 @@
 #include <commandParser.h>
 
-int parseCommand(operation_t *operation, id_t *id, void **data,
+int parseCommand(operation_t *operation, resourceId_t *id, void **data,
 				 size_t *dataLength) {
 	returnCode_t returnCode = IGNORE;
 	state_t currentState	= NOTHING;

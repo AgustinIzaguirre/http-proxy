@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <protocol.h>
 
-enum id_t {
+enum resourceId_t {
 	NO_ID,
 	MIME_ID,
 	BF_ID,
@@ -14,7 +14,7 @@ enum id_t {
 	MTR_ID,
 	TF_ID
 };
-typedef enum id_t id_t;
+typedef enum resourceId_t resourceId_t;
 
 #define ON 0x01
 #define OFF 0x00
