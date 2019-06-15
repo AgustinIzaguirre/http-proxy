@@ -63,7 +63,12 @@ unsigned responseRead(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		handleResponse->responseFinished = TRUE;
-		ret								 = setResponseFdInterests(key);
+		if (!buffer_can_read(writeBuffer)) {
+			ret = DONE;
+		}
+		else {
+			ret = setResponseFdInterests(key);
+		}
 	}
 	else {
 		ret = ERROR;
