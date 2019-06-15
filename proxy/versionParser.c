@@ -22,6 +22,10 @@ void parseVersionInit(struct versionParser *parser) {
 	parser->version		   = calloc(2, sizeof(int));
 }
 
+void parseVersionDestroy(struct versionParser *parser) {
+	free(parser->version);
+}
+
 unsigned getVersionState(struct versionParser *parser) {
 	return parser->state;
 }

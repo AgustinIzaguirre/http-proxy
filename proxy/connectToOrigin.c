@@ -16,6 +16,7 @@ int blockingToResolvName(struct selector_key *key, int fdClient) {
 	args[1]		= malloc(sizeof(struct selector_key));
 	memcpy(args[1], key, sizeof(struct selector_key));
 	((struct selector_key *) (args[1]))->fd = fdClient;
+	setSelectorCopy(GET_DATA(key), args);
 
 	if (-1 == pthread_create(&tid, NULL,
 							 (void *(*) (void *) )(addressResolvName),

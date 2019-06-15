@@ -64,9 +64,19 @@ struct http {
 	int transformContent;
 	MediaRangePtr_t mediaRanges; // TODO:free
 
+	void **selectorCopyForOtherThread;
+
 	// Next in pool
 	struct http *next;
 };
+
+void setSelectorCopy(struct http *s, void *selectorCopyForOtherThread) {
+	s->selectorCopyForOtherThread = selectorCopyForOtherThread;
+}
+
+void *getSelectorCopy(struct http *s) {
+	return s->selectorCopyForOtherThread;
+}
 
 struct addrinfo *getOriginResolutions(struct http *s) {
 	return s->originResolution;
@@ -289,6 +299,7 @@ struct http *httpNew(int clientFd) {
 	ret->transformContent = FALSE;
 	ret->mediaRanges =
 		createMediaRangeFromListOfMediaType(getMediaRange(getConfiguration()));
+	ret->selectorCopyForOtherThread = NULL;
 
 	// setting state machine
 	ret->stm.initial   = PARSE_METHOD;
@@ -319,7 +330,22 @@ void httpDestroyData(struct http *s) {
 		s->originResolution = 0;
 	}
 
-	freeMediaRange(s->mediaRanges);
+	if (s->mediaRanges != NULL) {
+		freeMediaRange(s->mediaRanges);
+		s->mediaRanges = NULL;
+	}
+
+	if (s->host != NULL) {
+		free(s->host);
+		s->host = NULL;
+	}
+
+	if (s->selectorCopyForOtherThread != NULL) {
+		free(s->selectorCopyForOtherThread[1]);
+		free(s->selectorCopyForOtherThread);
+		s->selectorCopyForOtherThread = NULL;
+	}
+
 	free(s);
 }
 

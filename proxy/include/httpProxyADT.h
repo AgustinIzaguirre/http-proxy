@@ -249,5 +249,7 @@ void setOriginResolutions(struct http *s, struct addrinfo *originResolution);
 int getTransformContent(struct http *s);
 void setTransformContent(struct http *s, int transformContent);
 MediaRangePtr_t getMediaRangeHTTP(struct http *s);
+void setSelectorCopy(struct http *s, void *selectorCopyForOtherThread);
+void *getSelectorCopy(struct http *s);
 
 #endif
