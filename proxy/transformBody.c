@@ -20,13 +20,14 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	buffer_reset(getReadBuffer(GET_DATA(key)));
 	int length = getLength(getReadBuffer(GET_DATA(key)));
 	initializeChunkedBuffer(transformBody, length);
+	transformBody->transformSelectors = FALSE;
+
 	if (getTransformContent(GET_DATA(key))) {
 		transformBody->commandStatus = executeTransformCommand(key);
 	}
 	transformBody->transformCommandExecuted = FALSE;
 	transformBody->transformFinished		= FALSE;
 	transformBody->responseFinished			= FALSE;
-	transformBody->transformSelectors		= FALSE;
 	printf("arrived to transform body state\n"); // TODO remove
 }
 
