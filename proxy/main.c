@@ -159,23 +159,46 @@ finally:
 }
 
 const int prepareTCPSocket(unsigned port, char *filterInterface) {
-	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof(addr));
-	addr.sin_family = AF_INET;
-	addr.sin_port   = htons(port);
+	struct addrinfo hint;
+	struct addrinfo *res = NULL;
+	int ret;
 
-	if (filterInterface != NULL) {
-		addr.sin_addr.s_addr =
-			inet_addr(filterInterface); // TODO: must use another e.g. inet_aton
-										// or inet_pton
-	}
-	else {
-		// TODO: Check management implementation of this, I think if the better
-		// option
-		addr.sin_addr.s_addr = htonl(INADDR_ANY);
+	memset(&hint, 0, sizeof(hint));
+
+	hint.ai_family = PF_UNSPEC;
+	hint.ai_flags  = AI_NUMERICHOST;
+
+	ret = getaddrinfo(filterInterface, NULL, &hint, &res);
+
+	if (ret < 0) {
+		// TODO fails
 	}
 
-	const int currentSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	struct sockaddr_storage *addr = calloc(1, sizeof(struct sockaddr_storage));
+
+	switch (res->ai_family) {
+		case AF_INET:
+			addr->ss_family							  = AF_INET;
+			((struct sockaddr_in *) addr)->sin_family = AF_INET;
+			((struct sockaddr_in *) addr)->sin_port   = htons(port);
+			// TODO: chech return of inet_pton
+			inet_pton(addr->ss_family, filterInterface,
+					  &(((struct sockaddr_in *) addr)->sin_addr.s_addr));
+			break;
+		case AF_INET6:
+			addr->ss_family								= AF_INET6;
+			((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
+			((struct sockaddr_in6 *) addr)->sin6_port   = htons(port);
+			// TODO: chech return of inet_pton
+			inet_pton(addr->ss_family, filterInterface,
+					  &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr));
+			break;
+		default:
+			// TODO: AF_UNSPEC
+			break;
+	}
+
+	const int currentSocket = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP);
 
 	if (currentSocket < 0) {
 		errorMessage = "Unable to create socket";
@@ -184,10 +207,16 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 
 	fprintf(stdout, "Listening on TCP  port %d\n", port);
 
+	if (addr->ss_family == AF_INET6) {
+		/* If AF_INET6 avoid  */
+		setsockopt(currentSocket, IPPROTO_IPV6, IPV6_V6ONLY, &(int){1},
+				   sizeof(int));
+	}
+
 	/* If server fails doesn't have to wait to reuse address */
 	setsockopt(currentSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
-	if (bind(currentSocket, (struct sockaddr *) &addr, sizeof(addr)) < 0) {
+	if (bind(currentSocket, (struct sockaddr *) addr, sizeof(*addr)) < 0) {
 		errorMessage = "Unable to bind socket";
 		return ERROR;
 	}
