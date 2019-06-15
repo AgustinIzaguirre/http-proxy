@@ -40,7 +40,7 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 
 	while (l) {
 		parseHeadersByChar(l, header);
-
+		printf("%c", l);
 		if (header->state == HEADER_DONE) {
 			printf("%s\n", header->currHeader);
 			resetHeaderParser(header);
@@ -166,7 +166,8 @@ static void isCensureHeader(struct headersParser *header) {
 	}
 	else if (strcmp(header->currHeader, "keep-alive") == 0 ||
 			 strcmp(header->currHeader, "connection") == 0 ||
-			 strcmp(header->currHeader, "upgrade") == 0) {
+			 strcmp(header->currHeader, "upgrade") == 0 ||
+			 strcmp(header->currHeader, "expect") == 0) {
 		header->censure = TRUE;
 	}
 	else if (getIsTransformationOn(getConfiguration()) &&
