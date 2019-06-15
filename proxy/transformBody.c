@@ -26,7 +26,7 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	transformBody->transformCommandExecuted = FALSE;
 	transformBody->transformFinished		= FALSE;
 	transformBody->responseFinished			= FALSE;
-	// transformBody->commandStatus = EXEC_ERROR;// TODO remove
+	transformBody->transformSelectors		= FALSE;
 	printf("arrived to transform body state\n"); // TODO remove
 }
 
@@ -48,7 +48,8 @@ unsigned transformBodyRead(struct selector_key *key) {
 		ret = ERROR;
 	}
 	else if (!getTransformContent(state) ||
-			 transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
+			 transformBody->commandStatus != TRANSFORM_COMMAND_OK ||
+			 !transformBody->transformSelectors) {
 		ret = standardOriginRead(key);
 	}
 	else if (key->fd == transformBody->readFromTransformFd) {
@@ -76,7 +77,8 @@ unsigned transformBodyWrite(struct selector_key *key) {
 		ret = ERROR;
 	}
 	else if (!getTransformContent(state) ||
-			 transformBody->commandStatus != TRANSFORM_COMMAND_OK) {
+			 transformBody->commandStatus != TRANSFORM_COMMAND_OK ||
+			 !transformBody->transformSelectors) {
 		ret = standardClientWrite(key);
 	}
 	else if (key->fd == transformBody->writeToTransformFd) {
@@ -101,9 +103,13 @@ unsigned standardOriginRead(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 	unsigned ret;
-
+	if (!buffer_can_write(inBuffer) && buffer_can_read(inBuffer) &&
+		buffer_can_write(chunkBuffer)) {
+		prepareChunkedBuffer(chunkBuffer, inBuffer);
+		return setStandardFdInterests(key);
+	}
 	// if there is no space to read should write what i already read
-	if (!buffer_can_write(inBuffer)) {
+	else if (!buffer_can_write(inBuffer)) {
 		// set interest no op on fd an write on origin fd
 		return setStandardFdInterests(key);
 	}
@@ -336,7 +342,8 @@ unsigned setStandardFdInterests(struct selector_key *key) {
 	}
 
 	if ((buffer_can_write(writeBuffer) || buffer_can_read(writeBuffer)) &&
-		buffer_can_write(chunkBuffer) && !transformBody->responseFinished) {
+		buffer_can_write(chunkBuffer) && !buffer_can_read(chunkBuffer) &&
+		!transformBody->responseFinished) {
 		originInterest |= OP_READ;
 	}
 
@@ -347,7 +354,7 @@ unsigned setStandardFdInterests(struct selector_key *key) {
 		return ERROR;
 	}
 
-	if (getTransformContent(state)) {
+	if (transformBody->transformSelectors) {
 		if (SELECTOR_SUCCESS != selector_set_interest(
 									key->s, transformBody->readFromTransformFd,
 									transformReadInterest) ||
@@ -498,6 +505,7 @@ int executeTransformCommand(struct selector_key *key) {
 												  state)) {
 			return SELECT_ERROR;
 		}
+		transformBody->transformSelectors = TRUE;
 		incrementReferences(state);
 		incrementReferences(state);
 	}

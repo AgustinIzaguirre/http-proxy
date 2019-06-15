@@ -21,6 +21,7 @@ struct transformBody {
 	uint8_t transformCommandExecuted;
 	uint8_t transformFinished;
 	uint8_t responseFinished;
+	uint8_t transformSelectors;
 	pid_t commandPid;
 };
 
