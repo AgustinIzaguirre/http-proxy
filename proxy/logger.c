@@ -7,6 +7,9 @@
 #include <http.h>
 #include <httpProxyADT.h>
 
+#define MAX_ENTRY_SIZE 512
+#define MAX_ADDR_SIZE 128
+
 enum accessLogElems {
   REMOTE_ADDR,
   TIME,
@@ -54,38 +57,47 @@ int createLogFile(char *path) {
   return fopen(newLogFilePath, "+a") == NULL ? FAILED : OK;
 }
 
-char *createLogEntry(const char **logElems, size_t logElemsSize, char *buff,
-  size_t buffSize) {
-  char const *end = buff + buffSize;
+char *createLogEntry(httpADT_t s) {
+  char *curr = malloc(MAX_ENTRY_SIZE);
+  const char *end = curr + MAX_ENTRY_SIZE;
   int bytesWritten = 0;
+  size_t logElemsSize = 6 // TODO: Should be 7 with BODY_BYTES_SENT
+  char **logElems = malloc(logElemsSize);
+  char *host = malloc(MAX_ADDR_SIZE);
+  char *server = malloc(MAX_ADDR_SIZE);
+  buffer *requestLine = getRequestLineBuffer(s);
 
-  // TODO: Format correctly
-  for (int i = 0; (i < logElemsSize) && (buff < end); i++) {
-    bytesWritten = snprintf(buff, end - buff, "%s", logElems[i]);
-
-    if (bytesWritten >= (end - buff))
-      return FAILED;
-    else
-      buff += bytesWritten;
+  if (getIpAddresses(getClientAddress(s), host, server) == FAILED) {
+    return FAILED;
   }
 
-  return buff < end ? buff : NULL;
+  if (writeLogElemToLogEntry(&curr, end, "[%s] ", getTime()) == FAILED) {
+    return FAILED;
+  }
+
+  if (writeLogElemToLogEntry(&curr, end, "%s - ", host) == FAILED) {
+    return FAILED;
+  }
+
+  if (writeLogElemToLogEntry(&curr, end, "\"%s\" ", requestLine) == FAILED) {
+    return FAILED;
+  }
+
+  return curr < end ? curr : NULL;
 }
 
-int addEntryToLog(struct sockaddr_storage *clientAddr,
-  const char *logFileName) {
+int addEntryToLog(httpADT_t http, const char *logFileName) {
   // TODO: Check if size makes sense & if it should be set as #define's
-  size_t maxLogEntrySize = 512;
-  char logEntryBuffer[maxLogEntrySize];
+  char *logEntryBuffer = malloc(MAX_ENTRY_SIZE);
   FILE *logFile;
   int couldWriteToFile = 0;
 
-  if (!createLogEntry(clientAddr, logEntryBuffer)) {
+  logEntryBuffer = createLogEntry(http);
+  if (logEntryBuffer == NULL) {
     return FAILED;
   }
 
   logFile = fopen (logFileName, "a+");
-
   couldWriteToFile = (fprintf(logFile, "%s", logEntryBuffer) >= 0);
   fclose(logFile);
 
@@ -119,12 +131,23 @@ int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
     sizeof(host), server, sizeof(server), NI_NAMEREQD);
 }
 
-char **createLogElemsArray() {
-  size_t logElemsAmount = 7; // TODO: Should be 8 with BODY_BYTES_SENT
-  char **logElems = malloc(logElemsAmount);
+int writeLogElemToLogEntry(char **beginning, char *end, const char *format,
+  const char *data) {
+  char *curr = *beginning;
+  int bytesWritten = snprintf(curr, end - curr, format, data);
 
-  return logElems;
+  if (bytesWritten >= (end - curr)) {
+    return FAILED;
+  }
+
+  curr += bytesWritten;
+  *beginning = curr;
+
+  return OK;
 }
+
+
+// ======================== SETTERS =======================================
 
 void setRemoteAddr(char **accessLog, const char *remoteAddr) {
   accessLog[REMOTE_ADDR] = remoteAddr;
@@ -149,4 +172,12 @@ void setHttpReferer(char **accessLog, const char *httpReferer) {
 
 void setHttpUserAgent(char **accessLog, const char *httpUserAgent) {
   accessLog[HTTP_USER_AGENT] = httpUserAgent;
+}
+
+
+// ======================== GETTERS =======================================
+
+char *getTime() {
+  time_t now = time(0);
+  return ctime(&now);
 }

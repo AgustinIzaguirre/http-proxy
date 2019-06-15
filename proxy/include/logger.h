@@ -12,9 +12,6 @@ void createLogFile();
 /* Add a new entry (line) to an existing log file */
 int addEntryToLog(struct sockaddr_storage *clientAddr, const char *logFileName);
 
-int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
-	char *server);
-
 /* Setters for the access log array of elements to construct an entry */
 void setRemoteAddr(char **accessLog, const char *remoteAddr);
 void setTime(char **accessLog);
