@@ -51,7 +51,12 @@ unsigned transformBodyRead(struct selector_key *key) {
 	else if (!getTransformContent(state) ||
 			 transformBody->commandStatus != TRANSFORM_COMMAND_OK ||
 			 !transformBody->transformSelectors) {
-		ret = standardOriginRead(key);
+		if (getIsChunked(state)) {
+			ret = standardOriginReadWithoutChunked(key);
+		}
+		else {
+			ret = standardOriginRead(key);
+		}
 	}
 	else if (key->fd == transformBody->readFromTransformFd) {
 		ret = readFromTransform(key);
@@ -80,6 +85,9 @@ unsigned transformBodyWrite(struct selector_key *key) {
 	else if (!getTransformContent(state) ||
 			 transformBody->commandStatus != TRANSFORM_COMMAND_OK ||
 			 !transformBody->transformSelectors) {
+		if (getIsChunked(state)) {
+			ret = standardClientWriteWithoutChunked(key);
+		}
 		ret = standardClientWrite(key);
 	}
 	else if (key->fd == transformBody->writeToTransformFd) {
@@ -130,6 +138,40 @@ unsigned standardOriginRead(struct selector_key *key) {
 			close(transformBody->writeToTransformFd);
 		}
 		ret = setStandardFdInterests(key);
+	}
+	else {
+		setErrorDoneFd(key);
+		printf("error6:\n%s\n", strerror(errno));
+		ret = ERROR;
+	}
+
+	return ret;
+}
+
+unsigned standardOriginReadWithoutChunked(struct selector_key *key) {
+	buffer *inBuffer					= getWriteBuffer(GET_DATA(key));
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+	unsigned ret;
+
+	// if there is no space to read should write what i already read
+	if (!buffer_can_write(inBuffer)) {
+		// set interest no op on fd an write on origin fd
+		return setStandardFdInterestsWithoutChunked(key);
+	}
+
+	pointer   = buffer_write_ptr(inBuffer, &count);
+	bytesRead = recv(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_write_adv(inBuffer, bytesRead);
+		ret = setStandardFdInterestsWithoutChunked(key);
+	}
+	else if (bytesRead == 0) {
+		transformBody->responseFinished = TRUE;
+		ret = setStandardFdInterestsWithoutChunked(key);
 	}
 	else {
 		setErrorDoneFd(key);
@@ -205,6 +247,7 @@ unsigned readFromOrigin(struct selector_key *key) {
 			close(transformBody->writeToTransformFd);
 		}
 		transformBody->responseFinished = TRUE;
+
 		ret = setFdInterestsWithTransformerCommand(key);
 	}
 	else {
@@ -237,6 +280,41 @@ unsigned standardClientWrite(struct selector_key *key) {
 		buffer_read_adv(writeBuffer, bytesRead);
 		increaseTransferBytes(bytesRead);
 		ret = setStandardFdInterests(key);
+	}
+	else {
+		setErrorDoneFd(key);
+		printf("error3:\n%s\n", strerror(errno)); // TODO REMOVE
+		ret = ERROR;
+	}
+
+	if (transformBody->responseFinished && !buffer_can_read(writeBuffer)) {
+		setErrorDoneFd(key);
+		ret = DONE;
+	}
+
+	return ret;
+}
+unsigned standardClientWriteWithoutChunked(struct selector_key *key) {
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
+	unsigned ret						= TRANSFORM_BODY;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+
+	// if everything is read on buffer
+	if (!buffer_can_read(writeBuffer)) {
+		// set interest no op on fd an read on client fd
+		return setStandardFdInterestsWithoutChunked(key);
+	}
+
+	pointer   = buffer_read_ptr(writeBuffer, &count);
+	bytesRead = send(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_read_adv(writeBuffer, bytesRead);
+		increaseTransferBytes(bytesRead);
+		ret = setStandardFdInterestsWithoutChunked(key);
 	}
 	else {
 		setErrorDoneFd(key);
@@ -330,6 +408,45 @@ unsigned writeToClient(struct selector_key *key) {
 	if (transformBody->responseFinished && !buffer_can_read(buffer)) {
 		setErrorDoneFd(key);
 		ret = DONE;
+	}
+
+	return ret;
+}
+unsigned setStandardFdInterestsWithoutChunked(struct selector_key *key) {
+	httpADT_t state						= GET_DATA(key);
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
+
+	unsigned ret			   = TRANSFORM_BODY;
+	int clientInterest		   = OP_NOOP;
+	int originInterest		   = OP_NOOP;
+	int transformReadInterest  = OP_NOOP;
+	int transformWriteInterest = OP_NOOP;
+
+	if (buffer_can_read(writeBuffer)) {
+		clientInterest |= OP_WRITE;
+	}
+
+	if ((buffer_can_write(writeBuffer)) && !transformBody->responseFinished) {
+		originInterest |= OP_READ;
+	}
+
+	if (SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
+		SELECTOR_SUCCESS !=
+			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
+		return ERROR;
+	}
+
+	if (transformBody->transformSelectors) {
+		if (SELECTOR_SUCCESS != selector_set_interest(
+									key->s, transformBody->readFromTransformFd,
+									transformReadInterest) ||
+			SELECTOR_SUCCESS !=
+				selector_set_interest(key->s, transformBody->writeToTransformFd,
+									  transformWriteInterest)) {
+			return ERROR;
+		}
 	}
 
 	return ret;
