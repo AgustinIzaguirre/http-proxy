@@ -16,6 +16,7 @@ void responseInit(const unsigned state, struct selector_key *key) {
 	headersParserInit(&(handleResponse->parseHeaders), key, FALSE);
 	buffer_init(&(handleResponse->requestDataBuffer), BUFFER_SIZE,
 				handleResponse->requestData);
+	handleResponse->responseFinished = FALSE;
 }
 
 void responceDestroy(const unsigned state, struct selector_key *key) {
@@ -33,13 +34,13 @@ unsigned responseRead(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
-	if (key->fd == getClientFd(key)) {
+
+	if (key->fd == getClientFd(GET_DATA(key))) {
 		return readFromClient(key);
 	}
 
 	if (handleResponse->parseHeaders.state == BODY_START &&
-		getIsTransformationOn(getConfiguration()) &&
-		1 /* Mime type is in filter list */) { // TODO add condition
+		getIsTransformationOn(getConfiguration())) {
 		return TRANSFORM_BODY;
 	}
 	// if there is no space to read should write what i already read
@@ -61,8 +62,8 @@ unsigned responseRead(struct selector_key *key) {
 		ret = setResponseFdInterests(key);
 	}
 	else if (bytesRead == 0) {
-		// if response is not chunked or is last chunk
-		ret = DONE; // should send what is left on buffer TODO
+		handleResponse->responseFinished = TRUE;
+		ret								 = setResponseFdInterests(key);
 	}
 	else {
 		ret = ERROR;
@@ -112,16 +113,16 @@ unsigned responseWrite(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
-	if (key->fd = getOriginFd(GET_DATA(key))) {
+	if (key->fd == getOriginFd(GET_DATA(key))) {
 		return writeToOrigin(key);
 	}
 
 	if (handleResponse->parseHeaders.state == BODY_START &&
 		getIsTransformationOn(getConfiguration()) &&
-		!buffer_can_read(writeBuffer) &&
-		1 /* Mime type is in filter list */) { // TODO add condition
+		!buffer_can_read(writeBuffer)) {
 		return TRANSFORM_BODY;
 	}
+
 	// if everything is read on buffer
 	if (!buffer_can_read(writeBuffer)) {
 		// set interest no op on fd an read on client fd
@@ -135,6 +136,10 @@ unsigned responseWrite(struct selector_key *key) {
 		buffer_read_adv(writeBuffer, bytesRead);
 		increaseTransferBytes(bytesRead);
 		ret = setResponseFdInterests(key);
+	}
+	else if (handleResponse->responseFinished == TRUE &&
+			 !buffer_can_read(writeBuffer)) {
+		return DONE;
 	}
 	else {
 		ret = ERROR;
