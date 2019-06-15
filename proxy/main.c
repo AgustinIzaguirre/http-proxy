@@ -58,8 +58,8 @@ int main(const int argc, const char **argv) {
 	}
 
 	/* Set management socket */
-	const int managementSocket = bindAndGetServerSocket(
-		managementPort, managementInterfaces, STREAM_QUANTITY);
+	const int managementSocket =
+		bindAndGetServerSocket(managementPort, managementInterfaces);
 
 	if (managementSocket < 0) {
 		goto finally;
@@ -69,6 +69,8 @@ int main(const int argc, const char **argv) {
 		errorMessage = getManagementErrorMessage();
 		goto finally;
 	}
+
+	fprintf(stdout, "Listening on STCP port %d\n", managementPort);
 
 	const struct selector_init conf = {
 		.signal = SIGALRM,
@@ -91,11 +93,10 @@ int main(const int argc, const char **argv) {
 		goto finally;
 	}
 
-	const struct fd_handler http = {
-		.handle_read  = httpPassiveAccept,
-		.handle_write = NULL,
-		.handle_close = NULL, /* nothing to free */
-	};
+	const struct fd_handler http = {.handle_read  = httpPassiveAccept,
+									.handle_write = NULL,
+									.handle_close = NULL, /* nothing to free */
+									.handle_block = NULL};
 
 	ss = selector_register(selector, serverSocket, &http, OP_READ, NULL);
 	if (ss != SELECTOR_SUCCESS) {
@@ -106,8 +107,8 @@ int main(const int argc, const char **argv) {
 	const struct fd_handler management = {
 		.handle_read  = managementPassiveAccept,
 		.handle_write = NULL,
-		.handle_close = NULL, /* TODO: nothing to free? */
-	};
+		.handle_close = NULL, /* nothing to free */
+		.handle_block = NULL};
 
 	ss = selector_register(selector, managementSocket, &management, OP_READ,
 						   NULL);
@@ -181,7 +182,7 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 		return ERROR;
 	}
 
-	fprintf(stdout, "Listening on TCP port %d\n", port);
+	fprintf(stdout, "Listening on TCP  port %d\n", port);
 
 	/* If server fails doesn't have to wait to reuse address */
 	setsockopt(currentSocket, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));

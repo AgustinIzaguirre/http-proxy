@@ -1,5 +1,6 @@
 # Custom http-proxy project executables
 /manager/manager
+/proxy/httpd
 
 # Prerequisites
 *.d
