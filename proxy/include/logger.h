@@ -2,15 +2,16 @@
 #define LOGGER_H
 
 #include <netinet/in.h>
+#include <httpProxyADT.h>
 
 #define FAILED 0
 #define OK 1
 
 /* Create a new log file */
-void createLogFile();
+int createLogFile(const char *path);
 
 /* Add a new entry (line) to an existing log file */
-int addEntryToLog(struct sockaddr_storage *clientAddr, const char *logFileName);
+int addEntryToLog(httpADT_t http, const char *logFileName);
 
 /* Setters for the access log array of elements to construct an entry */
 void setRemoteAddr(char **accessLog, const char *remoteAddr);

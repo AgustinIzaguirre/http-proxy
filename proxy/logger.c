@@ -5,7 +5,6 @@
  */
 #include <time.h>
 #include <http.h>
-#include <httpProxyADT.h>
 
 #define MAX_ENTRY_SIZE 512
 #define MAX_ADDR_SIZE 128
@@ -20,35 +19,20 @@ enum accessLogElems {
   HTTP_USER_AGENT
 };
 
-char *createPath(char *newLogFilePath, char *path) {
-  if (path == NULL) {
-    path = "./";
-  }
+char *getTime();
+int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
+    char *server);
+int writeLogElemToLogEntry(char **beginning, const char *end,
+  const char *format, const char *data);
+char *createPath(char *newLogFilePath, size_t newLogFilePathSize,
+  const char *path);
 
-  bytesWritten = snprintf(newLogFilePath, sizeof newLogFilePath, "%s", path);
-
-  if (bytesWritten >= sizeof newLogFilePath) {
-    return NULL;
-  }
-
-  bytesWritten = snprintf(newLogFilePath + sizeof(path),
-    sizeof(newLogFilePath) - sizeof(path), "access.log");
-
-  if (bytesWritten >= (sizeof(newLogFilePath) - sizeof(path))) {
-    return NULL;
-  }
-
-  return newLogFilePath;
-}
-
-int createLogFile(char *path) {
+int createLogFile(const char *path) {
   // TODO: Check if size makes sense & if it should be set as #define
   size_t size = 64;
   char *newLogFilePath = malloc(size);
-  char *accessLog = "access.log";
-  int bytesWritten = 0;
 
-  newLogFilePath = createPath(newLogFilePath, path);
+  createPath(newLogFilePath, size, path);
 
   if (newLogFilePath == NULL) {
     return FAILED;
@@ -57,15 +41,37 @@ int createLogFile(char *path) {
   return fopen(newLogFilePath, "+a") == NULL ? FAILED : OK;
 }
 
+char *createPath(char *newLogFilePath, size_t newLogFilePathSize,
+  const char *path) {
+  const char *accessLog = "access.log";
+  int bytesWritten = 0;
+
+  if (path == NULL) {
+    path = "./";
+  }
+
+  bytesWritten = snprintf(newLogFilePath, newLogFilePathSize, "%s", path);
+
+  if (bytesWritten >= sizeof newLogFilePath) {
+    return NULL;
+  }
+
+  bytesWritten = snprintf(newLogFilePath + sizeof(path),
+    sizeof(newLogFilePath) - sizeof(path), "%s", accessLog);
+
+  if (bytesWritten >= (sizeof(newLogFilePath) - sizeof(path))) {
+    return NULL;
+  }
+
+  return newLogFilePath;
+}
+
 char *createLogEntry(httpADT_t s) {
   char *curr = malloc(MAX_ENTRY_SIZE);
   const char *end = curr + MAX_ENTRY_SIZE;
-  int bytesWritten = 0;
-  size_t logElemsSize = 6 // TODO: Should be 7 with BODY_BYTES_SENT
-  char **logElems = malloc(logElemsSize);
   char *host = malloc(MAX_ADDR_SIZE);
   char *server = malloc(MAX_ADDR_SIZE);
-  buffer *requestLine = getRequestLineBuffer(s);
+  char *requestLine = (char *)((getRequestLineBuffer(s))->data);
 
   if (getIpAddresses(getClientAddress(s), host, server) == FAILED) {
     return FAILED;
@@ -131,8 +137,8 @@ int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
     sizeof(host), server, sizeof(server), NI_NAMEREQD);
 }
 
-int writeLogElemToLogEntry(char **beginning, char *end, const char *format,
-  const char *data) {
+int writeLogElemToLogEntry(char **beginning, const char *end,
+  const char *format, const char *data) {
   char *curr = *beginning;
   int bytesWritten = snprintf(curr, end - curr, format, data);
 
@@ -146,38 +152,35 @@ int writeLogElemToLogEntry(char **beginning, char *end, const char *format,
   return OK;
 }
 
-
-// ======================== SETTERS =======================================
-
-void setRemoteAddr(char **accessLog, const char *remoteAddr) {
-  accessLog[REMOTE_ADDR] = remoteAddr;
-}
-
-void setTime(char **accessLog) {
-  time_t now = time(0);
-  accessLog[TIME] = ctime(&now);
-}
-
-void setRequest(char **accessLog, const char *request) {
-  accessLog[REQUEST] = request;
-}
-
-void setStatus(char **accessLog, const char *status) {
-  accessLog[STATUS] = status;
-}
-
-void setHttpReferer(char **accessLog, const char *httpReferer) {
-  accessLog[HTTP_REFERER] = httpReferer;
-}
-
-void setHttpUserAgent(char **accessLog, const char *httpUserAgent) {
-  accessLog[HTTP_USER_AGENT] = httpUserAgent;
-}
-
-
-// ======================== GETTERS =======================================
-
 char *getTime() {
   time_t now = time(0);
   return ctime(&now);
 }
+
+
+// ======================== SETTERS =======================================
+// TODO> Check if setters make sense (is the structure necessary at all?)
+// void setRemoteAddr(char **accessLog, const char *remoteAddr) {
+//   accessLog[REMOTE_ADDR] = remoteAddr;
+// }
+//
+// void setTime(char **accessLog) {
+//   time_t now = time(0);
+//   accessLog[TIME] = ctime(&now);
+// }
+//
+// void setRequest(char **accessLog, const char *request) {
+//   accessLog[REQUEST] = request;
+// }
+//
+// void setStatus(char **accessLog, const char *status) {
+//   accessLog[STATUS] = status;
+// }
+//
+// void setHttpReferer(char **accessLog, const char *httpReferer) {
+//   accessLog[HTTP_REFERER] = httpReferer;
+// }
+//
+// void setHttpUserAgent(char **accessLog, const char *httpUserAgent) {
+//   accessLog[HTTP_USER_AGENT] = httpUserAgent;
+// }
