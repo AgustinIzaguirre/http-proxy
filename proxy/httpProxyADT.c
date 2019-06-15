@@ -70,11 +70,11 @@ struct http {
 	struct http *next;
 };
 
-void setSelectorCopy(struct http *s, void *selectorCopyForOtherThread) {
+void setSelectorCopy(struct http *s, void **selectorCopyForOtherThread) {
 	s->selectorCopyForOtherThread = selectorCopyForOtherThread;
 }
 
-void *getSelectorCopy(struct http *s) {
+void **getSelectorCopy(struct http *s) {
 	return s->selectorCopyForOtherThread;
 }
 
@@ -325,26 +325,20 @@ finally:
 }
 
 void httpDestroyData(struct http *s) {
-	if (s->originResolution != NULL) {
-		freeaddrinfo(s->originResolution);
-		s->originResolution = 0;
-	}
-
-	if (s->mediaRanges != NULL) {
-		freeMediaRange(s->mediaRanges);
-		s->mediaRanges = NULL;
-	}
-
-	if (s->host != NULL) {
-		free(s->host);
-		s->host = NULL;
-	}
-
-	if (s->selectorCopyForOtherThread != NULL) {
-		free(s->selectorCopyForOtherThread[1]);
-		free(s->selectorCopyForOtherThread);
-		s->selectorCopyForOtherThread = NULL;
-	}
+	// if (s->originResolution != NULL) {
+	// 	freeaddrinfo(s->originResolution);
+	// 	s->originResolution = 0;
+	// }
+	//
+	// if (s->mediaRanges != NULL) {
+	// 	freeMediaRange(s->mediaRanges);
+	// 	s->mediaRanges = NULL;
+	// }
+	//
+	// if (s->host != NULL) {
+	// 	free(s->host);
+	// 	s->host = NULL;
+	// }
 
 	free(s);
 }

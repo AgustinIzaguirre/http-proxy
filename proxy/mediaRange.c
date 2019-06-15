@@ -122,6 +122,7 @@ void freeMediaRange(MediaRangePtr_t mrp) {
 	int j = 0;
 	while (j < mrp->length) {
 		free(mrp->listMediaTypes[j]);
+		j++;
 	}
 	free(mrp->listMediaTypes);
 	free(mrp->canBeMatch);

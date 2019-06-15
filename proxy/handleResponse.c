@@ -24,6 +24,9 @@ void responceDestroy(const unsigned state, struct selector_key *key) {
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
 	setTransformContent(GET_DATA(key), aux);
+	if (getMediaRangeHTTP(GET_DATA(key)) != NULL) {
+		freeMediaRange(getMediaRangeHTTP(GET_DATA(key)));
+	}
 }
 
 unsigned responseRead(struct selector_key *key) {
