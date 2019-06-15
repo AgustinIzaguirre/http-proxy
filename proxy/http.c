@@ -114,6 +114,27 @@ static void httpDone(struct selector_key *key) {
 		getOriginFd(GET_DATA(key)),
 	};
 
+	if (getSelectorCopy(GET_DATA(key)) != NULL) {
+		void **aux = getSelectorCopy(GET_DATA(key));
+		free(aux[1]);
+		free(aux);
+		setSelectorCopy(GET_DATA(key), NULL);
+	}
+
+	if (getOriginHost(GET_DATA(key)) != NULL) {
+		free(getOriginHost(GET_DATA(key)));
+		setOriginHost(GET_DATA(key), NULL);
+	}
+
+	if (getMediaRangeHTTP(GET_DATA(key)) != NULL) {
+		freeMediaRange(getMediaRangeHTTP(GET_DATA(key)));
+	}
+
+	if (getOriginResolutions((GET_DATA(key))) != NULL) {
+		freeaddrinfo(getOriginResolutions((GET_DATA(key))));
+		setOriginResolutions(GET_DATA(key), NULL);
+	}
+
 	for (unsigned i = 0; i < SIZE_OF_ARRAY(fds); i++) {
 		if (fds[i] != -1) {
 			if (SELECTOR_SUCCESS != selector_unregister_fd(key->s, fds[i])) {

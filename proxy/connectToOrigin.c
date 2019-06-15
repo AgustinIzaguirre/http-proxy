@@ -55,21 +55,8 @@ void *addressResolvName(void **data) {
 }
 
 unsigned addressResolvNameDone(struct selector_key *key) {
-	if (getSelectorCopy(GET_DATA(key)) != NULL) {
-		void **aux = getSelectorCopy(GET_DATA(key));
-		free(aux[1]);
-		free(aux);
-		setSelectorCopy(GET_DATA(key), NULL);
-	}
-
-	if (getOriginHost(GET_DATA(key)) != NULL) {
-		free(getOriginHost(GET_DATA(key)));
-		setOriginHost(GET_DATA(key), NULL);
-	}
-
-	int flag					 = ERROR_CLIENT;
-	struct addrinfo *res		 = getOriginResolutions(GET_DATA(key));
-	struct addrinfo *resToBeFree = res;
+	int flag			 = ERROR_CLIENT;
+	struct addrinfo *res = getOriginResolutions(GET_DATA(key));
 
 	while (res && flag == ERROR_CLIENT) {
 		flag = connectToOrigin(key, res);
@@ -79,9 +66,6 @@ unsigned addressResolvNameDone(struct selector_key *key) {
 	if (flag == ERROR_CLIENT) {
 		setErrorType(GET_DATA(key), FAIL_TO_CONNECT);
 	}
-
-	freeaddrinfo(resToBeFree);
-	setOriginResolutions(GET_DATA(key), NULL);
 
 	return flag;
 }

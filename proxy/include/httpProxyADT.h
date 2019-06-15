@@ -20,7 +20,7 @@
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
-#define BUFFER_SIZE 20
+#define BUFFER_SIZE 4000
 #define MAX_PARSER 1000 // TODO: chech that number
 #define MAX_FIRST_LINE_LENGTH 2048
 

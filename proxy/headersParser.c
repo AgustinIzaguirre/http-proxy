@@ -40,7 +40,6 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 
 	while (l) {
 		parseHeadersByChar(l, header);
-		printf("%c", l);
 		if (header->state == HEADER_DONE) {
 			printf("%s\n", header->currHeader);
 			resetHeaderParser(header);
