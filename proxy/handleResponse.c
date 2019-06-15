@@ -14,6 +14,9 @@ void responseInit(const unsigned state, struct selector_key *key) {
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
 	headersParserInit(&(handleResponse->parseHeaders), key, FALSE);
+	buffer_init(&(handleResponse->requestDataBuffer), BUFFER_SIZE,
+				handleResponse->requestData);
+	handleResponse->responseFinished = FALSE;
 }
 
 void responceDestroy(const unsigned state, struct selector_key *key) {
@@ -32,9 +35,12 @@ unsigned responseRead(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 
+	if (key->fd == getClientFd(GET_DATA(key))) {
+		return readFromClient(key);
+	}
+
 	if (handleResponse->parseHeaders.state == BODY_START &&
-		getIsTransformationOn(getConfiguration()) &&
-		1 /* Mime type is in filter list */) { // TODO add condition
+		getIsTransformationOn(getConfiguration())) {
 		return TRANSFORM_BODY;
 	}
 	// if there is no space to read should write what i already read
@@ -56,6 +62,44 @@ unsigned responseRead(struct selector_key *key) {
 		ret = setResponseFdInterests(key);
 	}
 	else if (bytesRead == 0) {
+		handleResponse->responseFinished = TRUE;
+		if (!buffer_can_read(writeBuffer)) {
+			ret = DONE;
+		}
+		else {
+			ret = setResponseFdInterests(key);
+		}
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
+}
+
+unsigned readFromClient(struct selector_key *key) {
+	struct handleResponse *handleResponse =
+		getHandleResponseState(GET_DATA(key));
+	buffer *writeBuffer = &handleResponse->requestDataBuffer;
+	unsigned ret		= HANDLE_RESPONSE;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+
+	// if there is no space to read should write what i already read
+	if (!buffer_can_write(writeBuffer)) {
+		// set interest no op on fd an write on origin fd
+		return setResponseFdInterests(key);
+	}
+
+	pointer   = buffer_write_ptr(writeBuffer, &count);
+	bytesRead = recv(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_write_adv(writeBuffer, bytesRead);
+		ret = setResponseFdInterests(key);
+	}
+	else if (bytesRead == 0) {
 		// if response is not chunked or is last chunk
 		ret = DONE; // should send what is left on buffer TODO
 	}
@@ -74,13 +118,50 @@ unsigned responseWrite(struct selector_key *key) {
 	uint8_t *pointer;
 	size_t count;
 	ssize_t bytesRead;
+	if (key->fd == getOriginFd(GET_DATA(key))) {
+		return writeToOrigin(key);
+	}
 
 	if (handleResponse->parseHeaders.state == BODY_START &&
 		getIsTransformationOn(getConfiguration()) &&
-		!buffer_can_read(writeBuffer) &&
-		1 /* Mime type is in filter list */) { // TODO add condition
+		!buffer_can_read(writeBuffer)) {
 		return TRANSFORM_BODY;
 	}
+
+	// if everything is read on buffer
+	if (!buffer_can_read(writeBuffer)) {
+		// set interest no op on fd an read on client fd
+		return setResponseFdInterests(key);
+	}
+
+	pointer   = buffer_read_ptr(writeBuffer, &count);
+	bytesRead = send(key->fd, pointer, count, 0);
+
+	if (bytesRead > 0) {
+		buffer_read_adv(writeBuffer, bytesRead);
+		increaseTransferBytes(bytesRead);
+		ret = setResponseFdInterests(key);
+	}
+	else if (handleResponse->responseFinished == TRUE &&
+			 !buffer_can_read(writeBuffer)) {
+		return DONE;
+	}
+	else {
+		ret = ERROR;
+	}
+
+	return ret;
+}
+
+unsigned writeToOrigin(struct selector_key *key) {
+	struct handleResponse *handleResponse =
+		getHandleResponseState(GET_DATA(key));
+	buffer *writeBuffer = &handleResponse->requestDataBuffer;
+	unsigned ret		= HANDLE_RESPONSE;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+
 	// if everything is read on buffer
 	if (!buffer_can_read(writeBuffer)) {
 		// set interest no op on fd an read on client fd
@@ -106,7 +187,8 @@ unsigned setResponseFdInterests(struct selector_key *key) {
 	httpADT_t state						  = GET_DATA(key);
 	struct handleResponse *handleResponse = getHandleResponseState(state);
 	buffer *writeBuffer					  = getWriteBuffer(GET_DATA(key));
-	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
+	buffer *parsedBuffer  = &(handleResponse->parseHeaders.valueBuffer);
+	buffer *requestBuffer = &(handleResponse->requestDataBuffer);
 	;
 	unsigned ret	   = HANDLE_RESPONSE;
 	int clientInterest = OP_NOOP;
@@ -118,8 +200,16 @@ unsigned setResponseFdInterests(struct selector_key *key) {
 		clientInterest |= OP_WRITE;
 	}
 
+	if (buffer_can_read(requestBuffer)) {
+		originInterest |= OP_WRITE;
+	}
+
 	if (buffer_can_write(writeBuffer) && !buffer_can_read(parsedBuffer)) {
 		originInterest |= OP_READ;
+	}
+
+	if (buffer_can_write(requestBuffer) && !buffer_can_read(requestBuffer)) {
+		clientInterest |= OP_READ;
 	}
 
 	if (SELECTOR_SUCCESS !=

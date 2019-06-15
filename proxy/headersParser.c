@@ -29,7 +29,7 @@ void headersParserInit(struct headersParser *header, struct selector_key *key,
 
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer),
-				20 + 30 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
+				BUFFER_SIZE + 30 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
 				header->valueBuf); // TODO update with configuration buffer size
 }
 
@@ -40,7 +40,7 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 
 	while (l) {
 		parseHeadersByChar(l, header);
-
+		printf("%c", l);
 		if (header->state == HEADER_DONE) {
 			printf("%s\n", header->currHeader);
 			resetHeaderParser(header);
@@ -166,7 +166,8 @@ static void isCensureHeader(struct headersParser *header) {
 	}
 	else if (strcmp(header->currHeader, "keep-alive") == 0 ||
 			 strcmp(header->currHeader, "connection") == 0 ||
-			 strcmp(header->currHeader, "upgrade") == 0) {
+			 strcmp(header->currHeader, "upgrade") == 0 ||
+			 strcmp(header->currHeader, "expect") == 0) {
 		header->censure = TRUE;
 	}
 	else if (getIsTransformationOn(getConfiguration()) &&
