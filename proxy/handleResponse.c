@@ -114,6 +114,8 @@ unsigned responseWrite(struct selector_key *key) {
 	buffer *writeBuffer = getCurrentResponseBuffer(GET_DATA(key));
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
+	buffer *parsedBuffer = &(handleResponse->parseHeaders.valueBuffer);
+
 	unsigned ret = HANDLE_RESPONSE;
 	uint8_t *pointer;
 	size_t count;
@@ -124,7 +126,7 @@ unsigned responseWrite(struct selector_key *key) {
 
 	if (handleResponse->parseHeaders.state == BODY_START &&
 		getIsTransformationOn(getConfiguration()) &&
-		!buffer_can_read(writeBuffer)) {
+		!buffer_can_read(parsedBuffer)) {
 		return TRANSFORM_BODY;
 	}
 
