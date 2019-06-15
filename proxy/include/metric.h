@@ -2,6 +2,7 @@
 #define METRIC_H
 
 #include <stdint.h>
+#include <management.h>
 
 /*
  * Increase by one the number of ConcurrentConections

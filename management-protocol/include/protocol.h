@@ -10,7 +10,12 @@
 #include <errno.h>
 
 #define ALLOC_BLOCK 8
+#define STREAM_QUANTITY 2
 #define AUTHENTICATION_STREAM 0
+#define BYE_STREAM 1
+#define GET_STREAM 0
+#define SET_STREAM 1
+
 #define VERSION 0
 
 #define TRUE 1
@@ -84,10 +89,10 @@ typedef struct {
 	statusCode_t generalStatus;
 	statusCode_t versionStatus;
 	statusCode_t authenticationStatus;
-} versionStatus_t;
+} authStatus_t;
 
 typedef struct {
-	versionStatus_t status;
+	authStatus_t status;
 	uint64_t version;
 } authenticationResponse_t;
 
@@ -103,8 +108,7 @@ typedef struct {
 
 char *getProtocolErrorMessage();
 
-int establishConnection(const char *serverIP, uint16_t serverPort,
-						uint16_t streamQuantity);
+int establishConnection(const char *serverIP, uint16_t serverPort);
 
 int sendAuthenticationRequest(int server, char *username, size_t usernameLength,
 							  char *password, size_t passwordLength);
@@ -118,13 +122,12 @@ int sendAuthenticationResponse(int client,
 int recvAuthenticationResponse(
 	int server, authenticationResponse_t *authenticationResponse);
 
-int sendByeRequest(int server, uint16_t streamNumber);
+int sendByeRequest(int server);
 
-int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
-				   uint16_t streamNumber);
+int sendGetRequest(int server, uint8_t id, timeTag_t timeTag);
 
 int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
-				   size_t dataLength, uint16_t streamNumber);
+				   size_t dataLength);
 
 int recvRequest(int client, request_t *request);
 
@@ -132,7 +135,6 @@ int recvResponse(int server, response_t *response);
 
 int sendResponse(int client, response_t response);
 
-int bindAndGetServerSocket(uint16_t port, char *ipFilter,
-						   uint16_t streamQuantity);
+int bindAndGetServerSocket(uint16_t port, char *ipFilter);
 
 #endif
