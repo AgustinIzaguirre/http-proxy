@@ -64,6 +64,7 @@ unsigned responseRead(struct selector_key *key) {
 	else if (bytesRead == 0) {
 		handleResponse->responseFinished = TRUE;
 		if (!buffer_can_read(writeBuffer)) {
+			setErrorDoneFd(key);
 			ret = DONE;
 		}
 		else {
@@ -101,9 +102,11 @@ unsigned readFromClient(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		// if response is not chunked or is last chunk
+		setErrorDoneFd(key);
 		ret = DONE; // should send what is left on buffer TODO
 	}
 	else {
+		setErrorDoneFd(key);
 		ret = ERROR;
 	}
 
@@ -146,9 +149,11 @@ unsigned responseWrite(struct selector_key *key) {
 	}
 	else if (handleResponse->responseFinished == TRUE &&
 			 !buffer_can_read(writeBuffer)) {
+		setErrorDoneFd(key);
 		return DONE;
 	}
 	else {
+		setErrorDoneFd(key);
 		ret = ERROR;
 	}
 
@@ -179,6 +184,7 @@ unsigned writeToOrigin(struct selector_key *key) {
 		ret = setResponseFdInterests(key);
 	}
 	else {
+		setErrorDoneFd(key);
 		ret = ERROR;
 	}
 

@@ -242,6 +242,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 	}
 
 	if (transformBody->responseFinished && !buffer_can_read(writeBuffer)) {
+		setErrorDoneFd(key);
 		ret = DONE;
 	}
 
@@ -277,6 +278,7 @@ unsigned writeToTransform(struct selector_key *key) {
 		if (transformBody->transformCommandExecuted == TRUE) {
 			setErrorDoneFd(key);
 			printf("error2:\n%s\n", strerror(errno)); // TODO REMOVE
+			perror("");
 			ret = ERROR;
 		}
 		else {
@@ -320,6 +322,7 @@ unsigned writeToClient(struct selector_key *key) {
 	}
 
 	if (transformBody->responseFinished && !buffer_can_read(buffer)) {
+		setErrorDoneFd(key);
 		ret = DONE;
 	}
 
@@ -394,7 +397,8 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 		transformReadInterest |= OP_READ;
 	}
 
-	if (buffer_can_write(writeBuffer) && !transformBody->responseFinished) {
+	if (buffer_can_write(writeBuffer) && !transformBody->responseFinished &&
+		!buffer_can_read(chunkBuffer)) {
 		originInterest |= OP_READ;
 	}
 
@@ -427,14 +431,18 @@ unsigned setErrorDoneFd(struct selector_key *key) {
 	if (SELECTOR_SUCCESS !=
 			selector_set_interest(key->s, getClientFd(state), clientInterest) ||
 		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, getOriginFd(state), originInterest) ||
-		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, transformBody->readFromTransformFd,
-								  transformReadInterest) ||
-		SELECTOR_SUCCESS !=
-			selector_set_interest(key->s, transformBody->writeToTransformFd,
-								  transformWriteInterest)) {
+			selector_set_interest(key->s, getOriginFd(state), originInterest)) {
 		return ERROR;
+	}
+	if (transformBody->transformSelectors) {
+		if (SELECTOR_SUCCESS != selector_set_interest(
+									key->s, transformBody->readFromTransformFd,
+									transformReadInterest) ||
+			SELECTOR_SUCCESS !=
+				selector_set_interest(key->s, transformBody->writeToTransformFd,
+									  transformWriteInterest)) {
+			return ERROR;
+		}
 	}
 
 	return ret;
