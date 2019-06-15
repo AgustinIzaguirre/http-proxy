@@ -20,12 +20,16 @@ void headersParserInit(struct headersParser *header, struct selector_key *key,
 	header->mimeIndex		   = 0;
 	header->censure			   = FALSE;
 	header->isMime			   = FALSE;
+	header->isTransfer		   = FALSE;
+	header->isChunked		   = FALSE;
 	header->requestLineBuffer  = getRequestLineBuffer(GET_DATA(key));
 	header->responseLineBuffer = getResponseLineBuffer(GET_DATA(key));
 	header->isRequest		   = isRequest;
 	header->transformContent   = FALSE;
 	header->mediaRangeCurrent  = 0;
 	header->mediaRange		   = getMediaRangeHTTP(GET_DATA(key));
+	header->tranferIndex	   = 0;
+	header->isChar			   = FALSE;
 
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer),
@@ -110,6 +114,9 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 				header->state = HEADER_DONE;
 			}
 			else {
+				if (l != '\t' && l != ' ') {
+					header->isChar = TRUE;
+				}
 				if (header->isMime && l != '\r') {
 					if (!isOWS(l) && l != ';' &&
 						header->mediaRangeCurrent != -1) {
@@ -119,6 +126,17 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 					}
 					else if (header->mediaRangeCurrent != 0) {
 						header->mediaRangeCurrent = -1;
+					}
+				}
+				else if (header->isTransfer && l != '\r' &&
+						 header->tranferIndex <= CHUNKED_LENGTH &&
+						 header->isChar) {
+					header->transferValue[header->tranferIndex++] = tolower(l);
+					if (header->tranferIndex == CHUNKED_LENGTH) {
+						header->transferValue[header->tranferIndex++] = 0;
+						printf("transfer-Encoding: %s\n",
+							   header->transferValue);
+						compareWithChunked(header);
 					}
 				}
 			}
@@ -151,11 +169,14 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 }
 
 void resetHeaderParser(struct headersParser *header) {
-	header->headerIndex = 0;
-	header->mimeIndex   = 0;
-	header->state		= HEADERS_START;
-	header->censure		= FALSE;
-	header->isMime		= FALSE;
+	header->headerIndex  = 0;
+	header->tranferIndex = 0;
+	header->mimeIndex	= 0;
+	header->state		 = HEADERS_START;
+	header->censure		 = FALSE;
+	header->isMime		 = FALSE;
+	header->isTransfer   = FALSE;
+	header->isChar		 = FALSE;
 }
 
 static void isCensureHeader(struct headersParser *header) {
@@ -175,6 +196,8 @@ static void isCensureHeader(struct headersParser *header) {
 	}
 	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "transfer-encoding") == 0) {
+		header->isTransfer = TRUE;
+		printf("isTransfer:\n");
 		header->censure = TRUE;
 	}
 	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
@@ -223,5 +246,11 @@ void copyBuffer(struct headersParser *header) {
 void resetValueBuffer(struct headersParser *header) {
 	if (!buffer_can_read(&header->valueBuffer)) {
 		header->valueIndex = 0;
+	}
+}
+
+void compareWithChunked(struct headersParser *header) {
+	if (strcmp(header->transferValue, "chunked") == 0) {
+		header->isChunked = TRUE;
 	}
 }

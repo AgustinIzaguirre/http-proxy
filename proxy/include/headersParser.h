@@ -10,6 +10,7 @@
 #define MAX_HOP_BY_HOP_HEADER_LENGTH 20
 #define MAX_HEADER_LENGTH MAX_HOP_BY_HOP_HEADER_LENGTH + 128
 #define MAX_MIME_HEADER 128
+#define CHUNKED_LENGTH 7
 #define BLOCK 10
 #define MAX_TOTAL_HEADER_LENGTH MAX_HEADER_LENGTH + 1024
 
@@ -17,9 +18,10 @@ struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
 	uint8_t headerBuf[MAX_HEADER_LENGTH];
 	uint8_t mimeValue[MAX_MIME_HEADER];
-	uint8_t valueBuf[BUFFER_SIZE + 30 + 20 +		// TODO: check the 20 addes
-					 MAX_HOP_BY_HOP_HEADER_LENGTH]; // TODO set length with BUFF
-													// size from configuration
+	uint8_t valueBuf[BUFFER_SIZE + 30 + 20 + // TODO: check the 20 addes
+					 MAX_HOP_BY_HOP_HEADER_LENGTH];
+	uint8_t transferValue[CHUNKED_LENGTH];
+
 	buffer headerBuffer;
 	buffer valueBuffer;
 	int headerIndex;
@@ -28,6 +30,10 @@ struct headersParser {
 	int state;
 	uint8_t censure;
 	uint8_t isMime;
+	uint8_t isTransfer;
+	uint8_t isChunked;
+	uint8_t isChar;
+	int tranferIndex;
 
 	MediaRangePtr_t mediaRange;
 	int mediaRangeCurrent;
@@ -83,5 +89,10 @@ void copyBuffer(struct headersParser *header);
 void resetValueBuffer(struct headersParser *header);
 
 int getTransformContentParser(struct headersParser *header); // TODO
+/*
+ * Compares read value with chunked and if it is chunked it sets isChunked to
+ * TRUE
+ */
+void compareWithChunked(struct headersParser *header);
 
 #endif
