@@ -1,13 +1,13 @@
+#include <string.h>
 #include <logger.h>
 #include <stdio.h>
-/* TODO: Check the reason for gcc showing a warning telling me to include
- * <stdio.h> for the usage of snprintf when I have already included the library
- */
+#include <sys/stat.h>
 #include <time.h>
 #include <http.h>
 
 #define MAX_ENTRY_SIZE 512
 #define MAX_ADDR_SIZE 128
+#define MAX_PATH_SIZE 256
 
 enum accessLogElems {
   REMOTE_ADDR,
@@ -19,47 +19,67 @@ enum accessLogElems {
   HTTP_USER_AGENT
 };
 
+char **logFiles = NULL;
+
+
 char *getTime();
 int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
     char *server);
-int writeLogElemToLogEntry(char **beginning, const char *end,
+char *writeLogElemToLogEntry(char *curr, const char *end,
   const char *format, const char *data);
-char *createPath(char *newLogFilePath, size_t newLogFilePathSize,
-  const char *path);
+char *createPath(char *dir);
+int existsLogFile(log_t logType);
+int existsLogFilesArray();
+void createLogFilesArray();
+void checkLogFile(log_t type);
+void createDir(const char *dir);
 
-int createLogFile(const char *path) {
-  // TODO: Check if size makes sense & if it should be set as #define
-  size_t size = 64;
-  char *newLogFilePath = malloc(size);
 
-  createPath(newLogFilePath, size, path);
+int createLogFile(log_t type) {
+  FILE *newLogFile     = NULL;
+  char *newLogFilePath = NULL;
+  char *dir            = "./temp/logs/";
+
+  createDir(dir);
+
+  if (createPath(dir) == NULL) {
+    return FAILED;
+  }
 
   if (newLogFilePath == NULL) {
     return FAILED;
   }
 
-  return fopen(newLogFilePath, "+a") == NULL ? FAILED : OK;
-}
+  newLogFile = fopen(newLogFilePath, "+a");
 
-char *createPath(char *newLogFilePath, size_t newLogFilePathSize,
-  const char *path) {
-  const char *accessLog = "access.log";
-  int bytesWritten = 0;
-
-  if (path == NULL) {
-    path = "./";
+  if (newLogFile == NULL) {
+    return FAILED;
   }
 
-  bytesWritten = snprintf(newLogFilePath, newLogFilePathSize, "%s", path);
+  logFiles[type] = newLogFilePath;
 
-  if (bytesWritten >= sizeof newLogFilePath) {
+  return  OK;
+}
+
+char *createPath(char *dir) {
+  char *newLogFilePath  = calloc(MAX_PATH_SIZE, sizeof(char *));
+  const char *accessLog = "access.log";
+  size_t bytesWritten   = 0;
+
+  if (dir == NULL) {
+    dir = "./";
+  }
+
+  bytesWritten = snprintf(newLogFilePath, MAX_PATH_SIZE, "%s", dir);
+
+  if (bytesWritten >= MAX_PATH_SIZE) {
     return NULL;
   }
 
-  bytesWritten = snprintf(newLogFilePath + sizeof(path),
-    sizeof(newLogFilePath) - sizeof(path), "%s", accessLog);
+  bytesWritten = snprintf(newLogFilePath + strlen(dir),
+    strlen(newLogFilePath) - strlen(dir), "%s", accessLog);
 
-  if (bytesWritten >= (sizeof(newLogFilePath) - sizeof(path))) {
+  if (bytesWritten >= (sizeof(newLogFilePath) - sizeof(dir))) {
     return NULL;
   }
 
@@ -67,48 +87,112 @@ char *createPath(char *newLogFilePath, size_t newLogFilePathSize,
 }
 
 char *createLogEntry(httpADT_t s) {
-  char *curr = malloc(MAX_ENTRY_SIZE);
-  const char *end = curr + MAX_ENTRY_SIZE;
-  char *host = malloc(MAX_ADDR_SIZE);
-  char *server = malloc(MAX_ADDR_SIZE);
+  char *beginning   = malloc(MAX_ENTRY_SIZE);
+  char *curr        = beginning;
+  const char *end   = curr + MAX_ENTRY_SIZE;
+  char *host        = malloc(MAX_ADDR_SIZE);
+  char *server      = malloc(MAX_ADDR_SIZE);
   char *requestLine = (char *)((getRequestLineBuffer(s))->data);
 
-  if (getIpAddresses(getClientAddress(s), host, server) == FAILED) {
+  if (getIpAddresses(getClientAddress(s), host, server) != 0) {
     return FAILED;
   }
 
-  if (writeLogElemToLogEntry(&curr, end, "[%s] ", getTime()) == FAILED) {
+  if ((curr = writeLogElemToLogEntry(curr, end, "[%s] - ", getTime())) == NULL) {
     return FAILED;
   }
 
-  if (writeLogElemToLogEntry(&curr, end, "%s - ", host) == FAILED) {
+  if ((curr = writeLogElemToLogEntry(curr, end, "%s ", host)) == NULL) {
     return FAILED;
   }
 
-  if (writeLogElemToLogEntry(&curr, end, "\"%s\" ", requestLine) == FAILED) {
+  if ((curr = writeLogElemToLogEntry(curr, end, "''%s'", requestLine)) == NULL) {
     return FAILED;
   }
 
-  return curr < end ? curr : NULL;
+  free(host);
+  free(server);
+
+  return curr < end ? beginning : NULL;
 }
 
-int addEntryToLog(httpADT_t http, const char *logFileName) {
-  // TODO: Check if size makes sense & if it should be set as #define's
-  char *logEntryBuffer = malloc(MAX_ENTRY_SIZE);
-  FILE *logFile;
+int addEntryToLog(httpADT_t http, log_t type) {
+  char *logEntry = NULL;
   int couldWriteToFile = 0;
+  FILE *logFile        = NULL;
 
-  logEntryBuffer = createLogEntry(http);
-  if (logEntryBuffer == NULL) {
+  checkLogFile(type);
+  logEntry = createLogEntry(http);
+
+  if (logEntry == NULL) {
     return FAILED;
   }
 
-  logFile = fopen (logFileName, "a+");
-  couldWriteToFile = (fprintf(logFile, "%s", logEntryBuffer) >= 0);
+  logFile = fopen(logFiles[type], "a+");
+  couldWriteToFile = (fprintf(logFile, "%s", logEntry) >= 0);
   fclose(logFile);
 
   return couldWriteToFile;
 }
+
+int existsLogFile(log_t type) {
+  return logFiles[type] != NULL;
+}
+
+int existsLogFilesArray() {
+  return logFiles != NULL;
+}
+
+void createLogFilesArray() {
+  logFiles = malloc(LOG_TYPES * sizeof(char*));
+
+  for (int i = 0; i < LOG_TYPES; i++) {
+    logFiles[i] = NULL;
+  }
+}
+
+void checkLogFile(log_t type) {
+  if (!existsLogFilesArray()) {
+    createLogFilesArray();
+  }
+
+  if (!existsLogFile(type)) {
+    createLogFile(type);
+  }
+}
+
+int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
+    char *server) {
+  return getnameinfo((struct sockaddr *)clientAddr, sizeof(struct sockaddr), host,
+    MAX_ADDR_SIZE, server, MAX_ADDR_SIZE, NI_NAMEREQD);
+}
+
+char *writeLogElemToLogEntry(char *curr, const char *end,
+  const char *format, const char *data) {
+  int bytesWritten = snprintf(curr, end - curr, format, data);
+
+  if (bytesWritten >= (end - curr)) {
+    return NULL;
+  }
+
+  curr += bytesWritten;
+
+  return curr;
+}
+
+char *getTime() {
+  time_t now = time(0);
+  return ctime(&now);
+}
+
+void createDir(const char *dir) {
+  struct stat st = {0};
+
+  if (stat(dir, &st) == -1) {
+    mkdir(dir, 0700);
+  }
+}
+
 
 /*
 // TODO: Receive the response status saved in the proxy
@@ -129,33 +213,7 @@ int createLogEntryStr(struct sockaddr_storage *clientAddr,
 
   return ret;
 }
-*/
 
-int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
-    char *server) {
-  return getnameinfo((struct sockaddr *)clientAddr, sizeof(clientAddr), host,
-    sizeof(host), server, sizeof(server), NI_NAMEREQD);
-}
-
-int writeLogElemToLogEntry(char **beginning, const char *end,
-  const char *format, const char *data) {
-  char *curr = *beginning;
-  int bytesWritten = snprintf(curr, end - curr, format, data);
-
-  if (bytesWritten >= (end - curr)) {
-    return FAILED;
-  }
-
-  curr += bytesWritten;
-  *beginning = curr;
-
-  return OK;
-}
-
-char *getTime() {
-  time_t now = time(0);
-  return ctime(&now);
-}
 
 
 // ======================== SETTERS =======================================
@@ -184,3 +242,4 @@ char *getTime() {
 // void setHttpUserAgent(char **accessLog, const char *httpUserAgent) {
 //   accessLog[HTTP_USER_AGENT] = httpUserAgent;
 // }
+*/

@@ -4,14 +4,20 @@
 #include <netinet/in.h>
 #include <httpProxyADT.h>
 
-#define FAILED 0
-#define OK 1
+#define FAILED    0
+#define OK        1
 
-/* Create a new log file */
-int createLogFile(const char *path);
+#define LOG_TYPES 2
+
+enum logTypes {
+  ACCESS_LOG,
+  ERROR_LOG
+};
+typedef enum logTypes log_t;
+
 
 /* Add a new entry (line) to an existing log file */
-int addEntryToLog(httpADT_t http, const char *logFileName);
+int addEntryToLog(httpADT_t http, log_t type);
 
 /* Setters for the access log array of elements to construct an entry */
 void setRemoteAddr(char **accessLog, const char *remoteAddr);
