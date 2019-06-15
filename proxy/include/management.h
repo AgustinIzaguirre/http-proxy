@@ -7,8 +7,8 @@
 #include <protocol.h>
 #include <unistd.h>
 #include <time.h>
+#include <metric.h>
 
-#define STREAM_QUANTITY 2
 #define ID_QUANTITY 9
 #define ON 1
 #define OFF 0
@@ -31,6 +31,7 @@ typedef enum resourceId_t resId_t;
 
 typedef struct {
 	uint8_t isAuthenticated;
+	uint8_t authResponseSent;
 	authenticationResponse_t authResponse;
 	request_t request;
 	response_t response;

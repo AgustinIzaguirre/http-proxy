@@ -58,8 +58,8 @@ int main(const int argc, const char **argv) {
 	}
 
 	/* Set management socket */
-	const int managementSocket = bindAndGetServerSocket(
-		managementPort, managementInterfaces, STREAM_QUANTITY);
+	const int managementSocket =
+		bindAndGetServerSocket(managementPort, managementInterfaces);
 
 	if (managementSocket < 0) {
 		goto finally;

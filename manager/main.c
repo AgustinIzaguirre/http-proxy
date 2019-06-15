@@ -2,12 +2,15 @@
 #include <protocol.h>
 #include <commandParser.h>
 #include <linkedListADT.h>
+#include <time.h>
 
 /* Initialize in zero all time-tags */
 timeTag_t timeTags[ID_QUANTITY] = {0};
 
 typedef struct {
 	returnCode_t code;
+	operation_t operation;
+	id_t id;
 	uint16_t streamNumber;
 } responseToRecv_t;
 
@@ -43,7 +46,7 @@ int main(int argc, char const *argv[]) {
 
 	parseIPAndPortFromArguments(&ip, &port, argc, argv);
 
-	int server = establishConnection(ip, port, STREAM_QUANTITY);
+	int server = establishConnection(ip, port);
 
 	if (server < 0) {
 		printf("%s\n", getProtocolErrorMessage());
@@ -183,21 +186,22 @@ static int newCommandHandler(int server, operation_t operation, id_t id,
 		case BYE_OP:
 			*byeRead	 = 1;
 			streamNumber = BYE_STREAM;
-			sent		 = sendByeRequest(server, streamNumber);
+			sent		 = sendByeRequest(server);
 			break;
 		case GET_OP:
 			streamNumber = GET_STREAM;
-			sent = sendGetRequest(server, id, timeTags[id], streamNumber);
+			sent		 = sendGetRequest(server, id, timeTags[id]);
 			break;
 		case SET_OP:
 			streamNumber = SET_STREAM;
-			sent = sendSetRequest(server, id, timeTags[id], data, dataLength,
-								  streamNumber);
+			sent = sendSetRequest(server, id, timeTags[id], data, dataLength);
 			break;
 	}
 
-	if (!byeRead) {
+	if (!*byeRead) {
 		responseToRecv_t requestSent = {.code		  = NEW,
+										.operation	= operation,
+										.id			  = id,
 										.streamNumber = streamNumber};
 		enqueue(&toRecv, &requestSent, sizeof(requestSent));
 	}
@@ -208,7 +212,9 @@ static int newCommandHandler(int server, operation_t operation, id_t id,
 static void invalidCommandHandler() {
 	responseToRecv_t invalidCommand = {
 		.code		  = INVALID,
-		.streamNumber = 0 /* Could be any stream number, will be ignored */
+		.operation	= 0, /* Could be any operation, will be ignored */
+		.id			  = 0, /* Could be any id, will be ignored */
+		.streamNumber = 0  /* Could be any stream number, will be ignored */
 	};
 
 	enqueue(&toRecv, &invalidCommand, sizeof(invalidCommand));
@@ -256,6 +262,8 @@ static int recvAndPrintResponses(int server) {
 				response = *((response_t *) getFirst(&recvFromCurrentStream));
 			}
 
+			response.operation = nextToRecv.operation;
+			response.id		   = nextToRecv.id;
 			manageAndPrintResponse(response);
 		}
 	}
@@ -281,6 +289,44 @@ static void printInvalidCommand() {
 }
 
 static void manageAndPrintResponse(response_t response) {
-	// TODO: manage this...
-	printf("New response OPCODE = %x\n", response.operation);
+	printf("\n\n\n---------->> Response <<----------\n\n");
+
+	if (response.status.generalStatus == ERROR_STATUS) {
+		if (response.status.operationStatus == ERROR_STATUS) {
+			printf("Invalid operation\n");
+			return;
+		}
+
+		if (response.status.idStatus == ERROR_STATUS) {
+			printf("Invalid id\n");
+			return;
+		}
+	}
+
+	switch (response.operation) {
+		case GET_OP:
+			if (response.status.timeTagStatus == OK_STATUS) {
+				printf("You already had the last version\n");
+				printf("Last modified at: %s\n",
+					   ctime((const time_t *) &timeTags[response.id]));
+			}
+			else {
+				printf("New version gotten\n");
+				if (timeTags[response.id] == 0) {
+					printf("First time gotten\n");
+				}
+				else {
+					printf("You previous version modified date was: %s\n",
+						   ctime((const time_t *) &timeTags[response.id]));
+				}
+				printf("Last modified at: %s\n",
+					   ctime((const time_t *) &response.timeTag));
+				timeTags[response.id] = response.timeTag;
+			}
+			break;
+		case SET_OP:
+			break;
+		default:
+			break;
+	}
 }

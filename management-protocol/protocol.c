@@ -7,8 +7,7 @@ static int sendSCTPMsg(int fd, void *msg, size_t msgLength,
 static int receiveSCTPMsg(int fd, void **buffer, int maxLengthToRead,
 						  struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
 
-static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
-							 uint16_t streamQuantity);
+static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort);
 
 static void setVersionBytes(void *data);
 
@@ -45,8 +44,7 @@ static char *allocateAndCopyString(char *source, size_t *length);
 
 static uint8_t getResponseHeadByte(responseStatus_t status);
 
-static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter,
-									uint16_t streamQuantity);
+static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter);
 
 static char *errorMessage = NULL;
 /*****************************************************************************\
@@ -92,13 +90,11 @@ static int receiveSCTPMsg(int fd, void **buffer, int maxLengthToRead,
 	return bytesRead;
 }
 
-int establishConnection(const char *serverIP, uint16_t serverPort,
-						uint16_t streamQuantity) {
-	return prepareSCTPSocket(serverIP, serverPort, streamQuantity);
+int establishConnection(const char *serverIP, uint16_t serverPort) {
+	return prepareSCTPSocket(serverIP, serverPort);
 }
 
-static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
-							 uint16_t streamQuantity) {
+static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort) {
 	struct sockaddr_in serverAddress;
 	struct sctp_initmsg initMsg;
 	struct sctp_event_subscribe events;
@@ -109,8 +105,8 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 
 	memset(&initMsg, 0, sizeof(initMsg));
 
-	initMsg.sinit_num_ostreams  = streamQuantity;
-	initMsg.sinit_max_instreams = streamQuantity;
+	initMsg.sinit_num_ostreams  = STREAM_QUANTITY;
+	initMsg.sinit_max_instreams = STREAM_QUANTITY;
 	initMsg.sinit_max_attempts  = MAX_ATTEMPTS;
 
 	setsockopt(server, IPPROTO_SCTP, SCTP_INITMSG, &initMsg, sizeof(initMsg));
@@ -145,14 +141,12 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort,
 	return server;
 }
 
-int bindAndGetServerSocket(uint16_t port, char *ipFilter,
-						   uint16_t streamQuantity) {
-	return prepareAndBindSCTPSocket(port, ipFilter, streamQuantity);
+int bindAndGetServerSocket(uint16_t port, char *ipFilter) {
+	return prepareAndBindSCTPSocket(port, ipFilter);
 }
 
 // TODO: do for ipv6 too
-static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter,
-									uint16_t streamQuantity) {
+static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter) {
 	struct sockaddr_in addr;
 	struct sctp_initmsg initMsg;
 
@@ -181,8 +175,8 @@ static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter,
 
 	memset(&initMsg, 0, sizeof(initMsg));
 
-	initMsg.sinit_num_ostreams  = streamQuantity;
-	initMsg.sinit_max_instreams = streamQuantity;
+	initMsg.sinit_num_ostreams  = STREAM_QUANTITY;
+	initMsg.sinit_max_instreams = STREAM_QUANTITY;
 	initMsg.sinit_max_attempts  = MAX_ATTEMPTS;
 
 	setsockopt(fd, IPPROTO_SCTP, SCTP_INITMSG, &initMsg, sizeof(initMsg));
@@ -248,7 +242,7 @@ static void *formatData(void *data, size_t dataLength,
 
 	if (dataLength % CONCRET_DATA_BLOCK_BYTES != 0) {
 		paddingBytesNeeded =
-			CONCRET_DATA_BLOCK_BYTES - dataLength % CONCRET_DATA_BLOCK_BYTES;
+			CONCRET_DATA_BLOCK_BYTES - (dataLength % CONCRET_DATA_BLOCK_BYTES);
 		dataBlocksNeeded++;
 	}
 
@@ -263,8 +257,8 @@ static void *formatData(void *data, size_t dataLength,
 		byteOffsetInBlock = 0;
 
 		formattedData[blockNumber * DATA_BLOCK_BYTES + byteOffsetInBlock] =
-			(blockNumber == dataBlocksNeeded - 1) ? IS_FINAL_BYTE :
-													NOT_FINAL_BYTE;
+			(blockNumber == (dataBlocksNeeded - 1)) ? IS_FINAL_BYTE :
+													  NOT_FINAL_BYTE;
 		byteOffsetInBlock++;
 
 		bytesToCopy = CONCRET_DATA_BLOCK_BYTES;
@@ -283,6 +277,12 @@ static void *formatData(void *data, size_t dataLength,
 			   (uint8_t *) data + dataIndex, bytesToCopy);
 		dataIndex += bytesToCopy;
 	}
+
+	printf("[protocol.c][formatData] FORMATTED-DATA = "); // TODO
+	for (int i = 0; i < *formattedDataLength; i++) {
+		printf(" 0x%02X ", formattedData[i]);
+	}
+	printf("\n\n");
 
 	return (void *) formattedData;
 }
@@ -316,7 +316,7 @@ static int getConcretData(int fd, uint8_t **data, size_t *dataLength) {
 		*data = realloc(*data, *dataLength + CONCRET_DATA_BLOCK_BYTES);
 
 		offset		= 0;
-		isFinalByte = (*data)[offset];
+		isFinalByte = buffer[offset];
 		offset++;
 
 		while (buffer[offset] != START_DATA_BYTE) {
@@ -415,14 +415,13 @@ char *getProtocolErrorMessage() {
 	return "Unknown protocol error";
 }
 
-int sendByeRequest(int server, uint16_t streamNumber) {
+int sendByeRequest(int server) {
 	uint8_t byeRequest = BYE_MASK;
 
-	return sendSCTPMsg(server, (void *) &byeRequest, 1, streamNumber);
+	return sendSCTPMsg(server, (void *) &byeRequest, 1, BYE_STREAM);
 }
 
-int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
-				   uint16_t streamNumber) {
+int sendGetRequest(int server, uint8_t id, timeTag_t timeTag) {
 	size_t length		= sizeof(uint8_t) + sizeof(timeTag_t);
 	uint8_t *getRequest = malloc(length);
 
@@ -430,7 +429,13 @@ int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
 
 	memcpy(getRequest + sizeof(uint8_t), &timeTag, sizeof(timeTag));
 
-	int sent = sendSCTPMsg(server, (void *) getRequest, length, streamNumber);
+	int sent = sendSCTPMsg(server, (void *) getRequest, length, GET_STREAM);
+
+	printf("[protocol.c][sendGetRequest] GET-REQUEST = "); // TODO
+	for (int i = 0; i < length; i++) {
+		printf(" 0x%02X ", getRequest[i]);
+	}
+	printf("\n\n");
 
 	free(getRequest);
 
@@ -438,7 +443,7 @@ int sendGetRequest(int server, uint8_t id, timeTag_t timeTag,
 }
 
 int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
-				   size_t dataLength, uint16_t streamNumber) {
+				   size_t dataLength) {
 	size_t formattedDataLength;
 	void *formattedData = formatData(data, dataLength, &formattedDataLength);
 	size_t length = sizeof(uint8_t) + sizeof(timeTag_t) + formattedDataLength;
@@ -450,7 +455,13 @@ int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
 	memcpy(setRequest + sizeof(uint8_t) + sizeof(timeTag_t), formattedData,
 		   formattedDataLength);
 
-	int sent = sendSCTPMsg(server, (void *) setRequest, length, streamNumber);
+	int sent = sendSCTPMsg(server, (void *) setRequest, length, SET_STREAM);
+
+	printf("[protocol.c][sendSetRequest] SET-REQUEST = "); // TODO
+	for (int i = 0; i < length; i++) {
+		printf(" 0x%02X ", setRequest[i]);
+	}
+	printf("\n\n");
 
 	free(formattedData);
 	free(setRequest);
@@ -502,6 +513,8 @@ static int recvGetResponse(int server, response_t *response) {
 	/* If timeTagStatus = OK_STATUS you already had the last version of the
 	 * resource */
 	if (response->status.timeTagStatus == OK_STATUS) {
+		printf("[protocol.c][recvGetResponse] status.timeTagStatus is "
+			   "OK_STATUS, no need of recvTimeTag\n\n"); // TODO
 		response->data		 = NULL;
 		response->dataLength = 0;
 		return 0;
@@ -601,19 +614,17 @@ static int recvHeadByteAndLoadResponseInfo(int fd, response_t *response) {
 	response->status.timeTagStatus =
 		headByte & TTAG_STATUS_MASK ? ERROR_STATUS : OK_STATUS;
 
-	switch (headByte & OPCODE_MASK) {
-		case GET_MASK:
+	switch (response->streamNumber) {
+		case GET_STREAM:
 			response->operation = GET_OP;
 			break;
-		case SET_MASK:
+		case SET_STREAM:
 			response->operation = SET_OP;
 			break;
 		default:
 			/* If reached, operationStatus must be ERROR */
 			break;
 	}
-
-	response->id = headByte & ID_MASK;
 
 	return read;
 }
@@ -869,16 +880,28 @@ int sendResponse(int client, response_t response) {
 			   formattedData, formattedDataLength);
 	}
 
+	printf("[protocol.c][sendResponse] RESPONSE = "); // TODO
+	for (int i = 0; i < length; i++) {
+		printf(" 0x%02X ", msg[i]);
+	}
+	printf("\n\n");
+
 	return sendSCTPMsg(client, (void *) msg, length, response.streamNumber);
 }
 
 static uint8_t getResponseHeadByte(responseStatus_t status) {
 	uint8_t headByte = 0x00;
 
-	headByte = headByte | (status.generalStatus & GENERAL_STATUS_MASK);
-	headByte = headByte | (status.operationStatus & OPCODE_STATUS_MASK);
-	headByte = headByte | (status.operationStatus & OPCODE_STATUS_MASK);
-	headByte = headByte | (status.operationStatus & OPCODE_STATUS_MASK);
+	headByte =
+		headByte |
+		(status.generalStatus == ERROR_STATUS ? GENERAL_STATUS_MASK : 0x00);
+	headByte =
+		headByte |
+		(status.operationStatus == ERROR_STATUS ? OPCODE_STATUS_MASK : 0x00);
+	headByte =
+		headByte | (status.idStatus == ERROR_STATUS ? ID_STATUS_MASK : 0x00);
+	headByte = headByte |
+			   (status.timeTagStatus == ERROR_STATUS ? TTAG_STATUS_MASK : 0x00);
 
 	return headByte;
 }

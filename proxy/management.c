@@ -10,8 +10,8 @@ static uint8_t authenticate(char *username, char *password);
 static void initializeTimeTags();
 static void manageGetRequest(manager_t *client);
 static void manageSetRequest(manager_t *client);
-static uint8_t isValidGetId(ids_t id);
-static uint8_t isValidSetId(ids_t id);
+static uint8_t isValidGetId(resId_t id);
+static uint8_t isValidSetId(resId_t id);
 
 static const char *errorMessage = "";
 
@@ -25,7 +25,8 @@ static const struct fd_handler managementHandler = {.handle_read  = handleRead,
 static manager_t *newManager() {
 	manager_t *manager = calloc(sizeof(manager_t), 1);
 
-	manager->isAuthenticated = FALSE;
+	manager->isAuthenticated  = FALSE;
+	manager->authResponseSent = FALSE;
 
 	return manager;
 }
@@ -51,7 +52,7 @@ const char *getManagementErrorMessage() {
 }
 
 static void initializeTimeTags() {
-	time_t initialTimeTag = time(NULL);
+	timeTag_t initialTimeTag = time(NULL);
 
 	for (int i = 0; i < ID_QUANTITY; i++) {
 		timeTags[i] = initialTimeTag;
@@ -93,7 +94,6 @@ fail:
 }
 
 static void handleRead(struct selector_key *key) {
-	printf("Handling Read\n"); // TODO
 	manager_t *client = (manager_t *) key->data;
 	int read;
 
@@ -112,7 +112,6 @@ static void handleRead(struct selector_key *key) {
 }
 
 static int handleAuthenticatedRead(struct selector_key *key) {
-	printf("Handling auth Read\n"); // TODO
 	manager_t *client = (manager_t *) key->data;
 
 	int read = recvRequest(key->fd, &client->request);
@@ -123,6 +122,9 @@ static int handleAuthenticatedRead(struct selector_key *key) {
 	}
 
 	client->response.streamNumber = client->request.streamNumber;
+
+	client->response.operation = client->request.operation;
+	client->response.id		   = client->request.id;
 
 	client->response.status.generalStatus   = OK_STATUS;
 	client->response.status.operationStatus = OK_STATUS;
@@ -147,7 +149,7 @@ static int handleAuthenticatedRead(struct selector_key *key) {
 }
 
 static void manageGetRequest(manager_t *client) {
-	ids_t id = client->request.id;
+	resId_t id = client->request.id;
 
 	if (!isValidGetId(id)) {
 		/* Invalid ID */
@@ -165,6 +167,10 @@ static void manageGetRequest(manager_t *client) {
 	/* Valid ID & Different TIME-TAG: Response with data */
 	client->response.status.generalStatus = ERROR_STATUS;
 	client->response.status.timeTagStatus = ERROR_STATUS;
+	uint64_t *metric					  = malloc(sizeof(uint64_t));
+	// uint8_t *data;
+	// uint8_t transformState;
+	// uint32_t bufferSize; //TODO: discuss about this type
 
 	switch (id) {
 		case MIME_ID:
@@ -174,28 +180,45 @@ static void manageGetRequest(manager_t *client) {
 		case CMD_ID:
 			break;
 		case MTR_CN_ID:
+			printf(
+				"[management.c][manageGetRequest] ID = MTR_CN_ID\n\n"); // TODO
+			*metric = getConcurrentConections();
+			printf("data (no-format) = %lx\n", *metric);
+			client->response.data		= (void *) metric;
+			client->response.dataLength = sizeof(uint64_t);
 			break;
 		case MTR_HS_ID:
+			metric						= getHistoricAccess();
+			client->response.data		= (void *) &metric;
+			client->response.dataLength = sizeof(metric);
 			break;
 		case MTR_BT_ID:
+			metric						= getTransferBytes();
+			client->response.data		= (void *) &metric;
+			client->response.dataLength = sizeof(metric);
 			break;
 		case MTR_ID:
 			break;
 		case TF_ID:
 			break;
+		default:
+			/* Can't be reached because of isValidGetId check */
+			break;
 	}
+
+	client->response.timeTag = timeTags[id];
 }
 
-static uint8_t isValidGetId(ids_t id) {
+static uint8_t isValidGetId(resId_t id) {
 	return id >= MIME_ID && id <= TF_ID;
 }
 
-static uint8_t isValidSetId(ids_t id) {
+static uint8_t isValidSetId(resId_t id) {
 	return id == MIME_ID || id == BF_ID || id == CMD_ID || id == TF_ID;
 }
 
 static void manageSetRequest(manager_t *client) {
-	ids_t id = client->request.id;
+	resId_t id = client->request.id;
 
 	if (!isValidSetId(id)) {
 		/* Invalid ID */
@@ -217,6 +240,9 @@ static void manageSetRequest(manager_t *client) {
 				break;
 			case TF_ID:
 				break;
+			default:
+				/* Can't be reached because of isValidSetId check */
+				break;
 		}
 
 		return;
@@ -228,8 +254,6 @@ static void manageSetRequest(manager_t *client) {
 }
 
 static int handleNonAuthenticatedRead(struct selector_key *key) {
-	printf("Handling non auth Read\n"); // TODO
-
 	manager_t *client = (manager_t *) key->data;
 	char *username;
 	char *password;
@@ -274,23 +298,23 @@ static uint8_t authenticate(char *username, char *password) {
 }
 
 static void handleWrite(struct selector_key *key) {
-	printf("Handling Write\n"); // TODO
-
 	manager_t *client = (manager_t *) key->data;
 	int sent;
 
-	if (client->isAuthenticated) {
-		printf("Is auth!\n"); // TODO
+	if (client->isAuthenticated && client->authResponseSent) {
 		sent = sendResponse(key->fd, client->response);
 	}
 	else {
-		printf("Not auth yet!\n"); // TODO
 		sent = sendAuthenticationResponse(key->fd, client->authResponse);
 	}
 
 	if (sent < 0) {
 		errorMessage = getProtocolErrorMessage();
 		// TODO: destroy?
+	}
+
+	if (client->isAuthenticated && !client->authResponseSent) {
+		client->authResponseSent = TRUE;
 	}
 
 	selector_set_interest(key->s, key->fd, OP_READ);
