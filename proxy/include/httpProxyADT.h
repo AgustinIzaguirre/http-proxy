@@ -243,6 +243,16 @@ void setErrorType(struct http *s, int errorTypeFound);
  */
 int getErrorType(struct http *s);
 
+/*
+ * Returns isChunked from http structure
+ */
+uint8_t getIsChunked(struct http *s);
+
+/*
+ *  Sets isChunked with received value
+ */
+void setIsChunked(struct http *s, uint8_t isChunked);
+
 // TODO
 struct addrinfo *getOriginResolutions(struct http *s);
 void setOriginResolutions(struct http *s, struct addrinfo *originResolution);

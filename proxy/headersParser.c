@@ -134,8 +134,6 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 					header->transferValue[header->tranferIndex++] = tolower(l);
 					if (header->tranferIndex == CHUNKED_LENGTH) {
 						header->transferValue[header->tranferIndex++] = 0;
-						printf("transfer-Encoding: %s\n",
-							   header->transferValue);
 						compareWithChunked(header);
 					}
 				}
@@ -197,8 +195,7 @@ static void isCensureHeader(struct headersParser *header) {
 	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "transfer-encoding") == 0) {
 		header->isTransfer = TRUE;
-		printf("isTransfer:\n");
-		header->censure = TRUE;
+		header->censure	= TRUE;
 	}
 	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "content-length") == 0) {
@@ -250,7 +247,7 @@ void resetValueBuffer(struct headersParser *header) {
 }
 
 void compareWithChunked(struct headersParser *header) {
-	if (strcmp(header->transferValue, "chunked") == 0) {
+	if (strcmp((char *) header->transferValue, "chunked") == 0) {
 		header->isChunked = TRUE;
 	}
 }

@@ -62,6 +62,7 @@ struct http {
 	unsigned references;
 
 	int transformContent;
+	uint8_t isChunked;
 	MediaRangePtr_t mediaRanges; // TODO:free
 
 	void **selectorCopyForOtherThread;
@@ -199,6 +200,14 @@ void setTransformContent(struct http *s, int transformContent) {
 	s->transformContent = transformContent;
 }
 
+uint8_t getIsChunked(struct http *s) {
+	return s->isChunked;
+}
+
+void setIsChunked(struct http *s, uint8_t isChunked) {
+	s->isChunked = isChunked;
+}
+
 MediaRangePtr_t getMediaRangeHTTP(struct http *s) {
 	return s->mediaRanges;
 }
@@ -297,6 +306,7 @@ struct http *httpNew(int clientFd) {
 	ret->clientFd		  = clientFd;
 	ret->clientAddrLen	= sizeof(ret->clientAddr);
 	ret->transformContent = FALSE;
+	ret->isChunked		  = FALSE;
 	ret->mediaRanges =
 		createMediaRangeFromListOfMediaType(getMediaRange(getConfiguration()));
 	ret->selectorCopyForOtherThread = NULL;

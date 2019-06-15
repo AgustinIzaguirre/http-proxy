@@ -47,6 +47,9 @@ void initializeChunkedBuffer(struct transformBody *transformBody, int length);
 void prepareChunkedBuffer(buffer *chunkBuffer, buffer *inbuffer);
 void sentLastChunked(buffer *chunkBuffer);
 void transformBodyDestroy(const unsigned state, struct selector_key *key);
+unsigned setStandardFdInterestsWithoutChunked(struct selector_key *key);
+unsigned standardOriginReadWithoutChunked(struct selector_key *key);
+unsigned standardClientWriteWithoutChunked(struct selector_key *key);
 
 // TODO comment all methods
 

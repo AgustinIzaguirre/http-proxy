@@ -24,6 +24,7 @@ void responceDestroy(const unsigned state, struct selector_key *key) {
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
 	setTransformContent(GET_DATA(key), aux);
+	setIsChunked(GET_DATA(key), handleResponse->parseHeaders.isChunked);
 }
 
 unsigned responseRead(struct selector_key *key) {
