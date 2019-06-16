@@ -35,6 +35,8 @@ void headersParserInit(struct headersParser *header, struct selector_key *key,
 	header->isChar			   = FALSE;
 	header->willTransform	  = FALSE;
 
+	header->firstLine = 0;
+
 	memset(header->mimeValue, 0, MAX_MIME_HEADER);
 	memset(header->transferValue, 0, CHUNKED_LENGTH + 1);
 	memset(header->contentValue, 0, IDENTITY_LENGTH + 1);
@@ -74,13 +76,28 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 	switch (state) {
 		case FIRST_LINE:
 			if (l == '\n') {
-				header->state = HEADERS_START;
+				if (header->firstLine == IS_100) {
+					header->state = FIRST_LINE;
+				}
+				else {
+					header->state = HEADERS_START;
+				}
 			}
 			else if (header->isRequest) {
 				buffer_write(header->requestLineBuffer, l);
 			}
 			else {
 				buffer_write(header->responseLineBuffer, l);
+				if (header->firstLine <= 0) {
+					header->firstLine++;
+					if ((header->firstLine == 10 && l != '1') ||
+						(header->firstLine == 11 && l != '0')) {
+						header->firstLine = IS_NOT_100;
+					}
+					else if (header->firstLine == 12 && l != '0') {
+						header->firstLine = IS_100;
+					}
+				}
 			}
 			buffer_write(&header->valueBuffer, l);
 			break;
@@ -111,7 +128,7 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 			}
 
 			if (header->headerIndex == MAX_HOP_BY_HOP_HEADER_LENGTH) {
-				header->headerIndex++; // TODO fix better
+				header->headerIndex++;
 				copyBuffer(header);
 				header->headerIndex = 0;
 				header->state		= HEADER_VALUE;
@@ -203,8 +220,7 @@ static void isCensureHeader(struct headersParser *header) {
 	}
 	else if (strcmp(header->currHeader, "keep-alive") == 0 ||
 			 strcmp(header->currHeader, "connection") == 0 ||
-			 strcmp(header->currHeader, "upgrade") == 0 ||
-			 strcmp(header->currHeader, "expect") == 0) {
+			 strcmp(header->currHeader, "upgrade") == 0) {
 		header->censure = TRUE;
 	}
 	else if (getIsTransformationOn(getConfiguration()) &&

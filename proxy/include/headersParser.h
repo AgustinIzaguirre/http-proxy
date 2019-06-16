@@ -40,6 +40,7 @@ struct headersParser {
 	uint8_t hasEncode;
 	int tranferIndex;
 	int contentIndex;
+	int firstLine;
 
 	MediaRangePtr_t mediaRange;
 	int mediaRangeCurrent;
@@ -58,6 +59,9 @@ enum headersState {
 	HEADER_DONE,
 	BODY_START,
 };
+
+#define IS_100 -1
+#define IS_NOT_100 -2
 
 /*
  * Parse a char into the headers parser statemachine
