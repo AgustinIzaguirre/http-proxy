@@ -35,7 +35,6 @@ const struct fd_handler *getHttpHandler() {
 }
 
 void httpPassiveAccept(struct selector_key *key) {
-	printf("conexion aceptada\n"); // TODO:
 	struct sockaddr_storage clientAddr;
 	socklen_t clientAddrLen = sizeof(clientAddr);
 	struct http *state		= NULL;
