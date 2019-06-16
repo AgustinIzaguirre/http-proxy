@@ -147,13 +147,3 @@ char *showMediaTypeInString(MediaRangePtr_t mrp) {
 	}
 	return ans;
 }
-
-void printMediaRange(MediaRangePtr_t mediaRange) {
-	int i = 0;
-	while (i < mediaRange->length) {
-		printf("%d: %d | %s \n", i, mediaRange->canBeMatch[i],
-			   mediaRange->listMediaTypes[i]);
-		i++;
-	}
-	return;
-}
