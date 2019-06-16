@@ -392,7 +392,7 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 				switch (currentChar) {
 					case '\t':
 					case ' ': /* space */
-						currentState = SET_CMD_DATA_;
+						/* Keeps current state */
 						break;
 					case '\n':
 						/* Set command info *set cmd command* */
@@ -418,17 +418,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 							returnCode = INVALID;
 						}
 				}
-				break;
-			case SET_CMD_DATA_:
-				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* Set command info *set mime media-type* */
-					(*dataLength)++; /* Null terminated */
-					*data = realloc(*data, *dataLength);
-					*(*((char **) data) + *dataLength - 1) = '\0';
-					*operation							   = SET_OP;
-					*id									   = MIME_ID;
-					returnCode							   = NEW;
-				});
 				break;
 		}
 	} while (returnCode == IGNORE);

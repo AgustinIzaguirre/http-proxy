@@ -65,8 +65,6 @@ enum state_t {
 	GET_MTR_CN,
 	GET_MTR_H,
 	GET_MTR_HS,
-	GET_B,
-	GET_BF,
 	GET_C,
 	GET_CM,
 	GET_CMD,
