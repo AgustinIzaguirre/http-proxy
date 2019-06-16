@@ -330,6 +330,9 @@ struct http *httpNew(int clientFd) {
 	ret->errorTypeFound = DEFAULT;
 
 	ret->references = 1;
+
+	increaseConcurrentConections();
+	increaseHistoricAccess();
 finally:
 	return ret;
 }
@@ -356,7 +359,6 @@ void httpDestroyData(struct http *s) {
 void httpDestroy(struct http *s) {
 	if (s != NULL) {
 		if (s->references == 1) {
-			decreaseConcurrentConections();
 			if (poolSize < maxPool) {
 				s->next = pool;
 				pool	= s;

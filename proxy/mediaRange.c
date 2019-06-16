@@ -1,4 +1,5 @@
 #include <mediaRange.h>
+#include <utilities.h>
 
 #define isOWS(a) (a == ' ' || a == '\t')
 
@@ -127,6 +128,24 @@ void freeMediaRange(MediaRangePtr_t mrp) {
 	free(mrp->listMediaTypes);
 	free(mrp->canBeMatch);
 	free(mrp);
+}
+
+char *showMediaTypeInString(MediaRangePtr_t mrp) {
+	char *ans			 = NULL;
+	unsigned int sizeAns = 0;
+	int i = 0, j = 0;
+	while (j < mrp->length) {
+		if (sizeAns != 0) {
+			addCharToString(ans, &sizeAns, ',');
+		}
+		while ((mrp->listMediaTypes)[j][i] != '\0') {
+			addCharToString(ans, &sizeAns, (mrp->listMediaTypes)[j][i]);
+			i++;
+		}
+		i = 0;
+		j++;
+	}
+	return ans;
 }
 
 void printMediaRange(MediaRangePtr_t mediaRange) {
