@@ -13,14 +13,16 @@
 #define CHUNKED_LENGTH 7
 #define BLOCK 10
 #define IDENTITY_LENGTH 8
+#define TRANSFER_ENCODING_LENGTH 30
+#define CONNECTION_CLOSE_LENGTH 20
+#define EXTRA_SPACE TRANSFER_ENCODING_LENGTH + CONNECTION_CLOSE_LENGTH
 #define MAX_TOTAL_HEADER_LENGTH MAX_HEADER_LENGTH + 1024
 
 struct headersParser {
 	char currHeader[MAX_HEADER_LENGTH];
 	uint8_t headerBuf[MAX_HEADER_LENGTH];
 	uint8_t mimeValue[MAX_MIME_HEADER];
-	uint8_t valueBuf[BUFFER_SIZE + 30 + 20 + // TODO: check the 20 addes
-					 MAX_HOP_BY_HOP_HEADER_LENGTH];
+	uint8_t valueBuf[BUFFER_SIZE + EXTRA_SPACE + MAX_HOP_BY_HOP_HEADER_LENGTH];
 	uint8_t transferValue[CHUNKED_LENGTH + 1];
 	uint8_t contentValue[IDENTITY_LENGTH + 1];
 
