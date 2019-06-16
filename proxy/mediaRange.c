@@ -52,7 +52,7 @@ MediaRangePtr_t createMediaRange(char const *string) {
 }
 
 void addMediaRange(MediaRangePtr_t mrp, char const *string) {
-	int i = 0, j = mrp->length;
+	int i = 0, j = 0;
 	while (string[i] != '\0') {
 		if (string[i] == ',') {
 			if ((j % BLOCK) == 0) {
