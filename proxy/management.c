@@ -184,14 +184,10 @@ static void manageGetRequest(manager_t *client) {
 
 	switch (id) {
 		case MIME_ID:
-			// TODO: @AgustinAlejoDammiano implement getMediaRangeString this
-			// please char *mediaRange =
-			// getMediaRangeString(getMediaRange(getConfiguration()));
-			// client->response.data		= (void *) mediaRange;
-			// client->response.dataLength = strlen(mediaRange) + 1;
-			break;
-		case BF_ID:
-			// TODO: REMOVE COMMAND?
+			char *mediaRange =
+				getMediaRangeAsString(getMediaRange(getConfiguration()));
+			client->response.data		= (void *) mediaRange;
+			client->response.dataLength = strlen(mediaRange) + 1;
 			break;
 		case CMD_ID:
 			manageGetCommandRequest(&client->response);
@@ -200,9 +196,6 @@ static void manageGetRequest(manager_t *client) {
 		case MTR_HS_ID:
 		case MTR_BT_ID:
 			manageGetMetricRequest(id, &client->response);
-			break;
-		case MTR_ID:
-			// TODO: REMOVE COMMAND?
 			break;
 		case TF_ID:
 			manageGetTransformationStatusRequest(&client->response);
@@ -255,7 +248,7 @@ static uint8_t isValidGetId(resId_t id) {
 }
 
 static uint8_t isValidSetId(resId_t id) {
-	return id == MIME_ID || id == BF_ID || id == CMD_ID || id == TF_ID;
+	return id == MIME_ID || id == CMD_ID || id == TF_ID;
 }
 
 static void manageSetRequest(manager_t *client) {
@@ -281,9 +274,6 @@ static void manageSetRequest(manager_t *client) {
 				else {
 					resetMediaRangeList(getConfiguration());
 				}
-				break;
-			case BF_ID:
-				// TODO: remove command?
 				break;
 			case CMD_ID:
 				setCommand(getConfiguration(), (char *) client->request.data);

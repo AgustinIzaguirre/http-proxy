@@ -134,7 +134,7 @@ void freeMediaRange(MediaRangePtr_t mrp) {
 	free(mrp);
 }
 
-char *showMediaTypeInString(MediaRangePtr_t mrp) {
+char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 	char *ans			 = NULL;
 	unsigned int sizeAns = 0;
 	int i = 0, j = 0;

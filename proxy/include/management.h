@@ -21,12 +21,10 @@
 enum resourceId_t {
 	NO_ID,
 	MIME_ID,
-	BF_ID,
 	CMD_ID,
 	MTR_CN_ID,
 	MTR_HS_ID,
 	MTR_BT_ID,
-	MTR_ID,
 	TF_ID
 };
 typedef enum resourceId_t resId_t;

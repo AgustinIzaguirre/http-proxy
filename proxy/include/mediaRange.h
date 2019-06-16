@@ -51,7 +51,8 @@ void freeMediaRange(MediaRangePtr_t mrp);
 /*
  * Returns a string of all the media range
  */
-char *showMediaTypeInString(MediaRangePtr_t mrp);
-void printMediaRange(MediaRangePtr_t mediaRange); // TODO: for test
+char *getMediaRangeAsString(MediaRangePtr_t mrp);
+
+void printMediaRange(MediaRangePtr_t mediaRange);
 
 #endif

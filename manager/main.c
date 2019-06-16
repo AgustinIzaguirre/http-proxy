@@ -378,10 +378,6 @@ static void manageAndPrintGetResponse(response_t response) {
 			// TODO: printf("MIME Media-types = %s\n", (char *)
 			// storedData[response.id]);
 			break;
-		case BF_ID:
-			// TODO: printf("Buffer size = %d\n", *((uint32_t *)
-			// storedData[response.id]));
-			break;
 		case CMD_ID:
 			printf("Command = %s\n", (char *) storedData[response.id]);
 			break;
@@ -396,9 +392,6 @@ static void manageAndPrintGetResponse(response_t response) {
 		case MTR_BT_ID:
 			printf("Bytes transfered = %ld\n",
 				   *((uint64_t *) storedData[response.id]));
-			break;
-		case MTR_ID:
-			// TODO: Send and receive in a particular order... all the metrics
 			break;
 		case TF_ID:
 			printf("Transformations state = %s\n",
