@@ -40,6 +40,7 @@ struct headersParser {
 	uint8_t hasEncode;
 	int tranferIndex;
 	int contentIndex;
+	int firstLine;
 
 	MediaRangePtr_t mediaRange;
 	int mediaRangeCurrent;
