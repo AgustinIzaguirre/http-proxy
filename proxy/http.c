@@ -53,8 +53,6 @@ void httpPassiveAccept(struct selector_key *key) {
 	state = httpNew(client);
 
 	if (state == NULL) {
-		/* Without state, can't handle */
-		// TODO: should turn off accept() until detect a free-conection?
 		goto fail;
 	}
 
