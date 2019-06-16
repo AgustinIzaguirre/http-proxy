@@ -82,9 +82,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					case 'm':
 						currentState = GET_M;
 						break;
-					case 'b':
-						currentState = GET_B;
-						break;
 					case 't':
 						currentState = GET_T;
 						break;
@@ -103,9 +100,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case 'm':
 						currentState = SET_M;
-						break;
-					case 'b':
-						currentState = SET_B;
 						break;
 					case 't':
 						currentState = SET_T;
@@ -194,17 +188,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					returnCode = NEW;
 				});
 				break;
-			case GET_B:
-				EXPECTS('f', GET_BF);
-				break;
-			case GET_BF:
-				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* Set command information to *get bf* */
-					*operation = GET_OP;
-					*id		   = BF_ID;
-					returnCode = NEW;
-				});
-				break;
 			case GET_C:
 				EXPECTS('m', GET_CM);
 				break;
@@ -241,76 +224,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					/* Set command information to *get tf* */
 					*operation = GET_OP;
 					*id		   = TF_ID;
-					returnCode = NEW;
-				});
-				break;
-			case SET_B:
-				EXPECTS('f', SET_BF);
-				break;
-			case SET_BF:
-				*dataLength = sizeof(uint32_t);
-				*data		= calloc(1, *dataLength);
-				EXPECTS_SPACE(SET_BF_);
-				break;
-			case SET_BF_:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
-					case '0':
-					case '1':
-					case '2':
-					case '3':
-					case '4':
-					case '5':
-					case '6':
-					case '7':
-					case '8':
-					case '9':
-						**((uint32_t **) data) =
-							**((uint32_t **) data) * 10 + currentChar - '0';
-						currentState = SET_BF_DATA;
-						break;
-					default:
-						returnCode = INVALID;
-				}
-				break;
-			case SET_BF_DATA:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						currentState = SET_BF_DATA_;
-						break;
-					case '0':
-					case '1':
-					case '2':
-					case '3':
-					case '4':
-					case '5':
-					case '6':
-					case '7':
-					case '8':
-					case '9':
-						**((uint32_t **) data) =
-							**((uint32_t **) data) * 10 + currentChar - '0';
-						currentState = SET_BF_DATA;
-						break;
-					case '\n':
-						/* Set command information to *get bf int* */
-						*operation = GET_OP;
-						*id		   = BF_ID;
-						returnCode = NEW;
-						break;
-					default:
-						returnCode = INVALID;
-				}
-				break;
-			case SET_BF_DATA_:
-				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* Set command information to *get bf int* */
-					*operation = GET_OP;
-					*id		   = BF_ID;
 					returnCode = NEW;
 				});
 				break;
