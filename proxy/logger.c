@@ -11,6 +11,7 @@
 #define MAX_ADDR_SIZE 128
 #define MAX_PATH_SIZE 256
 
+// TODO: Is the accessLogElems enum even necessary?
 enum accessLogElems {
   REMOTE_ADDR,
   TIME,
@@ -22,11 +23,12 @@ enum accessLogElems {
 };
 
 char **logFiles = NULL;
-
+char *client    = NULL;
+char *host      = NULL;
 
 char *getTime();
-int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
-    char *server);
+int getIpAddresses(struct sockaddr_storage *clientAddr, char *client,
+    char *host);
 char *writeLogElemToLogEntry(char *curr, const char *end,
   const char *format, const char *data);
 char *createPath(char *dir);
@@ -35,6 +37,10 @@ int existsLogFilesArray();
 void createLogFilesArray();
 void checkLogFile(log_t type);
 int createDir(const char *dir);
+char *determineCommunication(httpADT_t s, communication_t action);
+char *writeClientAndHost(char *curr, const char *end, char *client,
+  char *host, communication_t action);
+int setClientAndHost(httpADT_t s, communication_t action);
 
 
 int createLogFile(log_t type) {
@@ -86,43 +92,36 @@ char *createPath(char *dir) {
   return newLogFilePath;
 }
 
-char *createLogEntry(httpADT_t s) {
+char *createLogEntry(httpADT_t s, communication_t action) {
   char *beginning   = malloc(MAX_ENTRY_SIZE);
   char *curr        = beginning;
   const char *end   = curr + MAX_ENTRY_SIZE;
-  char *host        = malloc(MAX_ADDR_SIZE);
-  char *server      = malloc(MAX_ADDR_SIZE);
-  char *requestLine = (char *)((getRequestLineBuffer(s))->data);
+  char *firstLine   = determineCommunication(s, action);
 
-  if (getIpAddresses(getClientAddress(s), host, server) != 0) {
+  setClientAndHost(s, action);
+
+  if ((curr = writeLogElemToLogEntry(curr, end, "[%s] ", getTime())) == NULL) {
     return FAILED;
   }
 
-  if ((curr = writeLogElemToLogEntry(curr, end, "[%s] - ", getTime())) == NULL) {
+  if ((curr = writeClientAndHost(curr, end, client, host, action)) == NULL) {
     return FAILED;
   }
 
-  if ((curr = writeLogElemToLogEntry(curr, end, "%s ", host)) == NULL) {
+  if ((curr = writeLogElemToLogEntry(curr, end, "'%s'\n", firstLine)) == NULL) {
     return FAILED;
   }
-
-  if ((curr = writeLogElemToLogEntry(curr, end, "''%s'", requestLine)) == NULL) {
-    return FAILED;
-  }
-
-  free(host);
-  free(server);
 
   return curr < end ? beginning : NULL;
 }
 
-int addEntryToLog(httpADT_t http, log_t type) {
-  char *logEntry = NULL;
+int addEntryToLog(httpADT_t http, log_t type, communication_t action) {
+  char *logEntry       = NULL;
   int couldWriteToFile = 0;
   FILE *logFile        = NULL;
 
   checkLogFile(type);
-  logEntry = createLogEntry(http);
+  logEntry = createLogEntry(http, action);
 
   if (logEntry == NULL) {
     return FAILED;
@@ -161,10 +160,10 @@ void checkLogFile(log_t type) {
   }
 }
 
-int getIpAddresses(struct sockaddr_storage *clientAddr, char *host,
-    char *server) {
-  return getnameinfo((struct sockaddr *)clientAddr, sizeof(struct sockaddr), host,
-    MAX_ADDR_SIZE, server, MAX_ADDR_SIZE, NI_NAMEREQD);
+int getIpAddresses(struct sockaddr_storage *clientAddr, char *client,
+    char *host) {
+  return getnameinfo((struct sockaddr *)clientAddr, sizeof(struct sockaddr), client,
+    MAX_ADDR_SIZE, host, MAX_ADDR_SIZE, NI_NAMEREQD);
 }
 
 char *writeLogElemToLogEntry(char *curr, const char *end,
@@ -182,7 +181,11 @@ char *writeLogElemToLogEntry(char *curr, const char *end,
 
 char *getTime() {
   time_t now = time(0);
-  return ctime(&now);
+  char *time = calloc(128, sizeof(char));
+  snprintf(time, 128, "%s", ctime(&now));
+  size_t len = strlen(time);
+  time[len - strlen("\n")] = 0;
+  return time;
 }
 
 int createDir(const char *dir) {
@@ -195,6 +198,66 @@ int createDir(const char *dir) {
       perror("Failed creating directory");
       return FAILED;
     }
+  }
+
+  return OK;
+}
+
+char *determineCommunication(httpADT_t s, communication_t action) {
+  char *ret       = malloc(MAX_FIRST_LINE_LENGTH);
+  char *firstLine = NULL;
+  size_t len      = 0;
+
+  if (action == REQ) {
+    firstLine = (char *)((getRequestLineBuffer(s))->data);
+  }
+  else {
+    firstLine = (char *)((getResponseLineBuffer(s))->data);
+  }
+
+  snprintf(ret, MAX_FIRST_LINE_LENGTH, "%s", firstLine);
+  len                     = strlen(ret);
+  ret[len - strlen("\n")] = 0;
+
+  return ret;
+}
+
+char *writeClientAndHost(char *curr, const char *end, char *client,
+  char *host, communication_t action) {
+  char *aux = NULL;
+
+  if (action == RESP) {
+    aux    = client;
+    client = host;
+    host   = aux;
+  }
+
+  if ((curr = writeLogElemToLogEntry(curr, end, "[%s --> ", client)) == NULL) {
+    return NULL;
+  }
+
+  if ((curr = writeLogElemToLogEntry(curr, end, "%s] - ", host)) == NULL) {
+    return NULL;
+  }
+
+  return curr;
+}
+
+int setClientAndHost(httpADT_t s, communication_t action) {
+  if (client == NULL) {
+    client = malloc(MAX_ADDR_SIZE);
+  }
+
+  if (host == NULL) {
+    host = malloc(MAX_ADDR_SIZE);
+  }
+
+  if (action == REQ) {
+    if (getIpAddresses(getClientAddress(s), client, NULL) != 0) {
+      return FAILED;
+    }
+
+    host = getOriginHost(s);
   }
 
   return OK;

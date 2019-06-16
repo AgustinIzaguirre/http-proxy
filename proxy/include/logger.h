@@ -15,9 +15,15 @@ enum logTypes {
 };
 typedef enum logTypes log_t;
 
+enum communicationTypes {
+  REQ,
+  RESP
+};
+typedef enum communicationTypes communication_t;
+
 
 /* Add a new entry (line) to an existing log file */
-int addEntryToLog(httpADT_t http, log_t type);
+int addEntryToLog(httpADT_t http, log_t type, communication_t action);
 
 /* Setters for the access log array of elements to construct an entry */
 void setRemoteAddr(char **accessLog, const char *remoteAddr);

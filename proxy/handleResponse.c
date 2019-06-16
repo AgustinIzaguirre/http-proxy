@@ -7,6 +7,7 @@
 #include <transformBody.h>
 #include <configuration.h>
 #include <utilities.h>
+#include <logger.h>
 
 /*
  * Returns buffer to read from to write on clientFd
@@ -20,9 +21,11 @@ void responseInit(const unsigned state, struct selector_key *key) {
 	buffer_init(&(handleResponse->requestDataBuffer), BUFFER_SIZE,
 				handleResponse->requestData);
 	handleResponse->responseFinished = FALSE;
+	addEntryToLog(GET_DATA(key), ACCESS_LOG, REQ);
 }
 
 void responceDestroy(const unsigned state, struct selector_key *key) {
+	addEntryToLog(GET_DATA(key), ACCESS_LOG, RESP);
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));

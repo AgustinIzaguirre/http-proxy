@@ -6,7 +6,6 @@
 #include <configuration.h>
 #include <headersParser.h>
 #include <utilities.h>
-#include <logger.h>
 
 /*
  * Returns buffer to read from to write on originFd
@@ -16,7 +15,6 @@ static buffer *getCurrentBuffer(httpADT_t state);
 void requestInit(const unsigned state, struct selector_key *key) {
 	struct handleRequest *handleRequest = getHandleRequestState(GET_DATA(key));
 	headersParserInit(&(handleRequest->parseHeaders), key, TRUE);
-	addEntryToLog(GET_DATA(key), ACCESS_LOG);
 	handleRequest->requestState = FIRST_BUFFER;
 }
 
