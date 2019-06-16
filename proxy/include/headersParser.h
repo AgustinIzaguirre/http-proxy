@@ -80,8 +80,12 @@ void resetHeaderParser(struct headersParser *header);
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
 
+/*
+ * Initialize headers parser structure with default values and initialize its
+ * buffers
+ */
 void headersParserInit(struct headersParser *header, struct selector_key *key,
-					   uint8_t isRequest); // TODO comment
+					   uint8_t isRequest);
 
 /*
  * Adds header connection: close to either request or response
