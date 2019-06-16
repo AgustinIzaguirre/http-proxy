@@ -7,8 +7,6 @@
 #include <http.h>
 #include <signal.h>
 #include <wait.h>
-
-// TODO REMOVE HEADER
 #include <stdio.h>
 #include <errno.h>
 

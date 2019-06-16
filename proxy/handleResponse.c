@@ -8,6 +8,9 @@
 #include <configuration.h>
 #include <utilities.h>
 
+/*
+ * Returns buffer to read from to write on clientFd
+ */
 static buffer *getCurrentResponseBuffer(httpADT_t state);
 
 void responseInit(const unsigned state, struct selector_key *key) {
@@ -107,9 +110,8 @@ unsigned readFromClient(struct selector_key *key) {
 		ret = setResponseFdInterests(key);
 	}
 	else if (bytesRead == 0) {
-		// if response is not chunked or is last chunk
 		setErrorDoneFd(key);
-		ret = DONE; // should send what is left on buffer TODO
+		ret = DONE;
 	}
 	else {
 		setErrorDoneFd(key);

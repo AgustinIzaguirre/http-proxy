@@ -8,7 +8,7 @@
 #include <utilities.h>
 
 /*
- * Returns buffer to read from to write on clientFd
+ * Returns buffer to read from to write on originFd
  */
 static buffer *getCurrentBuffer(httpADT_t state);
 

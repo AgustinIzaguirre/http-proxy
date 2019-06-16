@@ -9,7 +9,6 @@ struct handleResponse {
 	buffer requestDataBuffer;
 	uint8_t requestData[BUFFER_SIZE];
 	uint8_t responseFinished;
-	// other info
 };
 
 /*
