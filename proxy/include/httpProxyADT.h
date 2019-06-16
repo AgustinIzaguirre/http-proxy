@@ -59,7 +59,6 @@ enum httpState {
 	 */
 	HANDLE_REQUEST,
 	HANDLE_RESPONSE,
-	HANDLE_RESPONSE_WITH_TRANSFORMATION,
 	TRANSFORM_BODY,
 	ERROR_CLIENT,
 
@@ -175,12 +174,6 @@ struct handleRequest *getHandleRequestState(httpADT_t s);
  * Returns http handle response structure
  */
 struct handleResponse *getHandleResponseState(httpADT_t s);
-
-/*
- * Returns http handle response with transform structure
- */
-struct handleResponseWithTransform *
-getHandleResponseWithTransformState(httpADT_t s);
 
 /*
  * Returns transform body structure

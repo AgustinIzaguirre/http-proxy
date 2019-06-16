@@ -142,7 +142,5 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	}
 	incrementReferences(currentState);
 
-	increaseConcurrentConections();
-	increaseHistoricAccess();
 	return HANDLE_REQUEST;
 }

@@ -3,7 +3,6 @@
 #include <connectToOrigin.h>
 #include <handleRequest.h>
 #include <handleResponse.h>
-#include <handleResponseWithTransform.h>
 #include <headersParser.h>
 #include <transformBody.h>
 
@@ -39,8 +38,6 @@ struct http {
 		struct parseRequest parseRequest;
 		struct handleRequest handleRequest;
 		struct handleResponse handleResponse;
-		struct handleResponseWithTransform
-			handleResponseWithTransform; // TODO remove deprecated
 		struct transformBody transformBody;
 		int other; // TODO REMOVE
 	} clientState;
@@ -121,11 +118,6 @@ struct handleRequest *getHandleRequestState(httpADT_t s) {
 
 struct handleResponse *getHandleResponseState(httpADT_t s) {
 	return &((s->clientState).handleResponse);
-}
-
-struct handleResponseWithTransform *
-getHandleResponseWithTransformState(httpADT_t s) {
-	return &((s->clientState).handleResponseWithTransform);
 }
 
 struct transformBody *getTransformBodyState(httpADT_t s) {
@@ -253,12 +245,6 @@ static const struct state_definition clientStatbl[] = {
 		.on_departure   = responceDestroy,
 	},
 	{
-		.state			= HANDLE_RESPONSE_WITH_TRANSFORMATION,
-		.on_arrival		= responseWithTransformInit,
-		.on_read_ready  = responseWithTransformRead,
-		.on_write_ready = responseWithTransformWrite,
-	},
-	{
 		.state			= TRANSFORM_BODY,
 		.on_arrival		= transformBodyInit,
 		.on_read_ready  = transformBodyRead,
@@ -330,6 +316,9 @@ struct http *httpNew(int clientFd) {
 	ret->errorTypeFound = DEFAULT;
 
 	ret->references = 1;
+
+	increaseConcurrentConections();
+	increaseHistoricAccess();
 finally:
 	return ret;
 }
@@ -356,7 +345,6 @@ void httpDestroyData(struct http *s) {
 void httpDestroy(struct http *s) {
 	if (s != NULL) {
 		if (s->references == 1) {
-			decreaseConcurrentConections();
 			if (poolSize < maxPool) {
 				s->next = pool;
 				pool	= s;

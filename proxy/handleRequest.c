@@ -130,20 +130,6 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 	return ret;
 }
 
-// TODO remove function deprecated
-unsigned getAdecuateResponseState(struct selector_key *key) {
-	configurationADT config = getConfiguration();
-	unsigned ret;
-	if (getIsTransformationOn(config)) {
-		ret = HANDLE_RESPONSE_WITH_TRANSFORMATION;
-	}
-	else {
-		ret = HANDLE_RESPONSE;
-	}
-
-	return ret;
-}
-
 static buffer *getCurrentBuffer(httpADT_t state) {
 	struct handleRequest *handleRequest = getHandleRequestState(state);
 
