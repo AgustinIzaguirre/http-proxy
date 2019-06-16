@@ -390,10 +390,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 				break;
 			case SET_CMD_DATA:
 				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
 					case '\n':
 						/* Set command info *set cmd command* */
 						(*dataLength)++; /* Null terminated */
