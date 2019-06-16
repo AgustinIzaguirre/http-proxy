@@ -63,16 +63,25 @@ void setManagementInterfaces(configurationADT config,
 /* Sets transform command */
 void setCommand(configurationADT config, char *command);
 
-/* returns transform command */
+/* Returns transform command */
 char *getCommand(configurationADT config);
 
 /* Returns TRUE if transformations are enabled or FALSE otherwise */
-int getIsTransformationOn(configurationADT config);
+uint8_t getIsTransformationOn(configurationADT config);
 
-/* set media range*/
+/* Set media range*/
 void setMediaRange(configurationADT config, MediaRangePtr_t mediaRange);
 
-/* return media range*/
+/* Return media range*/
 MediaRangePtr_t getMediaRange(configurationADT config);
+
+/* Resets media range list, leaving it empty */
+void resetMediaRangeList(configurationADT config);
+
+/* Sets cmd and enable/disable transformation depending cmd length */
+void setCommandAndTransformations(configurationADT config, char *command);
+
+/* Sets transformation state to the given state */
+void setTransformationState(configurationADT config, uint8_t state);
 
 #endif

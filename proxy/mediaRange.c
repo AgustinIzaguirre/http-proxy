@@ -1,4 +1,5 @@
 #include <mediaRange.h>
+#include <management.h>
 
 #define isOWS(a) (a == ' ' || a == '\t')
 
@@ -87,6 +88,8 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 
 	mrp->listMediaTypes[mrp->length][j] = '\0';
 	(mrp->length)++;
+
+	generateAndUpdateTimeTag(MIME_ID);
 }
 
 enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,
@@ -115,6 +118,7 @@ void resetMediaRange(MediaRangePtr_t mediaRange) {
 		mediaRange->canBeMatch[i] = 0; // TODO: define can
 		i++;
 	}
+
 	return;
 }
 

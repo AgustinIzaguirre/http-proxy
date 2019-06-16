@@ -8,6 +8,8 @@
 #include <unistd.h>
 #include <time.h>
 #include <metric.h>
+#include <configuration.h>
+#include <mediaRange.h>
 
 #define ID_QUANTITY 9
 #define ON 1

@@ -8,6 +8,7 @@
 #include <netinet/sctp.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #define ALLOC_BLOCK 8
 #define STREAM_QUANTITY 2
@@ -17,9 +18,6 @@
 #define SET_STREAM 1
 
 #define VERSION 0
-
-#define TRUE 1
-#define FALSE 0
 
 #define MAX_ATTEMPTS 4 /* Used to setup SCTP Socket */
 

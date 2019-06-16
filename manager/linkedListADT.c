@@ -73,7 +73,7 @@ void *getFirst(struct Node **head) {
 		return NULL;
 	}
 
-	void *data  = malloc(sizeof((*head)->size));
+	void *data  = malloc((*head)->size);
 	size_t size = (*head)->size;
 
 	if (data == NULL) {

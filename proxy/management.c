@@ -12,6 +12,9 @@ static void manageGetRequest(manager_t *client);
 static void manageSetRequest(manager_t *client);
 static uint8_t isValidGetId(resId_t id);
 static uint8_t isValidSetId(resId_t id);
+static void manageGetCommandRequest(response_t *response);
+static void manageGetMetricRequest(resId_t id, response_t *response);
+static void manageGetTransformationStatusRequest(response_t *response);
 
 static const char *errorMessage = "";
 
@@ -179,33 +182,30 @@ static void manageGetRequest(manager_t *client) {
 	client->response.status.generalStatus = ERROR_STATUS;
 	client->response.status.timeTagStatus = ERROR_STATUS;
 
-	uint64_t *metric = malloc(sizeof(uint64_t));
-
 	switch (id) {
 		case MIME_ID:
+			// TODO: @AgustinAlejoDammiano implement getMediaRangeString this
+			// please char *mediaRange =
+			// getMediaRangeString(getMediaRange(getConfiguration()));
+			// client->response.data		= (void *) mediaRange;
+			// client->response.dataLength = strlen(mediaRange) + 1;
 			break;
 		case BF_ID:
+			// TODO: REMOVE COMMAND?
 			break;
 		case CMD_ID:
+			manageGetCommandRequest(&client->response);
 			break;
 		case MTR_CN_ID:
-			*metric						= getConcurrentConections();
-			client->response.data		= (void *) metric;
-			client->response.dataLength = sizeof(uint64_t);
-			break;
 		case MTR_HS_ID:
-			*metric						= getHistoricAccess();
-			client->response.data		= (void *) metric;
-			client->response.dataLength = sizeof(uint64_t);
-			break;
 		case MTR_BT_ID:
-			*metric						= getTransferBytes();
-			client->response.data		= (void *) metric;
-			client->response.dataLength = sizeof(uint64_t);
+			manageGetMetricRequest(id, &client->response);
 			break;
 		case MTR_ID:
+			// TODO: REMOVE COMMAND?
 			break;
 		case TF_ID:
+			manageGetTransformationStatusRequest(&client->response);
 			break;
 		default:
 			/* Can't be reached because of isValidGetId check */
@@ -213,6 +213,41 @@ static void manageGetRequest(manager_t *client) {
 	}
 
 	client->response.timeTag = timeTags[id];
+}
+
+static void manageGetTransformationStatusRequest(response_t *response) {
+	uint8_t *transformationState = malloc(sizeof(uint8_t));
+	*transformationState		 = getIsTransformationOn(getConfiguration());
+	response->data				 = (void *) transformationState;
+	response->dataLength		 = sizeof(uint8_t);
+}
+
+static void manageGetCommandRequest(response_t *response) {
+	char *command = getCommand(getConfiguration());
+
+	response->data		 = (void *) command;
+	response->dataLength = strlen(command) + 1;
+}
+
+static void manageGetMetricRequest(resId_t id, response_t *response) {
+	uint64_t *metric = malloc(sizeof(uint64_t));
+
+	switch (id) {
+		case MTR_CN_ID:
+			*metric = getConcurrentConections();
+			break;
+		case MTR_HS_ID:
+			*metric = getHistoricAccess();
+			break;
+		case MTR_BT_ID:
+			*metric = getTransferBytes();
+			break;
+		default:
+			break;
+	}
+
+	response->data		 = (void *) metric;
+	response->dataLength = sizeof(uint64_t);
 }
 
 static uint8_t isValidGetId(resId_t id) {
@@ -239,22 +274,35 @@ static void manageSetRequest(manager_t *client) {
 
 		switch (id) {
 			case MIME_ID:
+				if (client->request.dataLength > 0) {
+					addMediaRange(getMediaRange(getConfiguration()),
+								  (char *) client->request.data);
+				}
+				else {
+					resetMediaRangeList(getConfiguration());
+				}
 				break;
 			case BF_ID:
+				// TODO: remove command?
 				break;
 			case CMD_ID:
+				setCommand(getConfiguration(), (char *) client->request.data);
 				break;
 			case TF_ID:
+				setTransformationState(getConfiguration(),
+									   *((uint8_t *) client->request.data));
 				break;
 			default:
 				/* Can't be reached because of isValidSetId check */
 				break;
 		}
 
+		client->response.timeTag = timeTags[id];
+
 		return;
 	}
 
-	/* Valid ID & Different TIME-TAG: Response with data */
+	/* Valid ID & Different TIME-TAG */
 	client->response.status.generalStatus = ERROR_STATUS;
 	client->response.status.timeTagStatus = ERROR_STATUS;
 }

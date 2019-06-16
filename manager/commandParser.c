@@ -360,7 +360,7 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 			case SET_TF_ON:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *set tf on* */
-					*operation			  = SET;
+					*operation			  = SET_OP;
 					*id					  = TF_ID;
 					*dataLength			  = sizeof(uint8_t);
 					*data				  = malloc(*dataLength);
@@ -374,7 +374,7 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 			case SET_TF_OFF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *set tf off* */
-					*operation			  = SET;
+					*operation			  = SET_OP;
 					*id					  = TF_ID;
 					*dataLength			  = sizeof(uint8_t);
 					*data				  = malloc(*dataLength);
@@ -436,9 +436,12 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 				switch (currentChar) {
 					case '\n':
 						/* Set command info *set mime media-type* */
-						*operation = SET_OP;
-						*id		   = MIME_ID;
-						returnCode = NEW;
+						(*dataLength)++; /* Null terminated */
+						*data = realloc(*data, *dataLength);
+						*(*((char **) data) + *dataLength - 1) = '\0';
+						*operation							   = SET_OP;
+						*id									   = MIME_ID;
+						returnCode							   = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
@@ -492,9 +495,12 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command info *set cmd command* */
-						*operation = SET_OP;
-						*id		   = CMD_ID;
-						returnCode = NEW;
+						(*dataLength)++; /* Null terminated */
+						*data = realloc(*data, *dataLength);
+						*(*((char **) data) + *dataLength - 1) = '\0';
+						*operation							   = SET_OP;
+						*id									   = CMD_ID;
+						returnCode							   = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
@@ -515,9 +521,12 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 			case SET_CMD_DATA_:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command info *set mime media-type* */
-					*operation = SET_OP;
-					*id		   = MIME_ID;
-					returnCode = NEW;
+					(*dataLength)++; /* Null terminated */
+					*data = realloc(*data, *dataLength);
+					*(*((char **) data) + *dataLength - 1) = '\0';
+					*operation							   = SET_OP;
+					*id									   = MIME_ID;
+					returnCode							   = NEW;
 				});
 				break;
 		}

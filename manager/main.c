@@ -14,12 +14,13 @@ typedef struct {
 	returnCode_t code;
 	operation_t operation;
 	id_t id;
+	void *data;
 	uint16_t streamNumber;
 } responseToRecv_t;
 
-queueADT_t toRecv;
-linkedListADT_t recvFromSetStream;
-linkedListADT_t recvFromGetStream;
+queueADT_t toRecv				  = NULL;
+linkedListADT_t recvFromSetStream = NULL;
+linkedListADT_t recvFromGetStream = NULL;
 
 static int authenticate(int server);
 
@@ -183,10 +184,6 @@ static int parseAndSendRequests(int server, uint8_t *byeRead) {
 					break;
 			}
 		}
-
-		if (data != NULL) {
-			free(data);
-		}
 	} while (returnCode != SEND && sent >= 0);
 
 	return sent;
@@ -218,6 +215,7 @@ static int newCommandHandler(int server, operation_t operation, id_t id,
 		responseToRecv_t requestSent = {.code		  = NEW,
 										.operation	= operation,
 										.id			  = id,
+										.data		  = data,
 										.streamNumber = streamNumber};
 		enqueue(&toRecv, &requestSent, sizeof(requestSent));
 	}
@@ -239,23 +237,24 @@ static void invalidCommandHandler() {
 static int recvAndPrintResponses(int server) {
 	int totalRead = 0;
 	int read;
+	response_t *responsePtr = NULL;
 	response_t response;
 	/* The next response to receive, to print the command responses in order */
-	responseToRecv_t nextToRecv;
+	responseToRecv_t *nextToRecv = NULL;
 	/* The nextToRecv.streamNumber stream */
-	linkedListADT_t recvFromCurrentStream;
+	linkedListADT_t recvFromCurrentStream = NULL;
 	/* The stream that not match the nextToRecv.streamNumber stream number */
-	linkedListADT_t recvFromOtherStream;
+	linkedListADT_t recvFromOtherStream = NULL;
 
 	while (!isEmpty(&toRecv)) {
-		nextToRecv = *((responseToRecv_t *) getFirst(&toRecv));
+		nextToRecv = (responseToRecv_t *) getFirst(&toRecv);
 
-		if (nextToRecv.code == INVALID) {
+		if (nextToRecv->code == INVALID) {
 			printInvalidCommand();
 		}
 		else {
 			/* nextToRecv.code is NEW */
-			setRecvFrom(nextToRecv.streamNumber, &recvFromCurrentStream,
+			setRecvFrom(nextToRecv->streamNumber, &recvFromCurrentStream,
 						&recvFromOtherStream);
 
 			if (isEmpty(&recvFromCurrentStream)) {
@@ -268,20 +267,29 @@ static int recvAndPrintResponses(int server) {
 
 					totalRead += read;
 
-					if (response.streamNumber != nextToRecv.streamNumber) {
+					if (response.streamNumber != nextToRecv->streamNumber) {
 						enqueue(&recvFromOtherStream, &response,
 								sizeof(response_t));
 					}
-				} while (response.streamNumber != nextToRecv.streamNumber);
+				} while (response.streamNumber != nextToRecv->streamNumber);
 			}
 			else {
-				response = *((response_t *) getFirst(&recvFromCurrentStream));
+				responsePtr = getFirst(&recvFromCurrentStream);
+				response	= *responsePtr;
 			}
 
-			response.operation = nextToRecv.operation;
-			response.id		   = nextToRecv.id;
+			response.operation = nextToRecv->operation;
+			response.id		   = nextToRecv->id;
+
+			if (response.operation == SET_OP) {
+				response.data = nextToRecv->data;
+			}
+
 			manageAndPrintResponse(response);
 		}
+
+		free(nextToRecv);
+		free(responsePtr);
 	}
 
 	return totalRead;
@@ -335,16 +343,26 @@ static void manageAndPrintResponse(response_t response) {
 
 static void manageAndPrintGetResponse(response_t response) {
 	if (response.status.timeTagStatus == OK_STATUS) {
-		printf("You already had the last version\n");
+		printf("[You already had the last version]\n");
 	}
 	else {
-		printf("New version gotten\n");
+		printf("[New version gotten]\n");
 		if (timeTags[response.id] == 0) {
-			printf("Resource gotten for first time\n");
+			printf("[Resource gotten for first time]\n");
 		}
 		else {
 			printf("You previous 'Last modified date' was: %s\n",
 				   ctime((const time_t *) &timeTags[response.id]));
+		}
+
+		// printf("[manager/main.c][manageAndPrintGetResponse] response.data =
+		// "); // TODO LOGGER for (int i = 0; i < response.dataLength; i++) {
+		// 	printf(" 0x%02X ", ((uint8_t *) response.data)[i]);
+		// }
+		// printf("\n\n");
+
+		if (storedData[response.id] != NULL) {
+			free(storedData[response.id]);
 		}
 
 		storedData[response.id] = response.data;
@@ -365,7 +383,7 @@ static void manageAndPrintGetResponse(response_t response) {
 			// storedData[response.id]));
 			break;
 		case CMD_ID:
-			// TODO: printf("Command = %s\n", (char *) storedData[response.id]);
+			printf("Command = %s\n", (char *) storedData[response.id]);
 			break;
 		case MTR_CN_ID:
 			printf("Concurrent connections = %ld\n",
@@ -383,8 +401,8 @@ static void manageAndPrintGetResponse(response_t response) {
 			// TODO: Send and receive in a particular order... all the metrics
 			break;
 		case TF_ID:
-			// TODO: printf("Transformations state = %s\n", *((uint8_t *)
-			// response.data) ? "ON", "OFF");
+			printf("Transformations state = %s\n",
+				   *((uint8_t *) storedData[response.id]) ? "on" : "off");
 			break;
 		default:
 			break;
@@ -392,4 +410,15 @@ static void manageAndPrintGetResponse(response_t response) {
 }
 
 static void manageAndPrintSetResponse(response_t response) {
+	if (response.status.timeTagStatus == OK_STATUS) {
+		printf("[Good timeTag. You override the resource!]\n");
+		timeTags[response.id] = response.timeTag; // TODO
+		if (storedData[response.id] != NULL) {
+			free(storedData[response.id]);
+		}
+		storedData[response.id] = response.data;
+	}
+	else {
+		printf("[You aren't up to date, you need to get the resource first]\n");
+	}
 }

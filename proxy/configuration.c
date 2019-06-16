@@ -2,6 +2,7 @@
 #include <stdlib.h> //NULL
 #include <netinet/in.h>
 #include <utilities.h>
+#include <management.h>
 
 struct configuration {
 	unsigned short httpPort;
@@ -10,7 +11,7 @@ struct configuration {
 	char *managementInterfaces; // TODO: use it
 	MediaRangePtr_t mediaRange;
 	char *command;
-	int isTransformationOn;
+	uint8_t isTransformationOn;
 	int commandStderrFd;
 	char *filterHttp;
 	char *filterAdmin;
@@ -40,6 +41,12 @@ void initializeConfigBaseValues(configurationADT config) {
 
 configurationADT getConfiguration() {
 	return &config;
+}
+
+void resetMediaRangeList(configurationADT config) {
+	config->mediaRange = createMediaRange(";");
+
+	generateAndUpdateTimeTag(MIME_ID);
 }
 
 int getCommandStderrFd(configurationADT config) {
@@ -91,7 +98,7 @@ void setManagementInterfaces(configurationADT config,
 	config->managementInterfaces = managementInterfaces;
 }
 
-void setCommand(configurationADT config, char *command) {
+void setCommandAndTransformations(configurationADT config, char *command) {
 	if (strlen(command) > 0) {
 		config->command			   = command;
 		config->isTransformationOn = TRUE;
@@ -101,12 +108,30 @@ void setCommand(configurationADT config, char *command) {
 	}
 }
 
-char *getCommand(configurationADT config) {
-	return config->command;
+void setTransformationState(configurationADT config, uint8_t state) {
+	config->isTransformationOn = state;
+
+	generateAndUpdateTimeTag(TF_ID);
 }
 
-int getIsTransformationOn(configurationADT config) {
+uint8_t getIsTransformationOn(configurationADT config) {
 	return config->isTransformationOn;
+}
+
+void setCommand(configurationADT config, char *command) {
+	config->command = command;
+
+	generateAndUpdateTimeTag(CMD_ID);
+}
+
+char *getCommand(configurationADT config) {
+	char *command = config->command;
+
+	if (command == NULL) {
+		command = "";
+	}
+
+	return command;
 }
 
 void setMediaRange(configurationADT config, MediaRangePtr_t mediaRange) {

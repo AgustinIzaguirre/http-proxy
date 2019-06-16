@@ -530,6 +530,12 @@ static int recvGetResponse(int server, response_t *response) {
 	read = getConcretData(server, (uint8_t **) &response->data,
 						  &response->dataLength);
 
+	// printf("[protocol.c][recvGetResponse] GET-RESPONSE-DATA = "); // TODO
+	// LOGGER for (int i = 0; i < response->dataLength; i++) { 	printf(" 0x%02X
+	// ", ((uint8_t *) response->data)[i]);
+	// }
+	// printf("\n\n");
+
 	if (read < 0) {
 		return read;
 	}
@@ -686,6 +692,12 @@ static int recvSetRequest(int client, request_t *request) {
 	read = getConcretData(client, (uint8_t **) &request->data,
 						  &request->dataLength);
 
+	// printf("[protocol.c][recvSetRequest] SET-REQUEST-RECV-C-DATA = "); //
+	// TODO LOGGER for (int i = 0; i < request->dataLength; i++) { 	printf("
+	// 0x%02X ", ((uint8_t *) request->data)[i]);
+	// }
+	// printf("\n\n");
+
 	if (read < 0) {
 		return read;
 	}
@@ -709,10 +721,10 @@ int recvAuthenticationRequest(int client, char **username, char **password,
 	}
 
 	uint8_t versionByte = buffer[0];
-	*hasSameVersion		= FALSE;
+	*hasSameVersion		= false;
 
 	if (versionByte == VERSION_BYTE) {
-		*hasSameVersion = TRUE;
+		*hasSameVersion = true;
 		size_t length;
 
 		*username = allocateAndCopyString((char *) (buffer + 1), &length);
@@ -838,14 +850,14 @@ int sendResponse(int client, response_t response) {
 	uint8_t headByte		   = getResponseHeadByte(response.status);
 	size_t formattedDataLength = 0;
 	void *formattedData		   = NULL;
-	uint8_t needsTimeTag	   = FALSE;
+	uint8_t needsTimeTag	   = false;
 
 	switch (response.operation) {
 		case GET_OP:
 			if (response.status.idStatus != ERROR_STATUS &&
 				response.status.operationStatus != ERROR_STATUS &&
 				response.status.timeTagStatus != OK_STATUS) {
-				needsTimeTag  = TRUE;
+				needsTimeTag  = true;
 				formattedData = formatData(response.data, response.dataLength,
 										   &formattedDataLength);
 			}
@@ -854,7 +866,7 @@ int sendResponse(int client, response_t response) {
 			if (response.status.idStatus != ERROR_STATUS &&
 				response.status.operationStatus != ERROR_STATUS &&
 				response.status.timeTagStatus == OK_STATUS) {
-				needsTimeTag = TRUE;
+				needsTimeTag = true;
 			}
 			break;
 		default:
