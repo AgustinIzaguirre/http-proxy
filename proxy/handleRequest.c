@@ -63,7 +63,8 @@ unsigned requestWrite(struct selector_key *key) {
 	ssize_t bytesRead;
 
 	if (handleRequest->requestState == FIRST_BUFFER &&
-		!buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
+		!buffer_can_read(&handleRequest->parseHeaders.valueBuffer) &&
+		handleRequest->parseHeaders.state != BODY_START) {
 		parseHeaders(&handleRequest->parseHeaders,
 					 getFinishParserBuffer(GET_DATA(key)), 0, 0);
 		if (!buffer_can_read(getFinishParserBuffer(GET_DATA(key)))) {
@@ -145,9 +146,14 @@ unsigned getAdecuateResponseState(struct selector_key *key) {
 
 static buffer *getCurrentBuffer(httpADT_t state) {
 	struct handleRequest *handleRequest = getHandleRequestState(state);
+
 	if (handleRequest->parseHeaders.state != BODY_START ||
 		buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
 		return &handleRequest->parseHeaders.valueBuffer;
+	}
+	else if (handleRequest->parseHeaders.state == BODY_START &&
+			 buffer_can_read(getFinishParserBuffer(state))) {
+		return getFinishParserBuffer(state);
 	}
 	else {
 		return getReadBuffer(state);
