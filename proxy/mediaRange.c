@@ -52,13 +52,17 @@ MediaRangePtr_t createMediaRange(char const *string) {
 }
 
 void addMediaRange(MediaRangePtr_t mrp, char const *string) {
+	if (((mrp->length) % BLOCK) == 0) {
+		mrp->listMediaTypes = realloc(mrp->listMediaTypes,
+									  ((mrp->length) + BLOCK) * sizeof(char));
+	}
 	int i = 0, j = 0;
 	while (string[i] != '\0') {
 		if (string[i] == ',') {
-			if ((j % BLOCK) == 0) {
-				mrp->listMediaTypes[mrp->length] =
-					realloc(mrp->listMediaTypes[mrp->length],
-							(j + BLOCK) * sizeof(char));
+			if (((mrp->length) % BLOCK) == 0) {
+				mrp->listMediaTypes =
+					realloc(mrp->listMediaTypes,
+							((mrp->length) + BLOCK) * sizeof(char));
 			}
 			mrp->listMediaTypes[mrp->length][j] = '\0';
 			(mrp->length)++;
@@ -89,7 +93,6 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 
 	mrp->listMediaTypes[mrp->length][j] = '\0';
 	(mrp->length)++;
-
 	generateAndUpdateTimeTag(MIME_ID);
 }
 
@@ -144,6 +147,7 @@ char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 		}
 		while ((mrp->listMediaTypes)[j][i] != '\0') {
 			if (sizeAns == 0 && strcmp((mrp->listMediaTypes)[j], ";") == 0) {
+				printf("viva peron\n");
 				break;
 			}
 			ans = addCharToString(ans, &sizeAns, (mrp->listMediaTypes)[j][i]);
@@ -155,14 +159,15 @@ char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 
 	ans = addCharToString(ans, &sizeAns, '\0');
 
+	printf("PERON:%s\n", ans);
 	return ans;
 }
 
 void printMediaRange(MediaRangePtr_t mediaRange) {
 	int i = 0;
 	while (i < mediaRange->length) {
-		printf("%d: %d | %s \n", i, mediaRange->canBeMatch[i],
-			   mediaRange->listMediaTypes[i]);
+		printf("%d: %d | %s | %d \n", i, mediaRange->canBeMatch[i],
+			   mediaRange->listMediaTypes[i], mediaRange->length);
 		i++;
 	}
 	return;
