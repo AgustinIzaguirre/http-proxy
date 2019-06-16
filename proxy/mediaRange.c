@@ -140,15 +140,21 @@ char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 	int i = 0, j = 0;
 	while (j < mrp->length) {
 		if (sizeAns != 0) {
-			addCharToString(ans, &sizeAns, ',');
+			ans = addCharToString(ans, &sizeAns, ',');
 		}
 		while ((mrp->listMediaTypes)[j][i] != '\0') {
-			addCharToString(ans, &sizeAns, (mrp->listMediaTypes)[j][i]);
+			if (sizeAns == 0 && strcmp((mrp->listMediaTypes)[j], ";") == 0) {
+				break;
+			}
+			ans = addCharToString(ans, &sizeAns, (mrp->listMediaTypes)[j][i]);
 			i++;
 		}
 		i = 0;
 		j++;
 	}
+
+	ans = addCharToString(ans, &sizeAns, '\0');
+
 	return ans;
 }
 

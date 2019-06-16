@@ -375,8 +375,7 @@ static void manageAndPrintGetResponse(response_t response) {
 	/* Print values */
 	switch (response.id) {
 		case MIME_ID:
-			// TODO: printf("MIME Media-types = %s\n", (char *)
-			// storedData[response.id]);
+			printf("MIME Media-types = %s\n", (char *) storedData[response.id]);
 			break;
 		case CMD_ID:
 			printf("Command = %s\n", (char *) storedData[response.id]);
