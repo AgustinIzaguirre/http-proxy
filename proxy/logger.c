@@ -1,6 +1,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <string.h>
 #include <logger.h>
 #include <stdio.h>
@@ -35,7 +36,7 @@ char *createPath(char *dir);
 int existsLogFile(log_t logType);
 int existsLogFilesArray();
 void createLogFilesArray();
-void checkLogFile(log_t type);
+int checkLogFile(log_t type);
 int createDir(const char *dir);
 char *determineCommunication(httpADT_t s, communication_t action);
 char *writeClientAndHost(char *curr, const char *end, char *client,
@@ -44,7 +45,6 @@ int setClientAndHost(httpADT_t s, communication_t action);
 
 
 int createLogFile(log_t type) {
-  FILE *newLogFile     = NULL;
   char *newLogFilePath = NULL;
   char *dir            = "./logs/";
 
@@ -53,12 +53,11 @@ int createLogFile(log_t type) {
   }
 
   if ((newLogFilePath = createPath(dir)) == NULL) {
-    perror("Failed creating the path");
     return FAILED;
   }
 
-  if ((newLogFile = fopen(newLogFilePath, "a+")) == NULL) {
-    perror("Failed creating the file");
+  if (open(newLogFilePath, (O_RDWR | O_CREAT | O_APPEND | O_NONBLOCK), 0777)
+    == -1) {
     return FAILED;
   }
 
@@ -118,18 +117,27 @@ char *createLogEntry(httpADT_t s, communication_t action) {
 int addEntryToLog(httpADT_t http, log_t type, communication_t action) {
   char *logEntry       = NULL;
   int couldWriteToFile = 0;
-  FILE *logFile        = NULL;
+  int logFileFd        = 0;
 
-  checkLogFile(type);
-  logEntry = createLogEntry(http, action);
-
-  if (logEntry == NULL) {
+  if (checkLogFile(type) == FAILED) {
     return FAILED;
   }
 
-  logFile = fopen(logFiles[type], "a+");
-  couldWriteToFile = (fprintf(logFile, "%s", logEntry) >= 0);
-  fclose(logFile);
+  if ((logEntry = createLogEntry(http, action)) == NULL) {
+    return FAILED;
+  }
+
+  if ((logFileFd = open(logFiles[type], (O_RDWR | O_APPEND | O_NONBLOCK), 0666))
+    == -1) {
+    return FAILED;
+  }
+
+  couldWriteToFile = (write(logFileFd, logEntry, strlen(logEntry)) >= 0);
+  //couldWriteToFile = (fprintf(logFile, "%s", logEntry) >= 0);
+
+  if (close(logFileFd) == -1) {
+    return FAILED;
+  }
 
   return couldWriteToFile;
 }
@@ -150,14 +158,18 @@ void createLogFilesArray() {
   }
 }
 
-void checkLogFile(log_t type) {
+int checkLogFile(log_t type) {
   if (!existsLogFilesArray()) {
     createLogFilesArray();
   }
 
   if (!existsLogFile(type)) {
-    createLogFile(type);
+    if(createLogFile(type) == FAILED) {
+      return FAILED;
+    }
   }
+
+  return OK;
 }
 
 int getIpAddresses(struct sockaddr_storage *clientAddr, char *client,
@@ -192,10 +204,7 @@ int createDir(const char *dir) {
   struct stat st = {0};
 
   if (stat(dir, &st) == -1) {
-    perror("Directory inexistent");
-
-    if (mkdir(dir, 0700) == -1) {
-      perror("Failed creating directory");
+    if (mkdir(dir, 0777) == -1) {
       return FAILED;
     }
   }
