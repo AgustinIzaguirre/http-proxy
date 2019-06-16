@@ -29,12 +29,20 @@ void headersParserInit(struct headersParser *header, struct selector_key *key,
 	header->mediaRangeCurrent  = 0;
 	header->mediaRange		   = getMediaRangeHTTP(GET_DATA(key));
 	header->tranferIndex	   = 0;
+	header->contentIndex	   = 0;
+	header->isEncoded		   = FALSE;
+	header->hasEncode		   = FALSE;
 	header->isChar			   = FALSE;
+	header->willTransform	  = FALSE;
+
+	memset(header->mimeValue, 0, MAX_MIME_HEADER);
+	memset(header->transferValue, 0, CHUNKED_LENGTH + 1);
+	memset(header->contentValue, 0, IDENTITY_LENGTH + 1);
 
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer),
 				BUFFER_SIZE + 30 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
-				header->valueBuf); // TODO update with configuration buffer size
+				header->valueBuf);
 }
 
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
@@ -137,6 +145,15 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 						compareWithChunked(header);
 					}
 				}
+				else if (header->isEncoded && l != '\r' &&
+						 header->contentIndex <= IDENTITY_LENGTH &&
+						 header->isChar) {
+					header->contentValue[header->contentIndex++] = tolower(l);
+					if (header->contentIndex == IDENTITY_LENGTH) {
+						header->contentValue[header->contentIndex++] = 0;
+						compareWithIdentity(header);
+					}
+				}
 			}
 			if (!header->censure) {
 				buffer_write(&header->valueBuffer, l);
@@ -170,11 +187,13 @@ void resetHeaderParser(struct headersParser *header) {
 	header->headerIndex  = 0;
 	header->tranferIndex = 0;
 	header->mimeIndex	= 0;
+	header->contentIndex = 0;
 	header->state		 = HEADERS_START;
 	header->censure		 = FALSE;
 	header->isMime		 = FALSE;
 	header->isTransfer   = FALSE;
 	header->isChar		 = FALSE;
+	header->isEncoded	= FALSE;
 }
 
 static void isCensureHeader(struct headersParser *header) {
@@ -200,6 +219,15 @@ static void isCensureHeader(struct headersParser *header) {
 	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "content-length") == 0) {
 		header->censure = TRUE;
+	}
+	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
+			 strcmp(header->currHeader, "content-encoding") == 0) {
+		header->isEncoded	 = TRUE;
+		header->hasEncode	 = TRUE;
+		header->willTransform = FALSE;
+		header->censure		  = FALSE;
+		copyBuffer(header);
+		buffer_write(&header->valueBuffer, ':');
 	}
 	else {
 		if (strcmp(header->currHeader, "content-type") == 0 &&
@@ -249,5 +277,20 @@ void resetValueBuffer(struct headersParser *header) {
 void compareWithChunked(struct headersParser *header) {
 	if (strcmp((char *) header->transferValue, "chunked") == 0) {
 		header->isChunked = TRUE;
+	}
+}
+
+void compareWithIdentity(struct headersParser *header) {
+	if (strcmp((char *) header->contentValue, "identity") == 0) {
+		header->willTransform = TRUE;
+	}
+}
+
+uint8_t getTransformEncode(struct headersParser *header) {
+	if (!header->hasEncode || header->willTransform) {
+		return TRUE;
+	}
+	else {
+		return FALSE;
 	}
 }

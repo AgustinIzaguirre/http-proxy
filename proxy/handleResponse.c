@@ -23,7 +23,12 @@ void responceDestroy(const unsigned state, struct selector_key *key) {
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
-	setTransformContent(GET_DATA(key), aux);
+	if (getTransformEncode(&handleResponse->parseHeaders)) {
+		setTransformContent(GET_DATA(key), aux);
+	}
+	else {
+		setTransformContent(GET_DATA(key), FALSE);
+	}
 	setIsChunked(GET_DATA(key), handleResponse->parseHeaders.isChunked);
 }
 
