@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h> //TODO: for test
 
 enum matchResult { NO, YES, ALL };
 #define BLOCK 10
