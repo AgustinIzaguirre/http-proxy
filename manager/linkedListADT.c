@@ -56,7 +56,7 @@ void *getFirstWithSize(struct Node **head, size_t *size) {
 		return NULL;
 	}
 
-	void *data = malloc(sizeof((*head)->size));
+	void *data = malloc((*head)->size);
 	*size	  = (*head)->size;
 
 	if (data == NULL) {
