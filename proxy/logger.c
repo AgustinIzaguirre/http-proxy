@@ -30,7 +30,7 @@ char *dir			 = "./logs/";
 
 int checkLogFileExistence(log_t type);
 char *createAccessLogEntry(httpADT_t s, communication_t action);
-char *createErrorLogEntry(const char *errorMsg);
+char *createErrorLogEntry(const char *errorMsg, logError_t errorType);
 int writeToLog(log_t type, const char *logEntry);
 int existsLogFilesArray();
 void createLogFilesArray();
@@ -45,6 +45,7 @@ char *writeClientAndHost(char *curr, const char *end, char *client, char *host,
 						 communication_t action);
 char *writeLogElemToLogEntry(char *curr, const char *end, const char *format,
 							 const char *data);
+// TODO: Handle FAILED returns
 
 int logAccess(httpADT_t http, communication_t action) {
 	char *logEntry = NULL;
@@ -60,14 +61,14 @@ int logAccess(httpADT_t http, communication_t action) {
 	return writeToLog(ACCESS_LOG, logEntry);
 }
 
-int logError(const char *errorMsg) {
+int logError(const char *errorMsg, logError_t errorType) {
 	char *logEntry = NULL;
 
 	if (checkLogFileExistence(ERROR_LOG) == FAILED) {
 		return FAILED;
 	}
 
-	if ((logEntry = createErrorLogEntry(errorMsg)) == NULL) {
+	if ((logEntry = createErrorLogEntry(errorMsg, errorType)) == NULL) {
 		return FAILED;
 	}
 
@@ -117,25 +118,31 @@ char *createAccessLogEntry(httpADT_t s, communication_t action) {
 	return curr < end ? beginning : NULL;
 }
 
-char *createErrorLogEntry(const char *errorMsg) {
-	char *beginning  = malloc(MAX_ENTRY_SIZE);
-	char *curr		 = beginning;
-	char *end		 = beginning + MAX_ENTRY_SIZE;
-	char *errorDescr = strerror(errno);
+char *createErrorLogEntry(const char *errorMsg, logError_t errorType) {
+	char *beginning = malloc(MAX_ENTRY_SIZE);
+	char *curr		= beginning;
+	char *end		= beginning + MAX_ENTRY_SIZE;
 
 	if ((curr = writeTime(curr, end)) == NULL) {
 		return NULL;
 	}
 
-	if (errorMsg == NULL) {
+	if (errorMsg == NULL || (strcmp(errorMsg, "") == 0)) {
 		errorMsg = "Error";
 	}
 
-	if ((curr = writeLogElemToLogEntry(curr, end, "%s: ", errorMsg)) == NULL) {
+	if ((curr = writeLogElemToLogEntry(curr, end, "%s", errorMsg)) == NULL) {
 		return NULL;
 	}
 
-	if ((curr = writeLogElemToLogEntry(curr, end, "%s", errorDescr)) == NULL) {
+	if (errorType == SYS_ERROR) {
+		if ((curr = writeLogElemToLogEntry(curr, end, ": %s",
+										   strerror(errno))) == NULL) {
+			return NULL;
+		}
+	}
+
+	if ((curr = writeLogElemToLogEntry(curr, end, "%s\n", "")) == NULL) {
 		return NULL;
 	}
 

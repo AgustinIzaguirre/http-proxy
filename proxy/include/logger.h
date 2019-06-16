@@ -15,9 +15,15 @@ typedef enum logTypes log_t;
 enum communicationTypes { REQ, RESP };
 typedef enum communicationTypes communication_t;
 
+enum errorOptions { SYS_ERROR, CUSTOM_ERROR };
+typedef enum errorOptions logError_t;
+
+// TODO: What to do with the return values
+
 /* Add a new entry (line) to an access log file called access.log */
 int logAccess(httpADT_t http, communication_t action);
 
-int logError(const char *errorMsg);
+/* Add a new entry (line) to an error log file called error.log */
+int logError(const char *errorMsg, logError_t errorType);
 
 #endif
