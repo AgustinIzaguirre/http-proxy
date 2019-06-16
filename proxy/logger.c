@@ -14,260 +14,319 @@
 
 // TODO: Is the accessLogElems enum even necessary?
 enum accessLogElems {
-  REMOTE_ADDR,
-  TIME,
-  REQUEST,
-  STATUS,
-  // TODO: BODY_BYTES_SENT,
-  HTTP_REFERER,
-  HTTP_USER_AGENT
+	REMOTE_ADDR,
+	TIME,
+	REQUEST,
+	STATUS,
+	// TODO: BODY_BYTES_SENT,
+	HTTP_REFERER,
+	HTTP_USER_AGENT
 };
 
-char **logFiles = NULL;
-char *client    = NULL;
-char *host      = NULL;
+char **logFilesPaths = NULL;
+char *client		 = NULL;
+char *host			 = NULL;
+char *dir			 = "./logs/";
 
-char *getTime();
-int getIpAddresses(struct sockaddr_storage *clientAddr, char *client,
-    char *host);
-char *writeLogElemToLogEntry(char *curr, const char *end,
-  const char *format, const char *data);
-char *createPath(char *dir);
-int existsLogFile(log_t logType);
+int checkLogFileExistence(log_t type);
+char *createAccessLogEntry(httpADT_t s, communication_t action);
+char *createErrorLogEntry(const char *errorMsg);
+int writeToLog(log_t type, const char *logEntry);
 int existsLogFilesArray();
 void createLogFilesArray();
-int checkLogFile(log_t type);
+int existsLogFile(log_t logType);
+int createLogFile(log_t type);
 int createDir(const char *dir);
-char *determineCommunication(httpADT_t s, communication_t action);
-char *writeClientAndHost(char *curr, const char *end, char *client,
-  char *host, communication_t action);
+char *createPath(char *dir, log_t type);
+char *writeTime(char *curr, const char *end);
+char *getFirstLine(httpADT_t s, communication_t action);
 int setClientAndHost(httpADT_t s, communication_t action);
+char *writeClientAndHost(char *curr, const char *end, char *client, char *host,
+						 communication_t action);
+char *writeLogElemToLogEntry(char *curr, const char *end, const char *format,
+							 const char *data);
 
+int logAccess(httpADT_t http, communication_t action) {
+	char *logEntry = NULL;
 
-int createLogFile(log_t type) {
-  char *newLogFilePath = NULL;
-  char *dir            = "./logs/";
+	if (checkLogFileExistence(ACCESS_LOG) == FAILED) {
+		return FAILED;
+	}
 
-  if (createDir(dir) == FAILED) {
-    return FAILED;
-  }
+	if ((logEntry = createAccessLogEntry(http, action)) == NULL) {
+		return FAILED;
+	}
 
-  if ((newLogFilePath = createPath(dir)) == NULL) {
-    return FAILED;
-  }
-
-  if (open(newLogFilePath, (O_RDWR | O_CREAT | O_APPEND | O_NONBLOCK), 0777)
-    == -1) {
-    return FAILED;
-  }
-
-  logFiles[type] = newLogFilePath;
-
-  return  OK;
+	return writeToLog(ACCESS_LOG, logEntry);
 }
 
-char *createPath(char *dir) {
-  char *newLogFilePath  = calloc(MAX_PATH_SIZE, sizeof(char *));
-  const char *accessLog = "access.log";
-  size_t bytesWritten   = 0;
+int logError(const char *errorMsg) {
+	char *logEntry = NULL;
 
-  if (dir == NULL) {
-    dir = "./";
-  }
+	if (checkLogFileExistence(ERROR_LOG) == FAILED) {
+		return FAILED;
+	}
 
-  bytesWritten = snprintf(newLogFilePath, MAX_PATH_SIZE, "%s", dir);
+	if ((logEntry = createErrorLogEntry(errorMsg)) == NULL) {
+		return FAILED;
+	}
 
-  if (bytesWritten >= MAX_PATH_SIZE) {
-    return NULL;
-  }
-
-  bytesWritten = snprintf(newLogFilePath + strlen(dir),
-    MAX_PATH_SIZE - strlen(dir), "%s", accessLog);
-
-  if (bytesWritten >= (MAX_PATH_SIZE - strlen(dir))) {
-    return NULL;
-  }
-
-  return newLogFilePath;
+	return writeToLog(ERROR_LOG, logEntry);
 }
 
-char *createLogEntry(httpADT_t s, communication_t action) {
-  char *beginning   = malloc(MAX_ENTRY_SIZE);
-  char *curr        = beginning;
-  const char *end   = curr + MAX_ENTRY_SIZE;
-  char *firstLine   = determineCommunication(s, action);
+int checkLogFileExistence(log_t type) {
+	if (!existsLogFilesArray()) {
+		createLogFilesArray();
+	}
 
-  setClientAndHost(s, action);
+	if (!existsLogFile(type)) {
+		if (createLogFile(type) == FAILED) {
+			return FAILED;
+		}
+	}
 
-  if ((curr = writeLogElemToLogEntry(curr, end, "[%s] ", getTime())) == NULL) {
-    return FAILED;
-  }
-
-  if ((curr = writeClientAndHost(curr, end, client, host, action)) == NULL) {
-    return FAILED;
-  }
-
-  if ((curr = writeLogElemToLogEntry(curr, end, "'%s'\n", firstLine)) == NULL) {
-    return FAILED;
-  }
-
-  return curr < end ? beginning : NULL;
+	return OK;
 }
 
-int addEntryToLog(httpADT_t http, log_t type, communication_t action) {
-  char *logEntry       = NULL;
-  int couldWriteToFile = 0;
-  int logFileFd        = 0;
+char *createAccessLogEntry(httpADT_t s, communication_t action) {
+	char *beginning = malloc(MAX_ENTRY_SIZE);
+	char *curr		= beginning;
+	const char *end = curr + MAX_ENTRY_SIZE;
+	char *firstLine = NULL;
 
-  if (checkLogFile(type) == FAILED) {
-    return FAILED;
-  }
+	setClientAndHost(s, action);
 
-  if ((logEntry = createLogEntry(http, action)) == NULL) {
-    return FAILED;
-  }
+	if ((curr = writeTime(curr, end)) == NULL) {
+		return FAILED;
+	}
 
-  if ((logFileFd = open(logFiles[type], (O_RDWR | O_APPEND | O_NONBLOCK), 0666))
-    == -1) {
-    return FAILED;
-  }
+	if ((curr = writeClientAndHost(curr, end, client, host, action)) == NULL) {
+		return FAILED;
+	}
 
-  couldWriteToFile = (write(logFileFd, logEntry, strlen(logEntry)) >= 0);
-  //couldWriteToFile = (fprintf(logFile, "%s", logEntry) >= 0);
+	firstLine = getFirstLine(s, action);
 
-  if (close(logFileFd) == -1) {
-    return FAILED;
-  }
+	if ((curr = writeLogElemToLogEntry(curr, end, "'%s'\n", firstLine)) ==
+		NULL) {
+		free(firstLine);
+		return FAILED;
+	}
 
-  return couldWriteToFile;
+	free(firstLine);
+
+	return curr < end ? beginning : NULL;
 }
 
-int existsLogFile(log_t type) {
-  return logFiles[type] != NULL;
+char *createErrorLogEntry(const char *errorMsg) {
+	char *beginning  = malloc(MAX_ENTRY_SIZE);
+	char *curr		 = beginning;
+	char *end		 = beginning + MAX_ENTRY_SIZE;
+	char *errorDescr = strerror(errno);
+
+	if ((curr = writeTime(curr, end)) == NULL) {
+		return NULL;
+	}
+
+	if (errorMsg == NULL) {
+		errorMsg = "Error";
+	}
+
+	if ((curr = writeLogElemToLogEntry(curr, end, "%s: ", errorMsg)) == NULL) {
+		return NULL;
+	}
+
+	if ((curr = writeLogElemToLogEntry(curr, end, "%s", errorDescr)) == NULL) {
+		return NULL;
+	}
+
+	return curr < end ? beginning : NULL;
 }
 
 int existsLogFilesArray() {
-  return logFiles != NULL;
+	return logFilesPaths != NULL;
 }
 
 void createLogFilesArray() {
-  logFiles = malloc(LOG_TYPES * sizeof(char*));
+	logFilesPaths = malloc(LOG_TYPES * sizeof(char *));
 
-  for (int i = 0; i < LOG_TYPES; i++) {
-    logFiles[i] = NULL;
-  }
+	for (int i = 0; i < LOG_TYPES; i++) {
+		logFilesPaths[i] = NULL;
+	}
 }
 
-int checkLogFile(log_t type) {
-  if (!existsLogFilesArray()) {
-    createLogFilesArray();
-  }
-
-  if (!existsLogFile(type)) {
-    if(createLogFile(type) == FAILED) {
-      return FAILED;
-    }
-  }
-
-  return OK;
+int existsLogFile(log_t type) {
+	return logFilesPaths[type] != NULL;
 }
 
-int getIpAddresses(struct sockaddr_storage *clientAddr, char *client,
-    char *host) {
-  return getnameinfo((struct sockaddr *)clientAddr, sizeof(struct sockaddr), client,
-    MAX_ADDR_SIZE, host, MAX_ADDR_SIZE, NI_NAMEREQD);
-}
+int createLogFile(log_t type) {
+	char *newLogFilePath = NULL;
 
-char *writeLogElemToLogEntry(char *curr, const char *end,
-  const char *format, const char *data) {
-  int bytesWritten = snprintf(curr, end - curr, format, data);
+	if (createDir(dir) == FAILED) {
+		return FAILED;
+	}
 
-  if (bytesWritten >= (end - curr)) {
-    return NULL;
-  }
+	if ((newLogFilePath = createPath(dir, type)) == NULL) {
+		return FAILED;
+	}
 
-  curr += bytesWritten;
+	if (open(newLogFilePath, (O_RDWR | O_CREAT | O_APPEND | O_NONBLOCK),
+			 0777) == -1) {
+		return FAILED;
+	}
 
-  return curr;
-}
+	logFilesPaths[type] = newLogFilePath;
 
-char *getTime() {
-  time_t now = time(0);
-  char *time = calloc(128, sizeof(char));
-  snprintf(time, 128, "%s", ctime(&now));
-  size_t len = strlen(time);
-  time[len - strlen("\n")] = 0;
-  return time;
+	return OK;
 }
 
 int createDir(const char *dir) {
-  struct stat st = {0};
+	struct stat st = {0};
 
-  if (stat(dir, &st) == -1) {
-    if (mkdir(dir, 0777) == -1) {
-      return FAILED;
-    }
-  }
+	if (stat(dir, &st) == -1) {
+		if (mkdir(dir, 0777) == -1) {
+			return FAILED;
+		}
+	}
 
-  return OK;
+	return OK;
+}
+
+char *createPath(char *dir, log_t type) {
+	char *newLogFilePath = calloc(MAX_PATH_SIZE, sizeof(char *));
+	const char *log		 = (type == ACCESS_LOG ? "access.log" : "error.log");
+	size_t bytesWritten  = 0;
+
+	if (dir == NULL) {
+		dir = "./";
+	}
+
+	bytesWritten = snprintf(newLogFilePath, MAX_PATH_SIZE, "%s", dir);
+
+	if (bytesWritten >= MAX_PATH_SIZE) {
+		free(newLogFilePath);
+		return NULL;
+	}
+
+	bytesWritten = snprintf(newLogFilePath + strlen(dir),
+							MAX_PATH_SIZE - strlen(dir), "%s", log);
+
+	if (bytesWritten >= (MAX_PATH_SIZE - strlen(dir))) {
+		free(newLogFilePath);
+		return NULL;
+	}
+
+	return newLogFilePath;
+}
+
+char *getTime() {
+	time_t now = time(0);
+	char *time = calloc(128, sizeof(char));
+	snprintf(time, 128, "%s", ctime(&now));
+	size_t len				 = strlen(time);
+	time[len - strlen("\n")] = 0;
+	return time;
+}
+
+char *writeTime(char *curr, const char *end) {
+	return writeLogElemToLogEntry(curr, end, "[%s] ", getTime());
 }
 
 char *determineCommunication(httpADT_t s, communication_t action) {
-  char *ret       = malloc(MAX_FIRST_LINE_LENGTH);
-  char *firstLine = NULL;
-  size_t len      = 0;
-
-  if (action == REQ) {
-    firstLine = (char *)((getRequestLineBuffer(s))->data);
-  }
-  else {
-    firstLine = (char *)((getResponseLineBuffer(s))->data);
-  }
-
-  snprintf(ret, MAX_FIRST_LINE_LENGTH, "%s", firstLine);
-  len                     = strlen(ret);
-  ret[len - strlen("\n")] = 0;
-
-  return ret;
+	if (action == REQ) {
+		return (char *) ((getRequestLineBuffer(s))->data);
+	}
+	else { // RESP
+		return (char *) ((getResponseLineBuffer(s))->data);
+	}
 }
 
-char *writeClientAndHost(char *curr, const char *end, char *client,
-  char *host, communication_t action) {
-  char *aux = NULL;
+char *getFirstLine(httpADT_t s, communication_t action) {
+	char *ret		= malloc(MAX_FIRST_LINE_LENGTH);
+	char *firstLine = determineCommunication(s, action);
+	size_t len		= 0;
 
-  if (action == RESP) {
-    aux    = client;
-    client = host;
-    host   = aux;
-  }
+	snprintf(ret, MAX_FIRST_LINE_LENGTH, "%s", firstLine);
+	len						= strlen(ret);
+	ret[len - strlen("\n")] = 0;
 
-  if ((curr = writeLogElemToLogEntry(curr, end, "[%s --> ", client)) == NULL) {
-    return NULL;
-  }
+	return ret;
+}
 
-  if ((curr = writeLogElemToLogEntry(curr, end, "%s] - ", host)) == NULL) {
-    return NULL;
-  }
-
-  return curr;
+int getIpAddresses(struct sockaddr_storage *clientAddr, char *client,
+				   char *host) {
+	return getnameinfo((struct sockaddr *) clientAddr, sizeof(struct sockaddr),
+					   client, MAX_ADDR_SIZE, host, MAX_ADDR_SIZE, NI_NAMEREQD);
 }
 
 int setClientAndHost(httpADT_t s, communication_t action) {
-  if (client == NULL) {
-    client = malloc(MAX_ADDR_SIZE);
-  }
+	if (client == NULL) {
+		client = malloc(MAX_ADDR_SIZE);
+	}
 
-  if (host == NULL) {
-    host = malloc(MAX_ADDR_SIZE);
-  }
+	if (host == NULL) {
+		host = malloc(MAX_ADDR_SIZE);
+	}
 
-  if (action == REQ) {
-    if (getIpAddresses(getClientAddress(s), client, NULL) != 0) {
-      return FAILED;
-    }
+	if (action == REQ) {
+		if (getIpAddresses(getClientAddress(s), client, NULL) != 0) {
+			return FAILED;
+		}
 
-    host = getOriginHost(s);
-  }
+		host = getOriginHost(s);
+	}
 
-  return OK;
+	return OK;
+}
+
+char *writeClientAndHost(char *curr, const char *end, char *client, char *host,
+						 communication_t action) {
+	char *aux = NULL;
+
+	if (action == RESP) {
+		aux	= client;
+		client = host;
+		host   = aux;
+	}
+
+	if ((curr = writeLogElemToLogEntry(curr, end, "[%s --> ", client)) ==
+		NULL) {
+		return NULL;
+	}
+
+	if ((curr = writeLogElemToLogEntry(curr, end, "%s] - ", host)) == NULL) {
+		return NULL;
+	}
+
+	return curr;
+}
+
+char *writeLogElemToLogEntry(char *curr, const char *end, const char *format,
+							 const char *data) {
+	int bytesWritten = snprintf(curr, end - curr, format, data);
+
+	if (bytesWritten >= (end - curr)) {
+		return NULL;
+	}
+
+	curr += bytesWritten;
+
+	return curr;
+}
+
+int writeToLog(log_t type, const char *logEntry) {
+	int logFileFd		 = 0;
+	int couldWriteToFile = 0;
+
+	if ((logFileFd = open(logFilesPaths[type], (O_RDWR | O_APPEND | O_NONBLOCK),
+						  0666)) == -1) {
+		return FAILED;
+	}
+
+	couldWriteToFile = (write(logFileFd, logEntry, strlen(logEntry)) >= 0);
+
+	if (close(logFileFd) == -1) {
+		return FAILED;
+	}
+
+	return couldWriteToFile;
 }

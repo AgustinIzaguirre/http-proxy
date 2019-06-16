@@ -21,11 +21,10 @@ void responseInit(const unsigned state, struct selector_key *key) {
 	buffer_init(&(handleResponse->requestDataBuffer), BUFFER_SIZE,
 				handleResponse->requestData);
 	handleResponse->responseFinished = FALSE;
-	addEntryToLog(GET_DATA(key), ACCESS_LOG, REQ);
+	logAccess(GET_DATA(key), REQ);
 }
 
-void responceDestroy(const unsigned state, struct selector_key *key) {
-	addEntryToLog(GET_DATA(key), ACCESS_LOG, RESP);
+void responseDestroy(const unsigned state, struct selector_key *key) {
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
@@ -36,6 +35,7 @@ void responceDestroy(const unsigned state, struct selector_key *key) {
 		setTransformContent(GET_DATA(key), FALSE);
 	}
 	setIsChunked(GET_DATA(key), handleResponse->parseHeaders.isChunked);
+	logAccess(GET_DATA(key), RESP);
 }
 
 unsigned responseRead(struct selector_key *key) {
