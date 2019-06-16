@@ -1,7 +1,9 @@
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <string.h>
 #include <logger.h>
 #include <stdio.h>
-#include <sys/stat.h>
 #include <time.h>
 #include <http.h>
 
@@ -32,27 +34,25 @@ int existsLogFile(log_t logType);
 int existsLogFilesArray();
 void createLogFilesArray();
 void checkLogFile(log_t type);
-void createDir(const char *dir);
+int createDir(const char *dir);
 
 
 int createLogFile(log_t type) {
   FILE *newLogFile     = NULL;
   char *newLogFilePath = NULL;
-  char *dir            = "./temp/logs/";
+  char *dir            = "./logs/";
 
-  createDir(dir);
-
-  if (createPath(dir) == NULL) {
+  if (createDir(dir) == FAILED) {
     return FAILED;
   }
 
-  if (newLogFilePath == NULL) {
+  if ((newLogFilePath = createPath(dir)) == NULL) {
+    perror("Failed creating the path");
     return FAILED;
   }
 
-  newLogFile = fopen(newLogFilePath, "+a");
-
-  if (newLogFile == NULL) {
+  if ((newLogFile = fopen(newLogFilePath, "a+")) == NULL) {
+    perror("Failed creating the file");
     return FAILED;
   }
 
@@ -77,9 +77,9 @@ char *createPath(char *dir) {
   }
 
   bytesWritten = snprintf(newLogFilePath + strlen(dir),
-    strlen(newLogFilePath) - strlen(dir), "%s", accessLog);
+    MAX_PATH_SIZE - strlen(dir), "%s", accessLog);
 
-  if (bytesWritten >= (sizeof(newLogFilePath) - sizeof(dir))) {
+  if (bytesWritten >= (MAX_PATH_SIZE - strlen(dir))) {
     return NULL;
   }
 
@@ -185,61 +185,17 @@ char *getTime() {
   return ctime(&now);
 }
 
-void createDir(const char *dir) {
+int createDir(const char *dir) {
   struct stat st = {0};
 
   if (stat(dir, &st) == -1) {
-    mkdir(dir, 0700);
-  }
-}
+    perror("Directory inexistent");
 
-
-/*
-// TODO: Receive the response status saved in the proxy
-int createLogEntryStr(struct sockaddr_storage *clientAddr,
-    char *logEntryBuffer) {
-  size_t maxAddrSize = 512;
-  size_t maxRequestSize = 1024;
-  char host[maxAddrSize], server[maxAddrSize];
-  // TODO: Get the request from the first line saved in the proxy
-  char request[maxRequestSize]; // TODO: Realloc request size if needed
-  int bytesSupposedToWrite = 0;
-  int couldGetIpAddresses = getIpAddresses(clientAddr, host, server);
-  int ret = 0;
-
-  if (couldGetIpAddresses != 0) {
-    return FAILED;
+    if (mkdir(dir, 0700) == -1) {
+      perror("Failed creating directory");
+      return FAILED;
+    }
   }
 
-  return ret;
+  return OK;
 }
-
-
-
-// ======================== SETTERS =======================================
-// TODO> Check if setters make sense (is the structure necessary at all?)
-// void setRemoteAddr(char **accessLog, const char *remoteAddr) {
-//   accessLog[REMOTE_ADDR] = remoteAddr;
-// }
-//
-// void setTime(char **accessLog) {
-//   time_t now = time(0);
-//   accessLog[TIME] = ctime(&now);
-// }
-//
-// void setRequest(char **accessLog, const char *request) {
-//   accessLog[REQUEST] = request;
-// }
-//
-// void setStatus(char **accessLog, const char *status) {
-//   accessLog[STATUS] = status;
-// }
-//
-// void setHttpReferer(char **accessLog, const char *httpReferer) {
-//   accessLog[HTTP_REFERER] = httpReferer;
-// }
-//
-// void setHttpUserAgent(char **accessLog, const char *httpUserAgent) {
-//   accessLog[HTTP_USER_AGENT] = httpUserAgent;
-// }
-*/
