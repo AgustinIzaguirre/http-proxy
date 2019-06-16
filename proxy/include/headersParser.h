@@ -80,8 +80,12 @@ void resetHeaderParser(struct headersParser *header);
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
 
+/*
+ * Initialize headers parser structure with default values and initialize its
+ * buffers
+ */
 void headersParserInit(struct headersParser *header, struct selector_key *key,
-					   uint8_t isRequest); // TODO comment
+					   uint8_t isRequest);
 
 /*
  * Adds header connection: close to either request or response
@@ -98,7 +102,10 @@ void copyBuffer(struct headersParser *header);
  */
 void resetValueBuffer(struct headersParser *header);
 
-int getTransformContentParser(struct headersParser *header); // TODO
+/*
+ * Returns transform content value from headers parser structure
+ */
+int getTransformContentParser(struct headersParser *header);
 
 /*
  * Compares read value with chunked and if it is chunked it sets isChunked to
@@ -116,4 +123,29 @@ void compareWithIdentity(struct headersParser *header);
  * Returns true if will transform given encode and false if wont transform
  */
 uint8_t getTransformEncode(struct headersParser *header);
+
+/*
+ * Handles headersParser FIRST_LINE state
+ */
+void handleFirstLine(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_START state
+ */
+void handleHeadersStart(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_NAME state
+ */
+void handleHeadersName(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_VALUE state
+ */
+void handleHeaderValue(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_END state
+ */
+void handleHeaderEnd(char l, struct headersParser *header);
 #endif
