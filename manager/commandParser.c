@@ -138,12 +138,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					case ' ': /* space */
 						currentState = GET_MTR_;
 						break;
-					case '\n':
-						/* Set command information to *get mtr* */
-						*operation = GET_OP;
-						*id		   = MTR_ID;
-						returnCode = NEW;
-						break;
 					default:
 						returnCode = INVALID;
 				}

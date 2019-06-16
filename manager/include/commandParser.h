@@ -92,17 +92,11 @@ enum state_t {
 	SET_TF_ON,
 	SET_TF_OF,
 	SET_TF_OFF,
-	SET_B,
-	SET_BF,
-	SET_BF_,
-	SET_BF_DATA,
-	SET_BF_DATA_,
 	SET_C,
 	SET_CM,
 	SET_CMD,
 	SET_CMD_,
-	SET_CMD_DATA,
-	SET_CMD_DATA_
+	SET_CMD_DATA
 };
 typedef enum state_t state_t;
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
