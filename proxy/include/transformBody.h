@@ -22,6 +22,7 @@ struct transformBody {
 	uint8_t transformFinished;
 	uint8_t responseFinished;
 	uint8_t transformSelectors;
+	uint8_t lastChunkSent;
 	pid_t commandPid;
 };
 
