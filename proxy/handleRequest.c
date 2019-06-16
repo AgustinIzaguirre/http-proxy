@@ -7,6 +7,9 @@
 #include <headersParser.h>
 #include <utilities.h>
 
+/*
+ * Returns buffer to read from to write on clientFd
+ */
 static buffer *getCurrentBuffer(httpADT_t state);
 
 void requestInit(const unsigned state, struct selector_key *key) {
@@ -44,7 +47,6 @@ unsigned requestRead(struct selector_key *key) {
 						 begining + bytesRead);
 		}
 
-		// check if request finished TODO
 		ret = setAdecuateFdInterests(key);
 	}
 	else {
@@ -82,7 +84,6 @@ unsigned requestWrite(struct selector_key *key) {
 	bytesRead = send(key->fd, pointer, count, 0);
 
 	if (bytesRead > 0) {
-		// parseRead
 		buffer_read_adv(readBuffer, bytesRead);
 		increaseTransferBytes(bytesRead);
 		ret = setAdecuateFdInterests(key);
