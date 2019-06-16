@@ -15,6 +15,7 @@ static uint8_t isValidSetId(resId_t id);
 static void manageGetCommandRequest(response_t *response);
 static void manageGetMetricRequest(resId_t id, response_t *response);
 static void manageGetTransformationStatusRequest(response_t *response);
+static void manageGetMediaRangeRequest(response_t *response);
 
 static const char *errorMessage = "";
 
@@ -184,10 +185,7 @@ static void manageGetRequest(manager_t *client) {
 
 	switch (id) {
 		case MIME_ID:
-			char *mediaRange =
-				getMediaRangeAsString(getMediaRange(getConfiguration()));
-			client->response.data		= (void *) mediaRange;
-			client->response.dataLength = strlen(mediaRange) + 1;
+			manageGetMediaRangeRequest(&client->response);
 			break;
 		case CMD_ID:
 			manageGetCommandRequest(&client->response);
@@ -206,6 +204,12 @@ static void manageGetRequest(manager_t *client) {
 	}
 
 	client->response.timeTag = timeTags[id];
+}
+
+static void manageGetMediaRangeRequest(response_t *response) {
+	char *mediaRange = getMediaRangeAsString(getMediaRange(getConfiguration()));
+	response->data   = (void *) mediaRange;
+	response->dataLength = strlen(mediaRange) + 1;
 }
 
 static void manageGetTransformationStatusRequest(response_t *response) {
