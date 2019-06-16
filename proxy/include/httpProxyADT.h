@@ -21,7 +21,7 @@
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
 #define BUFFER_SIZE 4000
-#define MAX_PARSER 1000 // TODO: chech that number
+#define MAX_PARSER 1000
 #define MAX_FIRST_LINE_LENGTH 2048
 
 typedef struct http *httpADT_t;
@@ -36,12 +36,12 @@ enum httpState {
 	 *   ClientFd:
 	 *
 	 *      - OP_READ       Until client sends end of line and has found host.
-	 //TODO AGUSTIN
+	 *
 	 * Transitions:
 	 *
 	 *   - CONNECT_TO_ORIGIN    If is a valid method and host.
 	 *
-	 *   - ERROR_CLIENT         If any error on first line request
+	 *   - ERROR_CLIENT         If any error to be send to the client
 	 *
 	 *   - ERROR                Any other error.
 	 *
@@ -161,7 +161,22 @@ enum httpState {
 	 */
 	TRANSFORM_BODY,
 
-	// TODO Agustin
+	/**
+	 * Send the error message that corespond to the erro code set in the http
+	 * structure.
+	 *
+	 * Interests:
+	 *
+	 *   ClientFd:
+	 *
+	 *      - OP_WRITE          Until it sends all the error.
+	 *
+	 * Transitions:
+	 *
+	 *   - ERROR                Any error or finish correctly (because it is
+	 *							suppose that a other error happend in a previous
+	 *							state).
+	 */
 	ERROR_CLIENT,
 
 	// final states
@@ -348,13 +363,40 @@ uint8_t getIsChunked(struct http *s);
  */
 void setIsChunked(struct http *s, uint8_t isChunked);
 
-// TODO
+/*
+ *	Returns the set of resolutions of the origin found in the DNS query or null
+ */
 struct addrinfo *getOriginResolutions(struct http *s);
+
+/*
+ *	Sets the oring host resolutions
+ */
 void setOriginResolutions(struct http *s, struct addrinfo *originResolution);
+
+/*
+ * Returns 1 if there must be transformation or 0 otherwise
+ */
 int getTransformContent(struct http *s);
+
+/*
+ * Set whenever must be transformation
+ */
 void setTransformContent(struct http *s, int transformContent);
+
+/*
+ * Return the media range that is compare with the content length in
+ * order to determine if there is transformations
+ */
 MediaRangePtr_t getMediaRangeHTTP(struct http *s);
+
+/*
+ * Set selector copy that is given to the child process in order to free it
+ */
 void setSelectorCopy(struct http *s, void **selectorCopyForOtherThread);
+
+/*
+ * Get selector copy
+ */
 void **getSelectorCopy(struct http *s);
 
 #endif
