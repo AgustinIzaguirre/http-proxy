@@ -12,6 +12,7 @@
 #define MAX_MIME_HEADER 128
 #define CHUNKED_LENGTH 7
 #define BLOCK 10
+#define IDENTITY_LENGTH 8
 #define MAX_TOTAL_HEADER_LENGTH MAX_HEADER_LENGTH + 1024
 
 struct headersParser {
@@ -20,7 +21,8 @@ struct headersParser {
 	uint8_t mimeValue[MAX_MIME_HEADER];
 	uint8_t valueBuf[BUFFER_SIZE + 30 + 20 + // TODO: check the 20 addes
 					 MAX_HOP_BY_HOP_HEADER_LENGTH];
-	uint8_t transferValue[CHUNKED_LENGTH];
+	uint8_t transferValue[CHUNKED_LENGTH + 1];
+	uint8_t contentValue[IDENTITY_LENGTH + 1];
 
 	buffer headerBuffer;
 	buffer valueBuffer;
@@ -33,7 +35,12 @@ struct headersParser {
 	uint8_t isTransfer;
 	uint8_t isChunked;
 	uint8_t isChar;
+	uint8_t isEncoded;
+	uint8_t willTransform;
+	uint8_t hasEncode;
 	int tranferIndex;
+	int contentIndex;
+	int firstLine;
 
 	MediaRangePtr_t mediaRange;
 	int mediaRangeCurrent;
@@ -53,6 +60,9 @@ enum headersState {
 	BODY_START,
 };
 
+#define IS_100 -1
+#define IS_NOT_100 -2
+
 /*
  * Parse a char into the headers parser statemachine
  */
@@ -70,8 +80,12 @@ void resetHeaderParser(struct headersParser *header);
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
 				  int end);
 
+/*
+ * Initialize headers parser structure with default values and initialize its
+ * buffers
+ */
 void headersParserInit(struct headersParser *header, struct selector_key *key,
-					   uint8_t isRequest); // TODO comment
+					   uint8_t isRequest);
 
 /*
  * Adds header connection: close to either request or response
@@ -88,11 +102,50 @@ void copyBuffer(struct headersParser *header);
  */
 void resetValueBuffer(struct headersParser *header);
 
-int getTransformContentParser(struct headersParser *header); // TODO
+/*
+ * Returns transform content value from headers parser structure
+ */
+int getTransformContentParser(struct headersParser *header);
+
 /*
  * Compares read value with chunked and if it is chunked it sets isChunked to
  * TRUE
  */
 void compareWithChunked(struct headersParser *header);
 
+/*
+ * Compares read value with identity and if it is not identity it sets isEncoded
+ * to TRUE
+ */
+void compareWithIdentity(struct headersParser *header);
+
+/*
+ * Returns true if will transform given encode and false if wont transform
+ */
+uint8_t getTransformEncode(struct headersParser *header);
+
+/*
+ * Handles headersParser FIRST_LINE state
+ */
+void handleFirstLine(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_START state
+ */
+void handleHeadersStart(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_NAME state
+ */
+void handleHeadersName(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_VALUE state
+ */
+void handleHeaderValue(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_END state
+ */
+void handleHeaderEnd(char l, struct headersParser *header);
 #endif

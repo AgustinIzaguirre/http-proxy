@@ -114,6 +114,8 @@ static void httpDone(struct selector_key *key) {
 		getOriginFd(GET_DATA(key)),
 	};
 
+	decreaseConcurrentConections();
+
 	if (getSelectorCopy(GET_DATA(key)) != NULL) {
 		void **aux = getSelectorCopy(GET_DATA(key));
 		free(aux[1]);
