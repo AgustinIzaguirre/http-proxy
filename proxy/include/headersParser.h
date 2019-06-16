@@ -102,7 +102,10 @@ void copyBuffer(struct headersParser *header);
  */
 void resetValueBuffer(struct headersParser *header);
 
-int getTransformContentParser(struct headersParser *header); // TODO
+/*
+ * Returns transform content value from headers parser structure
+ */
+int getTransformContentParser(struct headersParser *header);
 
 /*
  * Compares read value with chunked and if it is chunked it sets isChunked to
