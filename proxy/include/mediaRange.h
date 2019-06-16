@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h> //TODO: for test
 
 enum matchResult { NO, YES, ALL };
 #define BLOCK 10
@@ -52,6 +51,5 @@ void freeMediaRange(MediaRangePtr_t mrp);
  * Returns a string of all the media range
  */
 char *showMediaTypeInString(MediaRangePtr_t mrp);
-void printMediaRange(MediaRangePtr_t mediaRange); // TODO: for test
 
 #endif
