@@ -116,4 +116,29 @@ void compareWithIdentity(struct headersParser *header);
  * Returns true if will transform given encode and false if wont transform
  */
 uint8_t getTransformEncode(struct headersParser *header);
+
+/*
+ * Handles headersParser FIRST_LINE state
+ */
+void handleFirstLine(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_START state
+ */
+void handleHeadersStart(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_NAME state
+ */
+void handleHeadersName(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_VALUE state
+ */
+void handleHeaderValue(char l, struct headersParser *header);
+
+/*
+ * Handles headersParser HEADERS_END state
+ */
+void handleHeaderEnd(char l, struct headersParser *header);
 #endif
