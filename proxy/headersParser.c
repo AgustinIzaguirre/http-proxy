@@ -76,7 +76,7 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 	switch (state) {
 		case FIRST_LINE:
 			if (l == '\n') {
-				if (header->firstLine == -1) {
+				if (header->firstLine == IS_100) {
 					header->state = FIRST_LINE;
 				}
 				else {
@@ -92,10 +92,10 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 					header->firstLine++;
 					if ((header->firstLine == 10 && l != '1') ||
 						(header->firstLine == 11 && l != '0')) {
-						header->firstLine = -2;
+						header->firstLine = IS_NOT_100;
 					}
 					else if (header->firstLine == 12 && l != '0') {
-						header->firstLine = -1;
+						header->firstLine = IS_100;
 					}
 				}
 			}

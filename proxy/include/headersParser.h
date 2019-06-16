@@ -60,6 +60,9 @@ enum headersState {
 	BODY_START,
 };
 
+#define IS_100 -1
+#define IS_NOT_100 -2
+
 /*
  * Parse a char into the headers parser statemachine
  */
