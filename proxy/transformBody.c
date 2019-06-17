@@ -765,4 +765,6 @@ void sentLastChunked(buffer *chunkBuffer) {
 	writeNumber(chunkBuffer, 0);
 	buffer_write(chunkBuffer, '\r');
 	buffer_write(chunkBuffer, '\n');
+	buffer_write(chunkBuffer, '\r');
+	buffer_write(chunkBuffer, '\n');
 }
