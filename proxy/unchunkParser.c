@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <buffer.h>
 #include <limits.h>
 #include <unchunkParser.h>
@@ -52,7 +53,7 @@ void parseChunkedInfoByChar(uint8_t l, struct unchunkParser *unchunkParser) {
 
 		case CHUNK_DATA:
 			if (unchunkParser->bytes > 0) {
-				buffer_write(unchunkParser->unchunkedBuffer, l);
+				buffer_write(&unchunkParser->unchunkedBuffer, l);
 			}
 			else if (l == '\n') {
 				unchunkParser->state = CHUNKED_SIZE;
@@ -62,6 +63,6 @@ void parseChunkedInfoByChar(uint8_t l, struct unchunkParser *unchunkParser) {
 }
 
 void setBytes(struct unchunkParser *unchunkParser) {
-	unchunkParser->bytes = hexaToULLong(unchunkParser->chunkedBytes,
+	unchunkParser->bytes = hexaToULLong((char *) unchunkParser->chunkedBytes,
 										unchunkParser->chunkedBytesIndex - 1);
 }

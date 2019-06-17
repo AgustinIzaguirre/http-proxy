@@ -7,7 +7,7 @@
 #define MAX_CHUNKED_ACCEPTED_BYTES                                             \
 	16 // ULLONG_MAX expressed in hexa 0xFFFFFFFFFFFFFFFF
 
-enum headersState {
+enum unchunkParserState {
 	CHUNKED_SIZE,
 	CHUNK_DATA,
 	CHUNKED_ERROR,

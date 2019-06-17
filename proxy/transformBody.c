@@ -15,6 +15,7 @@ static int getLength(buffer *buffer);
 void transformBodyInit(const unsigned state, struct selector_key *key) {
 	signal(SIGPIPE, SIG_IGN);
 	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	unchunkParserInit(&(transformBody->unchunkParser), key);
 	buffer_reset(getReadBuffer(GET_DATA(key)));
 	int length = getLength(getReadBuffer(GET_DATA(key)));
 	initializeChunkedBuffer(transformBody, length);
@@ -90,7 +91,12 @@ unsigned transformBodyWrite(struct selector_key *key) {
 		ret = standardClientWrite(key);
 	}
 	else if (key->fd == transformBody->writeToTransformFd) {
-		ret = writeToTransform(key);
+		if (getIsChunked(state)) {
+			ret = writeToTransform(key); // TODO chunked
+		}
+		else {
+			ret = writeToTransform(key);
+		}
 	}
 	else if (key->fd == getClientFd(state)) {
 		ret = writeToClient(key);
@@ -502,6 +508,7 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	buffer *readBuffer					= getReadBuffer(GET_DATA(key));
 	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
 	buffer *chunkBuffer					= &transformBody->chunkedBuffer;
+	buffer *unchunkBuffer = &transformBody->unchunkParser.unchunkedBuffer;
 
 	unsigned ret			   = TRANSFORM_BODY;
 	int clientInterest		   = OP_NOOP;
@@ -509,8 +516,15 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	int transformReadInterest  = OP_NOOP;
 	int transformWriteInterest = OP_NOOP;
 
-	if (buffer_can_read(writeBuffer)) {
-		transformWriteInterest |= OP_WRITE;
+	if (!getIsChunked(state)) {
+		if (buffer_can_read(writeBuffer)) {
+			transformWriteInterest |= OP_WRITE;
+		}
+	}
+	else {
+		if (buffer_can_read(unchunkBuffer)) {
+			transformWriteInterest |= OP_WRITE;
+		}
 	}
 
 	if (buffer_can_read(chunkBuffer)) {

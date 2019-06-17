@@ -1,6 +1,8 @@
 #ifndef TRANSFORM_BODY_H
 #define TRANSFORM_BODY_H
 
+#include <unchunkParser.h>
+
 #define LIMITATING_CHARS 4 //'\r' and '\n' at begining and end
 
 enum transformCommandStatus {
@@ -13,6 +15,7 @@ enum transformCommandStatus {
 };
 
 struct transformBody {
+	struct unchunkParser unchunkParser;
 	int writeToTransformFd;
 	int readFromTransformFd;
 	unsigned commandStatus;
