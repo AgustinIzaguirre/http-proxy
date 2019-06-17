@@ -15,8 +15,19 @@
  */
 int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry);
 
+/*
+ * Create a thred that resolves the DNS query
+ */
 int blockingToResolvName(struct selector_key *key, int fdClient);
+
+/*
+ * Resolves the dns query
+ */
 void *addressResolvName(void **data);
+
+/*
+ * Iterates from the list of resolves and trys to connect to each
+ */
 unsigned addressResolvNameDone(struct selector_key *key);
 
 #endif

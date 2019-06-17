@@ -35,7 +35,6 @@ const struct fd_handler *getHttpHandler() {
 }
 
 void httpPassiveAccept(struct selector_key *key) {
-	printf("conexion aceptada\n"); // TODO:
 	struct sockaddr_storage clientAddr;
 	socklen_t clientAddrLen = sizeof(clientAddr);
 	struct http *state		= NULL;
@@ -53,8 +52,6 @@ void httpPassiveAccept(struct selector_key *key) {
 	state = httpNew(client);
 
 	if (state == NULL) {
-		/* Without state, can't handle */
-		// TODO: should turn off accept() until detect a free-conection?
 		goto fail;
 	}
 

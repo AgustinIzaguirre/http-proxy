@@ -15,6 +15,7 @@ static int getLength(buffer *buffer);
 void transformBodyInit(const unsigned state, struct selector_key *key) {
 	signal(SIGPIPE, SIG_IGN);
 	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	unchunkParserInit(&(transformBody->unchunkParser), key);
 	buffer_reset(getReadBuffer(GET_DATA(key)));
 	int length = getLength(getReadBuffer(GET_DATA(key)));
 	initializeChunkedBuffer(transformBody, length);
@@ -27,7 +28,6 @@ void transformBodyInit(const unsigned state, struct selector_key *key) {
 	transformBody->transformFinished		= FALSE;
 	transformBody->responseFinished			= FALSE;
 	transformBody->lastChunkSent			= FALSE;
-	printf("arrived to transform body state\n"); // TODO remove
 }
 
 void transformBodyDestroy(const unsigned state, struct selector_key *key) {
@@ -44,7 +44,7 @@ unsigned transformBodyRead(struct selector_key *key) {
 
 	if (transformBody->chunkedData == NULL) {
 		setErrorDoneFd(key);
-		printf("error9:\n%s\n", strerror(errno));
+		printf("Cannot allocate memory"); // TODO lucas logger de error
 		ret = ERROR;
 	}
 	else if (!getTransformContent(state) ||
@@ -65,7 +65,8 @@ unsigned transformBodyRead(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error8:\n%s\n", strerror(errno));
+		printf("unsupported file descriptor error\n"); // TODO lucas logger de
+													   // error
 		ret = ERROR;
 	}
 	return ret;
@@ -78,7 +79,7 @@ unsigned transformBodyWrite(struct selector_key *key) {
 
 	if (transformBody->chunkedData == NULL) {
 		setErrorDoneFd(key);
-		printf("error10:\n%s\n", strerror(errno));
+		printf("Cannot allocate memory"); // TODO lucas logger de error
 		ret = ERROR;
 	}
 	else if (!getTransformContent(state) ||
@@ -90,14 +91,20 @@ unsigned transformBodyWrite(struct selector_key *key) {
 		ret = standardClientWrite(key);
 	}
 	else if (key->fd == transformBody->writeToTransformFd) {
-		ret = writeToTransform(key);
+		if (getIsChunked(state)) {
+			ret = writeToTransformChunked(key);
+		}
+		else {
+			ret = writeToTransform(key);
+		}
 	}
 	else if (key->fd == getClientFd(state)) {
 		ret = writeToClient(key);
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error7:\n%s\n", strerror(errno));
+		printf("Unsupported file descriptor error\n"); // TODO lucas logger de
+													   // error
 		ret = ERROR;
 	}
 	return ret;
@@ -118,7 +125,6 @@ unsigned standardOriginRead(struct selector_key *key) {
 	}
 	// if there is no space to read should write what i already read
 	else if (!buffer_can_write(inBuffer)) {
-		// set interest no op on fd an write on origin fd
 		return setStandardFdInterests(key);
 	}
 
@@ -140,7 +146,7 @@ unsigned standardOriginRead(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error6:\n%s\n", strerror(errno));
+		printf("error6:\n%s\n", strerror(errno)); // TODO lucas logger de error
 		ret = ERROR;
 	}
 
@@ -157,7 +163,6 @@ unsigned standardOriginReadWithoutChunked(struct selector_key *key) {
 
 	// if there is no space to read should write what i already read
 	if (!buffer_can_write(inBuffer)) {
-		// set interest no op on fd an write on origin fd
 		return setStandardFdInterestsWithoutChunked(key);
 	}
 
@@ -174,7 +179,7 @@ unsigned standardOriginReadWithoutChunked(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error6:\n%s\n", strerror(errno));
+		printf("error6:\n%s\n", strerror(errno)); // TODO lucas logger de error
 		ret = ERROR;
 	}
 
@@ -192,7 +197,6 @@ unsigned readFromTransform(struct selector_key *key) {
 
 	// if there is no space to read should write what i already read
 	if (!buffer_can_write(inbuffer)) {
-		// set interest no op on fd an write on origin fd
 		return setFdInterestsWithTransformerCommand(key);
 	}
 
@@ -207,15 +211,16 @@ unsigned readFromTransform(struct selector_key *key) {
 	else if (bytesRead == 0) {
 		transformBody->transformFinished = TRUE;
 		ret = setFdInterestsWithTransformerCommand(key);
-		fprintf(stderr, "\nEOF\n"); // TODO remove
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error5:\n%s\n", strerror(errno)); // TODO REMOVE
+		printf("error5:\n%s\n", strerror(errno)); // TODO lucas logger de error
 		ret = ERROR;
 	}
 
 	if (transformBody->transformFinished && !buffer_can_read(chunkBuffer)) {
+		// We read and sent everything that transform command outputs so we sent
+		// last chunked
 		sentLastChunked(chunkBuffer);
 		transformBody->lastChunkSent = TRUE;
 		ret = setFdInterestsWithTransformerCommand(key);
@@ -234,7 +239,6 @@ unsigned readFromOrigin(struct selector_key *key) {
 
 	// if there is no space to read should write what i already read
 	if (!buffer_can_write(writeBuffer)) {
-		// set interest no op on fd an write on origin fd
 		return setFdInterestsWithTransformerCommand(key);
 	}
 
@@ -254,7 +258,7 @@ unsigned readFromOrigin(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error4:\n%s\n", strerror(errno)); // TODO REMOVE
+		printf("error4:\n%s\n", strerror(errno)); // TODO lucas logger de error
 		ret = ERROR;
 	}
 
@@ -271,7 +275,6 @@ unsigned standardClientWrite(struct selector_key *key) {
 
 	// if everything is read on buffer
 	if (!buffer_can_read(writeBuffer)) {
-		// set interest no op on fd an read on client fd
 		return setStandardFdInterests(key);
 	}
 
@@ -285,7 +288,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error3:\n%s\n", strerror(errno)); // TODO REMOVE
+		printf("error3:\n%s\n", strerror(errno)); // TODO lucas logger de error
 		ret = ERROR;
 	}
 
@@ -307,7 +310,6 @@ unsigned standardClientWriteWithoutChunked(struct selector_key *key) {
 
 	// if everything is read on buffer
 	if (!buffer_can_read(writeBuffer)) {
-		// set interest no op on fd an read on client fd
 		return setStandardFdInterestsWithoutChunked(key);
 	}
 
@@ -321,7 +323,7 @@ unsigned standardClientWriteWithoutChunked(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error3:\n%s\n", strerror(errno)); // TODO REMOVE
+		printf("error3:\n%s\n", strerror(errno)); // TODO lucas logger de error
 		ret = ERROR;
 	}
 
@@ -344,7 +346,6 @@ unsigned writeToTransform(struct selector_key *key) {
 
 	// if everything is read on buffer
 	if (!buffer_can_read(inbuffer)) {
-		// set interest no op on fd an read on client fd
 		return setFdInterestsWithTransformerCommand(key);
 	}
 
@@ -363,8 +364,7 @@ unsigned writeToTransform(struct selector_key *key) {
 	}
 	else if (transformBody->transformCommandExecuted == TRUE) {
 		setErrorDoneFd(key);
-		printf("error2:\n%s\n", strerror(errno)); // TODO REMOVE
-		perror("");
+		printf("error2:\n%s\n", strerror(errno)); // TODO lucas logger de error
 		ret = ERROR;
 	}
 	else {
@@ -374,6 +374,55 @@ unsigned writeToTransform(struct selector_key *key) {
 	}
 
 	if (transformBody->responseFinished && !buffer_can_read(inbuffer)) {
+		// closing pipe so that transform command finishes
+		close(transformBody->writeToTransformFd);
+	}
+
+	return ret;
+}
+
+unsigned writeToTransformChunked(struct selector_key *key) {
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	struct unchunkParser *unchunkParser = &transformBody->unchunkParser;
+	buffer *inbuffer					= getWriteBuffer(GET_DATA(key));
+	buffer *chunkBuffer					= &transformBody->chunkedBuffer;
+	buffer *unchunkData					= &unchunkParser->unchunkedBuffer;
+	unsigned ret						= TRANSFORM_BODY;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+	parseChunkedInfo(unchunkParser, inbuffer);
+	// if everything is read on buffer
+	if (!buffer_can_read(unchunkData)) {
+		return setFdInterestsWithTransformerCommand(key);
+	}
+
+	pointer   = buffer_read_ptr(unchunkData, &count);
+	bytesRead = write(key->fd, pointer, count);
+
+	if (bytesRead > 0) {
+		if (transformBody->transformCommandExecuted == FALSE) {
+			transformBody->transformCommandExecuted = TRUE;
+		}
+		buffer_read_adv(unchunkData, bytesRead);
+		if (!buffer_can_read(unchunkData) && transformBody->responseFinished) {
+			close(transformBody->writeToTransformFd);
+		}
+		ret = setFdInterestsWithTransformerCommand(key);
+	}
+	else if (transformBody->transformCommandExecuted == TRUE) {
+		setErrorDoneFd(key);
+		printf("error2:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		ret = ERROR;
+	}
+	else {
+		transformBody->commandStatus = EXEC_ERROR;
+		prepareChunkedBuffer(chunkBuffer, unchunkData);
+		ret = setStandardFdInterests(key);
+	}
+
+	if (transformBody->responseFinished && !buffer_can_read(inbuffer)) {
+		// closing pipe so that transform command finishes
 		close(transformBody->writeToTransformFd);
 	}
 
@@ -390,7 +439,6 @@ unsigned writeToClient(struct selector_key *key) {
 
 	// if everything is read on buffer
 	if (!buffer_can_read(buffer)) {
-		// set interest no op on fd an read on client fd
 		return setFdInterestsWithTransformerCommand(key);
 	}
 
@@ -404,7 +452,7 @@ unsigned writeToClient(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error1:\n%s\n", strerror(errno)); // TODO REMOVE
+		printf("error1:\n%s\n", strerror(errno)); // TODO lucas logger de error
 
 		ret = ERROR;
 	}
@@ -508,6 +556,7 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	buffer *readBuffer					= getReadBuffer(GET_DATA(key));
 	buffer *writeBuffer					= getWriteBuffer(GET_DATA(key));
 	buffer *chunkBuffer					= &transformBody->chunkedBuffer;
+	buffer *unchunkBuffer = &transformBody->unchunkParser.unchunkedBuffer;
 
 	unsigned ret			   = TRANSFORM_BODY;
 	int clientInterest		   = OP_NOOP;
@@ -515,8 +564,15 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 	int transformReadInterest  = OP_NOOP;
 	int transformWriteInterest = OP_NOOP;
 
-	if (buffer_can_read(writeBuffer)) {
-		transformWriteInterest |= OP_WRITE;
+	if (!getIsChunked(state)) {
+		if (buffer_can_read(writeBuffer)) {
+			transformWriteInterest |= OP_WRITE;
+		}
+	}
+	else {
+		if (buffer_can_read(unchunkBuffer) || buffer_can_read(writeBuffer)) {
+			transformWriteInterest |= OP_WRITE;
+		}
 	}
 
 	if (buffer_can_read(chunkBuffer)) {
@@ -589,9 +645,8 @@ int executeTransformCommand(struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(state);
 	int inputPipe[]						= {-1, -1};
 	int outputPipe[]					= {-1, -1};
-	int errorFd = open(getCommandStderrPath(getConfiguration()),
-					   OP_WRITE | OP_READ); // TODO
-	// initializae and dup to stderr
+	int errorFd =
+		open(getCommandStderrPath(getConfiguration()), OP_WRITE | OP_READ);
 	char *commandPath = getCommand(getConfiguration());
 	pid_t commandPid;
 
@@ -607,10 +662,8 @@ int executeTransformCommand(struct selector_key *key) {
 		dup2(inputPipe[0], 0);  // setting pipe as stdin
 		dup2(outputPipe[1], 1); // setting pipe as stdout
 		dup2(errorFd, 2);		// setting errorFd as stderr
-		// close(inputPipe[0]);	// closing unused copy of pipe
-		// close(outputPipe[1]);   // closing unused copy o pipe
-		close(inputPipe[1]);  // closing write end of input pipe
-		close(outputPipe[0]); // closing read end of output pipe
+		close(inputPipe[1]);	// closing write end of input pipe
+		close(outputPipe[0]);   // closing read end of output pipe
 
 		putenv("HTTPD_VERSION=1.0.0");
 		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {
@@ -620,7 +673,6 @@ int executeTransformCommand(struct selector_key *key) {
 			close(outputPipe[1]);
 			fprintf(stderr, "Exec error finishing\n");
 			exit(-1);
-			// return EXEC_ERROR;
 		}
 	}
 	else {
@@ -631,13 +683,13 @@ int executeTransformCommand(struct selector_key *key) {
 			selector_fd_set_nio(outputPipe[0]) == -1) {
 			return NONBLOCKING_ERROR;
 		}
+
 		int status = 0;
-		//		sleep(5);
-		//        pid_t answer = waitpid(commandPid, &status, WNOHANG);
-		//        printf("pid: %d\n answer: %d\n", commandPid, answer);
+
 		if (waitpid(commandPid, &status, WNOHANG) == commandPid) {
 			return EXEC_ERROR;
 		}
+
 		transformBody->commandPid		   = commandPid;
 		transformBody->writeToTransformFd  = inputPipe[1];
 		transformBody->readFromTransformFd = outputPipe[0];
@@ -650,6 +702,7 @@ int executeTransformCommand(struct selector_key *key) {
 												  state)) {
 			return SELECT_ERROR;
 		}
+
 		transformBody->transformSelectors = TRUE;
 		incrementReferences(state);
 		incrementReferences(state);

@@ -30,6 +30,7 @@ unsigned responseRead(struct selector_key *key);
  * Reads from client fd into requestDataBuffer
  */
 unsigned readFromClient(struct selector_key *key);
+
 /*
  * Writes from writeBuffer to clientFd
  */

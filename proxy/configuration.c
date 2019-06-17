@@ -7,8 +7,8 @@
 struct configuration {
 	unsigned short httpPort;
 	unsigned short managementPort;
-	char *httpInterfaces;		// TODO: use it
-	char *managementInterfaces; // TODO: use it
+	char *httpInterfaces;
+	char *managementInterfaces;
 	MediaRangePtr_t mediaRange;
 	char *command;
 	uint8_t isTransformationOn;
