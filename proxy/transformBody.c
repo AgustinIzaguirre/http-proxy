@@ -138,9 +138,13 @@ unsigned standardOriginRead(struct selector_key *key) {
 	}
 	else if (bytesRead == 0) {
 		transformBody->responseFinished = TRUE;
-		sentLastChunked(chunkBuffer);
+
 		if (!buffer_can_read(inBuffer)) {
+			sentLastChunked(chunkBuffer);
 			close(transformBody->writeToTransformFd);
+		}
+		else {
+			prepareChunkedBuffer(chunkBuffer, inBuffer);
 		}
 		ret = setStandardFdInterests(key);
 	}
@@ -280,9 +284,17 @@ unsigned standardClientWrite(struct selector_key *key) {
 
 	pointer   = buffer_read_ptr(writeBuffer, &count);
 	bytesRead = send(key->fd, pointer, count, 0);
-
+	int i	 = 0;
+	while (i < bytesRead) {
+		fprintf(stderr, "%c", pointer[i++]);
+	}
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
+		if (!buffer_can_read(writeBuffer) && transformBody->responseFinished &&
+			!transformBody->lastChunkSent) {
+			transformBody->lastChunkSent = TRUE;
+			sentLastChunked(writeBuffer);
+		}
 		increaseTransferBytes(bytesRead);
 		ret = setStandardFdInterests(key);
 	}
@@ -445,6 +457,10 @@ unsigned writeToClient(struct selector_key *key) {
 	pointer   = buffer_read_ptr(buffer, &count);
 	bytesRead = send(key->fd, pointer, count, 0);
 
+	int i = 0;
+	while (i < bytesRead) {
+		fprintf(stderr, "%c", pointer[i++]);
+	}
 	if (bytesRead > 0) {
 		buffer_read_adv(buffer, bytesRead);
 		increaseTransferBytes(bytesRead);
