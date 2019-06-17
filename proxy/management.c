@@ -271,7 +271,7 @@ static void manageSetRequest(manager_t *client) {
 
 		switch (id) {
 			case MIME_ID:
-				if (client->request.dataLength > 0) {
+				if (strcmp(client->request.data, "") != 0) {
 					addMediaRange(getMediaRange(getConfiguration()),
 								  (char *) client->request.data);
 				}

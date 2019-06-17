@@ -144,10 +144,10 @@ char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 	while (j < mrp->length) {
 		if (sizeAns != 0) {
 			ans = addCharToString(ans, &sizeAns, ',');
+			ans = addCharToString(ans, &sizeAns, ' ');
 		}
 		while ((mrp->listMediaTypes)[j][i] != '\0') {
 			if (sizeAns == 0 && strcmp((mrp->listMediaTypes)[j], ";") == 0) {
-				printf("viva peron\n");
 				break;
 			}
 			ans = addCharToString(ans, &sizeAns, (mrp->listMediaTypes)[j][i]);
@@ -159,7 +159,6 @@ char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 
 	ans = addCharToString(ans, &sizeAns, '\0');
 
-	printf("PERON:%s\n", ans);
 	return ans;
 }
 

@@ -692,9 +692,10 @@ static int recvSetRequest(int client, request_t *request) {
 	read = getConcretData(client, (uint8_t **) &request->data,
 						  &request->dataLength);
 
-	// printf("[protocol.c][recvSetRequest] SET-REQUEST-RECV-C-DATA = "); //
-	// TODO LOGGER for (int i = 0; i < request->dataLength; i++) { 	printf("
-	// 0x%02X ", ((uint8_t *) request->data)[i]);
+	// printf("[protocol.c][recvSetRequest] SET-REQUEST-RECV-C-DATA = "); //TODO
+	// LOGGER for (int i = 0; i < request->dataLength; i++) { 	printf("0x%02X
+	// ",
+	// ((uint8_t *) request->data)[i]);
 	// }
 	// printf("\n\n");
 

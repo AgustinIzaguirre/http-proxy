@@ -347,6 +347,7 @@ static void manageAndPrintGetResponse(response_t response) {
 	}
 	else {
 		printf("[New version gotten]\n");
+
 		if (timeTags[response.id] == 0) {
 			printf("[Resource gotten for first time]\n");
 		}
@@ -404,10 +405,34 @@ static void manageAndPrintGetResponse(response_t response) {
 static void manageAndPrintSetResponse(response_t response) {
 	if (response.status.timeTagStatus == OK_STATUS) {
 		printf("[Good timeTag. You override the resource!]\n");
-		timeTags[response.id] = response.timeTag; // TODO
+
+		timeTags[response.id] = response.timeTag;
+
+		if (response.id == MIME_ID && strcmp(response.data, "") != 0 &&
+			strcmp(storedData[MIME_ID], "") != 0) {
+			int storedDataLength = strlen(storedData[MIME_ID]);
+			int dataLength		 = strlen(response.data);
+
+			/* + 3 beacuse of: comma, space and null terminated */
+			char *data = malloc(storedDataLength + dataLength + 3);
+
+			memcpy(data, storedData[MIME_ID], storedDataLength);
+			data[storedDataLength] = ',';
+			storedDataLength++;
+			data[storedDataLength] = ' ';
+			storedDataLength++;
+			memcpy(data + storedDataLength, response.data, dataLength);
+			data[storedDataLength + dataLength] = '\0';
+
+			free(response.data);
+
+			response.data = data;
+		}
+
 		if (storedData[response.id] != NULL) {
 			free(storedData[response.id]);
 		}
+
 		storedData[response.id] = response.data;
 	}
 	else {

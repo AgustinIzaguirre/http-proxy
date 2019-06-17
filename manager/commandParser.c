@@ -300,9 +300,11 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *set mime* */
-						*operation = SET_OP;
-						*id		   = MIME_ID;
-						returnCode = NEW;
+						*data		= calloc(1, sizeof(char));
+						*dataLength = sizeof(char);
+						*operation  = SET_OP;
+						*id			= MIME_ID;
+						returnCode  = NEW;
 						break;
 					default:
 						returnCode = INVALID;
@@ -316,9 +318,11 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *set mime* */
-						*operation = SET_OP;
-						*id		   = MIME_ID;
-						returnCode = NEW;
+						*data		= calloc(1, sizeof(char));
+						*dataLength = sizeof(char);
+						*operation  = SET_OP;
+						*id			= MIME_ID;
+						returnCode  = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
