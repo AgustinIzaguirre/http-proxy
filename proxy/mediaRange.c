@@ -97,7 +97,7 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 	mrp->listMediaTypes[mrp->length][j] = '\0';
 	(mrp->length)++;
 
-	generateAndUpdateTimeTag(MIME_ID);
+	//	generateAndUpdateTimeTag(MIME_ID);
 }
 
 enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,
@@ -164,14 +164,4 @@ char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 	ans = addCharToString(ans, &sizeAns, '\0');
 
 	return ans;
-}
-
-void printMediaRange(MediaRangePtr_t mediaRange) {
-	int i = 0;
-	while (i < mediaRange->length) {
-		printf("%d: %d | %s | %d \n", i, mediaRange->canBeMatch[i],
-			   mediaRange->listMediaTypes[i], mediaRange->length);
-		i++;
-	}
-	return;
 }
