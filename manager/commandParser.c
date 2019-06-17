@@ -1,4 +1,5 @@
 #include <commandParser.h>
+#include <colors.h>
 
 int parseCommand(operation_t *operation, id_t *id, void **data,
 				 size_t *dataLength) {
@@ -468,7 +469,9 @@ void parseAuthenticationData(char **username, size_t *usernameLength,
 	*usernameLength = 0;
 
 	do {
+		setPrintStyle(BOLD);
 		printf("Username: ");
+		resetPrintStyle();
 
 		*usernameLength = readLine(username);
 
@@ -480,7 +483,9 @@ void parseAuthenticationData(char **username, size_t *usernameLength,
 	*passwordLength = 0;
 
 	do {
+		setPrintStyle(BOLD);
 		printf("Password: ");
+		resetPrintStyle();
 
 		*passwordLength = readLine(password);
 

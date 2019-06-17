@@ -4,6 +4,7 @@
 #include <linkedListADT.h>
 #include <time.h>
 #include <unistd.h>
+#include <colors.h>
 
 /* Initialize in zero all time-tags */
 timeTag_t timeTags[ID_QUANTITY] = {0};
@@ -23,30 +24,21 @@ linkedListADT_t recvFromSetStream = NULL;
 linkedListADT_t recvFromGetStream = NULL;
 
 static int authenticate(int server);
-
 static int parseAndSendRequests(int server, uint8_t *byeRead);
-
 static int newCommandHandler(int server, operation_t operation, id_t id,
 							 void *data, size_t dataLength, uint8_t *byeRead);
-
 static void invalidCommandHandler();
-
 static int recvAndPrintResponses(int server);
-
 static void setRecvFrom(uint16_t currentStreamNumber,
 						linkedListADT_t *recvFromCurrentStream,
 						linkedListADT_t *recvFromOtherStream);
-
 static void printInvalidCommand();
-
 static void manageAndPrintResponse(response_t response);
-
 static void manageAndPrintGetResponse(response_t response);
-
 static void manageAndPrintSetResponse(response_t response);
-
-/*****************************************************************************\
-\*****************************************************************************/
+static void printResponseHeader();
+static void printDottedSeparator();
+static void printContinuousSeparator();
 
 int main(int argc, char const *argv[]) {
 	char const *ip = DEFAULT_IP;
@@ -69,14 +61,20 @@ int main(int argc, char const *argv[]) {
 		return -1;
 	}
 
-	printf("\n\nWelcome to HTTP Proxy Manager!\n\n");
+	printContinuousSeparator();
+	setPrintStyle(BOLD_GREEN);
+	printf("\nWelcome to HTTP Proxy Manager!\n");
+	resetPrintStyle();
 
 	uint8_t byeRead;
 	int sent;
 	int read;
 
 	do {
-		printf("\n\n\n\n\n------ Enter commands ------\n\n");
+		printContinuousSeparator();
+		setPrintStyle(BOLD);
+		printf("\nENTER COMMANDS\n\n");
+		resetPrintStyle();
 
 		sent = parseAndSendRequests(server, &byeRead);
 
@@ -108,7 +106,10 @@ static int authenticate(int server) {
 	size_t passwordLength;
 	authenticationResponse_t response;
 
-	printf("\n\n-------- Authentication --------\n\n");
+	printContinuousSeparator();
+	setPrintStyle(BOLD);
+	printf("\nAUTHENTICATION\n\n");
+	resetPrintStyle();
 
 	do {
 		username	   = NULL;
@@ -145,8 +146,10 @@ static int authenticate(int server) {
 			}
 
 			if (response.status.authenticationStatus != OK_STATUS) {
-				printf(
-					"Incorrect username or password. Please, try again\n\n\n");
+				setPrintStyle(RED);
+				printf("\nIncorrect username or password. Please, try "
+					   "again\n\n\n");
+				resetPrintStyle();
 			}
 		}
 	} while (response.status.generalStatus != OK_STATUS);
@@ -309,13 +312,30 @@ static void setRecvFrom(uint16_t currentStreamNumber,
 }
 
 static void printInvalidCommand() {
-	printf("\n---------->> Response <<----------\n\n");
+	printResponseHeader();
 
+	setPrintStyle(RED);
 	printf("Invalid command\n");
+	resetPrintStyle();
+}
+
+static void printResponseHeader() {
+	printDottedSeparator();
+	setPrintStyle(BOLD);
+	printf("\nRESPONSE\n\n");
+	resetPrintStyle();
+}
+
+static void printDottedSeparator() {
+	printf("\n---------------------------------\n");
+}
+
+static void printContinuousSeparator() {
+	printf("_________________________________\n");
 }
 
 static void manageAndPrintResponse(response_t response) {
-	printf("\n---------->> Response <<----------\n\n");
+	printResponseHeader();
 
 	if (response.status.generalStatus == ERROR_STATUS) {
 		if (response.status.operationStatus == ERROR_STATUS) {
@@ -404,7 +424,9 @@ static void manageAndPrintGetResponse(response_t response) {
 
 static void manageAndPrintSetResponse(response_t response) {
 	if (response.status.timeTagStatus == OK_STATUS) {
+		setPrintStyle(GREEN);
 		printf("[Good timeTag. You override the resource!]\n");
+		resetPrintStyle();
 
 		timeTags[response.id] = response.timeTag;
 
@@ -436,6 +458,8 @@ static void manageAndPrintSetResponse(response_t response) {
 		storedData[response.id] = response.data;
 	}
 	else {
+		setPrintStyle(RED);
 		printf("[You aren't up to date, you need to get the resource first]\n");
+		resetPrintStyle();
 	}
 }

@@ -2,53 +2,33 @@
 
 static int sendSCTPMsg(int fd, void *msg, size_t msgLength,
 					   uint16_t streamNumber);
-
 /* If maxLengthToRead is not set, reads all the bytes in the socket fd */
 static int receiveSCTPMsg(int fd, void **buffer, int maxLengthToRead,
 						  struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
-
 static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort);
-
 static void setVersionBytes(void *data);
-
 static void *formatData(void *data, size_t dataLength,
 						size_t *formattedDataLength);
-
 static int getConcretData(int fd, uint8_t **data, size_t *dataLength);
-
 static void loadRecvAuthenticationResponse(
 	uint8_t *response, authenticationResponse_t *authenticationResponse);
-
 static uint64_t getVersion(uint8_t *response);
-
 static int recvGetResponse(int server, response_t *response);
-
 static int recvSetResponse(int server, response_t *response);
-
 static int recvTimeTag(int fd, timeTag_t *timeTag);
-
 /* Read and loads head byte and stream number */
 static int recvHeadByte(int fd, uint8_t *headByte, uint16_t *streamNumber);
-
 /* Read first byte and loads information to response struct */
 static int recvHeadByteAndLoadResponseInfo(int fd, response_t *response);
-
 static int recvGetRequest(int client, request_t *request);
-
 static int recvSetRequest(int client, request_t *request);
-
 /* Read first byte and loads information to request struct */
 static int recvHeadByteAndLoadRequestInfo(int fd, request_t *request);
-
 static char *allocateAndCopyString(char *source, size_t *length);
-
 static uint8_t getResponseHeadByte(responseStatus_t status);
-
 static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter);
 
 static char *errorMessage = NULL;
-/*****************************************************************************\
-\*****************************************************************************/
 
 static int sendSCTPMsg(int fd, void *msg, size_t msgLength,
 					   uint16_t streamNumber) {

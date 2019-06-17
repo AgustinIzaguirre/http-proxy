@@ -102,10 +102,8 @@ typedef enum returnCode_t returnCode_t;
 
 int parseCommand(operation_t *operation, id_t *id, void **data,
 				 size_t *dataLength);
-
 void parseAuthenticationData(char **username, size_t *usernameLength,
 							 char **password, size_t *passwordLength);
-
 void parseIPAndPortFromArguments(const char **ip, uint16_t *port, int argc,
 								 char const *argv[]);
 
