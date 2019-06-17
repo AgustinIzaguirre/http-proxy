@@ -94,6 +94,11 @@ unsigned standardClientWriteWithoutChunked(struct selector_key *key);
 unsigned writeToTransform(struct selector_key *key);
 
 /*
+ * Writes to transform unchunked message of write buffer
+ */
+unsigned writeToTransformChunked(struct selector_key *key);
+
+/*
  * Write to client from chunk buffer after transformation
  * and chunked
  */

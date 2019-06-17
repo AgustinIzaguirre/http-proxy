@@ -58,6 +58,9 @@ void parseChunkedInfoByChar(uint8_t l, struct unchunkParser *unchunkParser) {
 			else if (l == '\n') {
 				unchunkParser->state = CHUNKED_SIZE;
 			}
+			if (unchunkParser->bytes > 0) {
+				unchunkParser->bytes--;
+			}
 			break;
 	}
 }

@@ -92,7 +92,7 @@ unsigned transformBodyWrite(struct selector_key *key) {
 	}
 	else if (key->fd == transformBody->writeToTransformFd) {
 		if (getIsChunked(state)) {
-			ret = writeToTransform(key); // TODO chunked
+			ret = writeToTransformChunked(key);
 		}
 		else {
 			ret = writeToTransform(key);
@@ -381,6 +381,54 @@ unsigned writeToTransform(struct selector_key *key) {
 	return ret;
 }
 
+unsigned writeToTransformChunked(struct selector_key *key) {
+	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
+	struct unchunkParser *unchunkParser = &transformBody->unchunkParser;
+	buffer *inbuffer					= getWriteBuffer(GET_DATA(key));
+	buffer *chunkBuffer					= &transformBody->chunkedBuffer;
+	buffer *unchunkData					= &unchunkParser->unchunkedBuffer;
+	unsigned ret						= TRANSFORM_BODY;
+	uint8_t *pointer;
+	size_t count;
+	ssize_t bytesRead;
+	parseChunkedInfo(unchunkParser, inbuffer);
+	// if everything is read on buffer
+	if (!buffer_can_read(unchunkData)) {
+		return setFdInterestsWithTransformerCommand(key);
+	}
+
+	pointer   = buffer_read_ptr(unchunkData, &count);
+	bytesRead = write(key->fd, pointer, count);
+
+	if (bytesRead > 0) {
+		if (transformBody->transformCommandExecuted == FALSE) {
+			transformBody->transformCommandExecuted = TRUE;
+		}
+		buffer_read_adv(unchunkData, bytesRead);
+		if (!buffer_can_read(unchunkData) && transformBody->responseFinished) {
+			close(transformBody->writeToTransformFd);
+		}
+		ret = setFdInterestsWithTransformerCommand(key);
+	}
+	else if (transformBody->transformCommandExecuted == TRUE) {
+		setErrorDoneFd(key);
+		printf("error2:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		ret = ERROR;
+	}
+	else {
+		transformBody->commandStatus = EXEC_ERROR;
+		prepareChunkedBuffer(chunkBuffer, unchunkData);
+		ret = setStandardFdInterests(key);
+	}
+
+	if (transformBody->responseFinished && !buffer_can_read(inbuffer)) {
+		// closing pipe so that transform command finishes
+		close(transformBody->writeToTransformFd);
+	}
+
+	return ret;
+}
+
 unsigned writeToClient(struct selector_key *key) {
 	struct transformBody *transformBody = getTransformBodyState(GET_DATA(key));
 	buffer *buffer						= &transformBody->chunkedBuffer;
@@ -522,7 +570,7 @@ unsigned setFdInterestsWithTransformerCommand(struct selector_key *key) {
 		}
 	}
 	else {
-		if (buffer_can_read(unchunkBuffer)) {
+		if (buffer_can_read(unchunkBuffer) || buffer_can_read(writeBuffer)) {
 			transformWriteInterest |= OP_WRITE;
 		}
 	}
