@@ -225,9 +225,8 @@ int createDir(const char *dir) {
 
 	if (stat(dir, &st) == -1) {
 		if (mkdir(dir, 0777) == -1) {
-			fprintf(stderr,
-					"[LOG] Error: failed attempting to create the missing \
-				logs directory\n");
+			fprintf(stderr, "[LOG] Error: failed attempting to create the "
+							"missing logs directory\n");
 			return FAILED;
 		}
 	}
@@ -250,8 +249,8 @@ char *createPath(char *dir, log_t type) {
 
 	if (bytesWritten >= MAX_PATH_SIZE) {
 		free(newLogFilePath);
-		fprintf(stderr, "[LOG] Error: failed attempting to create the path to \
-			open//create the log file\n");
+		fprintf(stderr, "[LOG] Error: failed attempting to create the path to "
+						"open/create the log file\n");
 		return NULL;
 	}
 
@@ -259,9 +258,8 @@ char *createPath(char *dir, log_t type) {
 							MAX_PATH_SIZE - strlen(dir), "%s", log);
 
 	if (bytesWritten >= (MAX_PATH_SIZE - strlen(dir))) {
-		perror(
-			"[LOG] Error: failed attempting to create the path to open//create \
-			the log file\n");
+		fprintf(stderr, "[LOG] Error: failed attempting to create the path to "
+						"open/create the log file\n");
 		free(newLogFilePath);
 		return NULL;
 	}
@@ -320,9 +318,8 @@ int setClientAndHost(httpADT_t s, communication_t action) {
 
 	if (action == REQ) {
 		if (getIpAddresses(getClientAddress(s), client, NULL) != 0) {
-			fprintf(stderr,
-					"[LOG] Error: failed attempting to get the client and \
-				host addresses\n");
+			fprintf(stderr, "[LOG] Error: failed attempting to get the client "
+							"and host addresses\n");
 			return FAILED;
 		}
 
@@ -359,9 +356,8 @@ char *writeLogElemToLogEntry(char *curr, const char *end, const char *format,
 	int bytesWritten = snprintf(curr, end - curr, format, data);
 
 	if (bytesWritten >= (end - curr)) {
-		fprintf(stderr,
-				"[LOG] Error: failed attempting to create the log entry, \
-			the buffer ran out of space for the string\n");
+		fprintf(stderr, "[LOG] Error: failed attempting to create the log "
+						"entry, the buffer ran out of space for the string\n");
 		return NULL;
 	}
 
@@ -375,16 +371,14 @@ void writeToLog(log_t type, const char *logEntry) {
 
 	if ((logFileFd = open(logFilesPaths[type], (O_RDWR | O_APPEND | O_NONBLOCK),
 						  0666)) == -1) {
-		fprintf(stderr,
-				"[LOG] Error: failed attempting to open the log file in \
-			order to write to it\n");
+		fprintf(stderr, "[LOG] Error: failed attempting to open the log file "
+						"in order to write to it\n");
 		return;
 	}
 
 	if (write(logFileFd, logEntry, strlen(logEntry)) < 0) {
-		fprintf(stderr,
-				"[LOG] Error: failed attempting to write a new entry to \
-			the log file\n");
+		fprintf(stderr, "[LOG] Error: failed attempting to write a new entry "
+						"to the log file\n");
 	}
 
 	if (close(logFileFd) == -1) {
