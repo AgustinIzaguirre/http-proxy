@@ -283,10 +283,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 
 	pointer   = buffer_read_ptr(writeBuffer, &count);
 	bytesRead = send(key->fd, pointer, count, 0);
-	int i	 = 0;
-	while (i < bytesRead) {
-		fprintf(stderr, "%c", pointer[i++]);
-	}
+
 	if (bytesRead > 0) {
 		buffer_read_adv(writeBuffer, bytesRead);
 		if (!buffer_can_read(writeBuffer) && transformBody->responseFinished &&
@@ -456,10 +453,6 @@ unsigned writeToClient(struct selector_key *key) {
 	pointer   = buffer_read_ptr(buffer, &count);
 	bytesRead = send(key->fd, pointer, count, 0);
 
-	int i = 0;
-	while (i < bytesRead) {
-		fprintf(stderr, "%c", pointer[i++]);
-	}
 	if (bytesRead > 0) {
 		buffer_read_adv(buffer, bytesRead);
 		increaseTransferBytes(bytesRead);
