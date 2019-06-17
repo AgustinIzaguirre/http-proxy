@@ -2,53 +2,33 @@
 
 static int sendSCTPMsg(int fd, void *msg, size_t msgLength,
 					   uint16_t streamNumber);
-
 /* If maxLengthToRead is not set, reads all the bytes in the socket fd */
 static int receiveSCTPMsg(int fd, void **buffer, int maxLengthToRead,
 						  struct sctp_sndrcvinfo *sndRcvInfo, int *flags);
-
 static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort);
-
 static void setVersionBytes(void *data);
-
 static void *formatData(void *data, size_t dataLength,
 						size_t *formattedDataLength);
-
 static int getConcretData(int fd, uint8_t **data, size_t *dataLength);
-
 static void loadRecvAuthenticationResponse(
 	uint8_t *response, authenticationResponse_t *authenticationResponse);
-
 static uint64_t getVersion(uint8_t *response);
-
 static int recvGetResponse(int server, response_t *response);
-
 static int recvSetResponse(int server, response_t *response);
-
 static int recvTimeTag(int fd, timeTag_t *timeTag);
-
 /* Read and loads head byte and stream number */
 static int recvHeadByte(int fd, uint8_t *headByte, uint16_t *streamNumber);
-
 /* Read first byte and loads information to response struct */
 static int recvHeadByteAndLoadResponseInfo(int fd, response_t *response);
-
 static int recvGetRequest(int client, request_t *request);
-
 static int recvSetRequest(int client, request_t *request);
-
 /* Read first byte and loads information to request struct */
 static int recvHeadByteAndLoadRequestInfo(int fd, request_t *request);
-
 static char *allocateAndCopyString(char *source, size_t *length);
-
 static uint8_t getResponseHeadByte(responseStatus_t status);
-
 static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter);
 
 static char *errorMessage = NULL;
-/*****************************************************************************\
-\*****************************************************************************/
 
 static int sendSCTPMsg(int fd, void *msg, size_t msgLength,
 					   uint16_t streamNumber) {
@@ -530,6 +510,12 @@ static int recvGetResponse(int server, response_t *response) {
 	read = getConcretData(server, (uint8_t **) &response->data,
 						  &response->dataLength);
 
+	// printf("[protocol.c][recvGetResponse] GET-RESPONSE-DATA = "); // TODO
+	// LOGGER for (int i = 0; i < response->dataLength; i++) { 	printf(" 0x%02X
+	// ", ((uint8_t *) response->data)[i]);
+	// }
+	// printf("\n\n");
+
 	if (read < 0) {
 		return read;
 	}
@@ -686,6 +672,13 @@ static int recvSetRequest(int client, request_t *request) {
 	read = getConcretData(client, (uint8_t **) &request->data,
 						  &request->dataLength);
 
+	// printf("[protocol.c][recvSetRequest] SET-REQUEST-RECV-C-DATA = "); //TODO
+	// LOGGER for (int i = 0; i < request->dataLength; i++) { 	printf("0x%02X
+	// ",
+	// ((uint8_t *) request->data)[i]);
+	// }
+	// printf("\n\n");
+
 	if (read < 0) {
 		return read;
 	}
@@ -709,10 +702,10 @@ int recvAuthenticationRequest(int client, char **username, char **password,
 	}
 
 	uint8_t versionByte = buffer[0];
-	*hasSameVersion		= FALSE;
+	*hasSameVersion		= false;
 
 	if (versionByte == VERSION_BYTE) {
-		*hasSameVersion = TRUE;
+		*hasSameVersion = true;
 		size_t length;
 
 		*username = allocateAndCopyString((char *) (buffer + 1), &length);
@@ -838,14 +831,14 @@ int sendResponse(int client, response_t response) {
 	uint8_t headByte		   = getResponseHeadByte(response.status);
 	size_t formattedDataLength = 0;
 	void *formattedData		   = NULL;
-	uint8_t needsTimeTag	   = FALSE;
+	uint8_t needsTimeTag	   = false;
 
 	switch (response.operation) {
 		case GET_OP:
 			if (response.status.idStatus != ERROR_STATUS &&
 				response.status.operationStatus != ERROR_STATUS &&
 				response.status.timeTagStatus != OK_STATUS) {
-				needsTimeTag  = TRUE;
+				needsTimeTag  = true;
 				formattedData = formatData(response.data, response.dataLength,
 										   &formattedDataLength);
 			}
@@ -854,7 +847,7 @@ int sendResponse(int client, response_t response) {
 			if (response.status.idStatus != ERROR_STATUS &&
 				response.status.operationStatus != ERROR_STATUS &&
 				response.status.timeTagStatus == OK_STATUS) {
-				needsTimeTag = TRUE;
+				needsTimeTag = true;
 			}
 			break;
 		default:

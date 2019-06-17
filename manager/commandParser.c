@@ -1,6 +1,7 @@
 #include <commandParser.h>
+#include <colors.h>
 
-int parseCommand(operation_t *operation, id_t *id, void **data,
+int parseCommand(operation_t *operation, resId_t *id, void **data,
 				 size_t *dataLength) {
 	returnCode_t returnCode = IGNORE;
 	state_t currentState	= NOTHING;
@@ -8,8 +9,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 	*data		= NULL;
 	*dataLength = 0;
 	*id			= NO_ID;
-
-	// TODO: remember to use htons to transform to network-bytes
 
 	do {
 		currentChar = getchar();
@@ -82,9 +81,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					case 'm':
 						currentState = GET_M;
 						break;
-					case 'b':
-						currentState = GET_B;
-						break;
 					case 't':
 						currentState = GET_T;
 						break;
@@ -103,9 +99,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case 'm':
 						currentState = SET_M;
-						break;
-					case 'b':
-						currentState = SET_B;
 						break;
 					case 't':
 						currentState = SET_T;
@@ -138,12 +131,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					case ' ': /* space */
 						currentState = GET_MTR_;
 						break;
-					case '\n':
-						/* Set command information to *get mtr* */
-						*operation = GET_OP;
-						*id		   = MTR_ID;
-						returnCode = NEW;
-						break;
 					default:
 						returnCode = INVALID;
 				}
@@ -162,12 +149,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case 'b':
 						currentState = GET_MTR_B;
-						break;
-					case '\n':
-						/* Set command information to *get mtr* */
-						*operation = GET_OP;
-						*id		   = MTR_ID;
-						returnCode = NEW;
 						break;
 					default:
 						returnCode = INVALID;
@@ -203,17 +184,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					/* Set command information to *get mtr bt* */
 					*operation = GET_OP;
 					*id		   = MTR_BT_ID;
-					returnCode = NEW;
-				});
-				break;
-			case GET_B:
-				EXPECTS('f', GET_BF);
-				break;
-			case GET_BF:
-				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* Set command information to *get bf* */
-					*operation = GET_OP;
-					*id		   = BF_ID;
 					returnCode = NEW;
 				});
 				break;
@@ -256,76 +226,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 					returnCode = NEW;
 				});
 				break;
-			case SET_B:
-				EXPECTS('f', SET_BF);
-				break;
-			case SET_BF:
-				*dataLength = sizeof(uint32_t);
-				*data		= calloc(1, *dataLength);
-				EXPECTS_SPACE(SET_BF_);
-				break;
-			case SET_BF_:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						/* Keeps current state */
-						break;
-					case '0':
-					case '1':
-					case '2':
-					case '3':
-					case '4':
-					case '5':
-					case '6':
-					case '7':
-					case '8':
-					case '9':
-						**((uint32_t **) data) =
-							**((uint32_t **) data) * 10 + currentChar - '0';
-						currentState = SET_BF_DATA;
-						break;
-					default:
-						returnCode = INVALID;
-				}
-				break;
-			case SET_BF_DATA:
-				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						currentState = SET_BF_DATA_;
-						break;
-					case '0':
-					case '1':
-					case '2':
-					case '3':
-					case '4':
-					case '5':
-					case '6':
-					case '7':
-					case '8':
-					case '9':
-						**((uint32_t **) data) =
-							**((uint32_t **) data) * 10 + currentChar - '0';
-						currentState = SET_BF_DATA;
-						break;
-					case '\n':
-						/* Set command information to *get bf int* */
-						*operation = GET_OP;
-						*id		   = BF_ID;
-						returnCode = NEW;
-						break;
-					default:
-						returnCode = INVALID;
-				}
-				break;
-			case SET_BF_DATA_:
-				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* Set command information to *get bf int* */
-					*operation = GET_OP;
-					*id		   = BF_ID;
-					returnCode = NEW;
-				});
-				break;
 			case SET_T:
 				EXPECTS('f', SET_TF);
 				break;
@@ -360,7 +260,7 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 			case SET_TF_ON:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *set tf on* */
-					*operation			  = SET;
+					*operation			  = SET_OP;
 					*id					  = TF_ID;
 					*dataLength			  = sizeof(uint8_t);
 					*data				  = malloc(*dataLength);
@@ -374,7 +274,7 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 			case SET_TF_OFF:
 				EXPECTS_ENTER_ALLOWING_SPACES({
 					/* Set command information to *set tf off* */
-					*operation			  = SET;
+					*operation			  = SET_OP;
 					*id					  = TF_ID;
 					*dataLength			  = sizeof(uint8_t);
 					*data				  = malloc(*dataLength);
@@ -399,9 +299,11 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *set mime* */
-						*operation = SET_OP;
-						*id		   = MIME_ID;
-						returnCode = NEW;
+						*data		= calloc(1, sizeof(char));
+						*dataLength = sizeof(char);
+						*operation  = SET_OP;
+						*id			= MIME_ID;
+						returnCode  = NEW;
 						break;
 					default:
 						returnCode = INVALID;
@@ -415,9 +317,11 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 						break;
 					case '\n':
 						/* Set command information to *set mime* */
-						*operation = SET_OP;
-						*id		   = MIME_ID;
-						returnCode = NEW;
+						*data		= calloc(1, sizeof(char));
+						*dataLength = sizeof(char);
+						*operation  = SET_OP;
+						*id			= MIME_ID;
+						returnCode  = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
@@ -436,9 +340,12 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 				switch (currentChar) {
 					case '\n':
 						/* Set command info *set mime media-type* */
-						*operation = SET_OP;
-						*id		   = MIME_ID;
-						returnCode = NEW;
+						(*dataLength)++; /* Null terminated */
+						*data = realloc(*data, *dataLength);
+						*(*((char **) data) + *dataLength - 1) = '\0';
+						*operation							   = SET_OP;
+						*id									   = MIME_ID;
+						returnCode							   = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
@@ -486,15 +393,14 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 				break;
 			case SET_CMD_DATA:
 				switch (currentChar) {
-					case '\t':
-					case ' ': /* space */
-						currentState = SET_CMD_DATA_;
-						break;
 					case '\n':
 						/* Set command info *set cmd command* */
-						*operation = SET_OP;
-						*id		   = CMD_ID;
-						returnCode = NEW;
+						(*dataLength)++; /* Null terminated */
+						*data = realloc(*data, *dataLength);
+						*(*((char **) data) + *dataLength - 1) = '\0';
+						*operation							   = SET_OP;
+						*id									   = CMD_ID;
+						returnCode							   = NEW;
 						break;
 					default:
 						if (isprint(currentChar)) {
@@ -511,14 +417,6 @@ int parseCommand(operation_t *operation, id_t *id, void **data,
 							returnCode = INVALID;
 						}
 				}
-				break;
-			case SET_CMD_DATA_:
-				EXPECTS_ENTER_ALLOWING_SPACES({
-					/* Set command info *set mime media-type* */
-					*operation = SET_OP;
-					*id		   = MIME_ID;
-					returnCode = NEW;
-				});
 				break;
 		}
 	} while (returnCode == IGNORE);
@@ -569,7 +467,9 @@ void parseAuthenticationData(char **username, size_t *usernameLength,
 	*usernameLength = 0;
 
 	do {
+		setPrintStyle(BOLD);
 		printf("Username: ");
+		resetPrintStyle();
 
 		*usernameLength = readLine(username);
 
@@ -581,7 +481,9 @@ void parseAuthenticationData(char **username, size_t *usernameLength,
 	*passwordLength = 0;
 
 	do {
+		setPrintStyle(BOLD);
 		printf("Password: ");
+		resetPrintStyle();
 
 		*passwordLength = readLine(password);
 

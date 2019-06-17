@@ -8,6 +8,7 @@
 #include <netinet/sctp.h>
 #include <string.h>
 #include <errno.h>
+#include <stdbool.h>
 
 #define ALLOC_BLOCK 8
 #define STREAM_QUANTITY 2
@@ -17,9 +18,6 @@
 #define SET_STREAM 1
 
 #define VERSION 0
-
-#define TRUE 1
-#define FALSE 0
 
 #define MAX_ATTEMPTS 4 /* Used to setup SCTP Socket */
 
@@ -107,34 +105,22 @@ typedef struct {
 } request_t;
 
 char *getProtocolErrorMessage();
-
 int establishConnection(const char *serverIP, uint16_t serverPort);
-
 int sendAuthenticationRequest(int server, char *username, size_t usernameLength,
 							  char *password, size_t passwordLength);
-
 int recvAuthenticationRequest(int client, char **username, char **password,
 							  uint8_t *hasSameVersion);
-
 int sendAuthenticationResponse(int client,
 							   authenticationResponse_t authenticationResponse);
-
 int recvAuthenticationResponse(
 	int server, authenticationResponse_t *authenticationResponse);
-
 int sendByeRequest(int server);
-
 int sendGetRequest(int server, uint8_t id, timeTag_t timeTag);
-
 int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
 				   size_t dataLength);
-
 int recvRequest(int client, request_t *request);
-
 int recvResponse(int server, response_t *response);
-
 int sendResponse(int client, response_t response);
-
 int bindAndGetServerSocket(uint16_t port, char *ipFilter);
 
 #endif

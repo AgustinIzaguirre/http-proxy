@@ -1,4 +1,5 @@
 #include <mediaRange.h>
+#include <management.h>
 #include <utilities.h>
 
 #define isOWS(a) (a == ' ' || a == '\t')
@@ -51,13 +52,17 @@ MediaRangePtr_t createMediaRange(char const *string) {
 }
 
 void addMediaRange(MediaRangePtr_t mrp, char const *string) {
-	int i = 0, j = mrp->length;
+	if (((mrp->length) % BLOCK) == 0) {
+		mrp->listMediaTypes = realloc(mrp->listMediaTypes,
+									  ((mrp->length) + BLOCK) * sizeof(char *));
+	}
+	int i = 0, j = 0;
 	while (string[i] != '\0') {
 		if (string[i] == ',') {
-			if ((j % BLOCK) == 0) {
-				mrp->listMediaTypes[mrp->length] =
-					realloc(mrp->listMediaTypes[mrp->length],
-							(j + BLOCK) * sizeof(char));
+			if (((mrp->length) % BLOCK) == 0) {
+				mrp->listMediaTypes =
+					realloc(mrp->listMediaTypes,
+							((mrp->length) + BLOCK) * sizeof(char *));
 			}
 			mrp->listMediaTypes[mrp->length][j] = '\0';
 			(mrp->length)++;
@@ -73,6 +78,9 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 		}
 		else {
 			if ((j % BLOCK) == 0) {
+				if (j == 0) {
+					mrp->listMediaTypes[mrp->length] = NULL;
+				}
 				mrp->listMediaTypes[mrp->length] =
 					realloc(mrp->listMediaTypes[mrp->length],
 							(j + BLOCK) * sizeof(char));
@@ -88,6 +96,8 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 
 	mrp->listMediaTypes[mrp->length][j] = '\0';
 	(mrp->length)++;
+
+	generateAndUpdateTimeTag(MIME_ID);
 }
 
 enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,
@@ -116,6 +126,7 @@ void resetMediaRange(MediaRangePtr_t mediaRange) {
 		mediaRange->canBeMatch[i] = 0; // TODO: define can
 		i++;
 	}
+
 	return;
 }
 
@@ -130,20 +141,37 @@ void freeMediaRange(MediaRangePtr_t mrp) {
 	free(mrp);
 }
 
-char *showMediaTypeInString(MediaRangePtr_t mrp) {
+char *getMediaRangeAsString(MediaRangePtr_t mrp) {
 	char *ans			 = NULL;
 	unsigned int sizeAns = 0;
 	int i = 0, j = 0;
 	while (j < mrp->length) {
 		if (sizeAns != 0) {
-			addCharToString(ans, &sizeAns, ',');
+			ans = addCharToString(ans, &sizeAns, ',');
+			ans = addCharToString(ans, &sizeAns, ' ');
 		}
 		while ((mrp->listMediaTypes)[j][i] != '\0') {
-			addCharToString(ans, &sizeAns, (mrp->listMediaTypes)[j][i]);
+			if (sizeAns == 0 && strcmp((mrp->listMediaTypes)[j], ";") == 0) {
+				break;
+			}
+			ans = addCharToString(ans, &sizeAns, (mrp->listMediaTypes)[j][i]);
 			i++;
 		}
 		i = 0;
 		j++;
 	}
+
+	ans = addCharToString(ans, &sizeAns, '\0');
+
 	return ans;
+}
+
+void printMediaRange(MediaRangePtr_t mediaRange) {
+	int i = 0;
+	while (i < mediaRange->length) {
+		printf("%d: %d | %s | %d \n", i, mediaRange->canBeMatch[i],
+			   mediaRange->listMediaTypes[i], mediaRange->length);
+		i++;
+	}
+	return;
 }
