@@ -7,7 +7,6 @@ static manager_t *newManager();
 static int handleAuthenticatedRead(struct selector_key *key);
 static int handleNonAuthenticatedRead(struct selector_key *key);
 static uint8_t authenticate(char *username, char *password);
-static void initializeTimeTags();
 static void manageGetRequest(manager_t *client);
 static void manageSetRequest(manager_t *client);
 static uint8_t isValidGetId(resId_t id);
@@ -54,8 +53,6 @@ int listenManagementSocket(int managementSocket, size_t backlogQuantity) {
 		return -1;
 	}
 
-	initializeTimeTags();
-
 	return 0;
 }
 
@@ -63,7 +60,7 @@ const char *getManagementErrorMessage() {
 	return errorMessage;
 }
 
-static void initializeTimeTags() {
+void initializeTimeTags() {
 	timeTag_t initialTimeTag = time(NULL);
 
 	for (int i = 0; i < ID_QUANTITY; i++) {

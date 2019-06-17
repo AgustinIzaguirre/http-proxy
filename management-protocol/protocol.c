@@ -75,14 +75,32 @@ int establishConnection(const char *serverIP, uint16_t serverPort) {
 }
 
 static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort) {
-	struct sockaddr_in serverAddress;
-	struct sctp_initmsg initMsg;
-	struct sctp_event_subscribe events;
+	struct sockaddr_storage *addr = calloc(1, sizeof(struct sockaddr_storage));
 
-	int server = socket(AF_INET, SOCK_STREAM, IPPROTO_SCTP);
+	if (inet_pton(AF_INET, serverIP,
+				  &(((struct sockaddr_in *) addr)->sin_addr.s_addr)) == 1) {
+		addr->ss_family							  = AF_INET;
+		((struct sockaddr_in *) addr)->sin_family = AF_INET;
+		((struct sockaddr_in *) addr)->sin_port   = htons(serverPort);
+	}
+	else if (inet_pton(AF_INET6, serverIP,
+					   &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr)) ==
+			 1) {
+		addr->ss_family								= AF_INET6;
+		((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
+		((struct sockaddr_in6 *) addr)->sin6_port   = htons(serverPort);
+	}
+	else {
+		free(addr);
+		errorMessage = "Invalid IP interface, fails to convert it";
+		return -1;
+	}
+
+	int server = socket(addr->ss_family, SOCK_STREAM, IPPROTO_SCTP);
 
 	CHECK_FOR_ERROR(server);
 
+	struct sctp_initmsg initMsg;
 	memset(&initMsg, 0, sizeof(initMsg));
 
 	initMsg.sinit_num_ostreams  = STREAM_QUANTITY;
@@ -91,24 +109,11 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort) {
 
 	setsockopt(server, IPPROTO_SCTP, SCTP_INITMSG, &initMsg, sizeof(initMsg));
 
-	memset(&serverAddress, 0, sizeof(serverAddress));
-
-	serverAddress.sin_family = AF_INET;
-	serverAddress.sin_port   = htons(serverPort);
-
-	/* Convert IPv4 and (TODO: IPv6) addresses from text to binary form */
-	int convert = inet_pton(AF_INET, serverIP, &serverAddress.sin_addr.s_addr);
-
-	if (convert <= 0) {
-		errorMessage = "Invalid Server IP, fails to convert it";
-		return -1;
-	}
-
-	int connection = connect(server, (struct sockaddr *) &serverAddress,
-							 sizeof(serverAddress));
+	int connection = connect(server, (struct sockaddr *) addr, sizeof(*addr));
 
 	CHECK_FOR_ERROR(connection);
 
+	struct sctp_event_subscribe events;
 	memset((void *) &events, 0, sizeof(events));
 
 	/*	By default returns only the data read.
@@ -126,51 +131,26 @@ int bindAndGetServerSocket(uint16_t port, char *ipFilter) {
 }
 
 static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter) {
-	struct addrinfo hint;
-	struct addrinfo *res = NULL;
-	int ret;
-
-	memset(&hint, 0, sizeof(hint));
-
-	hint.ai_family = PF_UNSPEC;
-	hint.ai_flags  = AI_NUMERICHOST;
-
-	ret = getaddrinfo(ipFilter, NULL, &hint, &res);
-
-	if (ret != 0) {
-		errorMessage = "Can't get interface address info\n";
-		return -1;
-	}
-
 	struct sockaddr_storage *addr = calloc(1, sizeof(struct sockaddr_storage));
-	struct sctp_initmsg initMsg;
-	int convert;
 
-	switch (res->ai_family) {
-		case AF_INET:
-			addr->ss_family							  = AF_INET;
-			((struct sockaddr_in *) addr)->sin_family = AF_INET;
-			((struct sockaddr_in *) addr)->sin_port   = htons(port);
-			convert =
-				inet_pton(addr->ss_family, ipFilter,
-						  &(((struct sockaddr_in *) addr)->sin_addr.s_addr));
-			break;
-		case AF_INET6:
-			addr->ss_family								= AF_INET6;
-			((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
-			((struct sockaddr_in6 *) addr)->sin6_port   = htons(port);
-			convert =
-				inet_pton(addr->ss_family, ipFilter,
-						  &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr));
-			break;
+	if (inet_pton(AF_INET, ipFilter,
+				  &(((struct sockaddr_in *) addr)->sin_addr.s_addr)) == 1) {
+		addr->ss_family							  = AF_INET;
+		((struct sockaddr_in *) addr)->sin_family = AF_INET;
+		((struct sockaddr_in *) addr)->sin_port   = htons(port);
 	}
-
-	if (convert == 0) {
+	else if (inet_pton(AF_INET6, ipFilter,
+					   &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr)) ==
+			 1) {
+		addr->ss_family								= AF_INET6;
+		((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
+		((struct sockaddr_in6 *) addr)->sin6_port   = htons(port);
+	}
+	else {
+		free(addr);
 		errorMessage = "Invalid IP interface, fails to convert it";
 		return -1;
 	}
-
-	CHECK_FOR_ERROR(convert);
 
 	int fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_SCTP);
 
@@ -180,14 +160,15 @@ static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter) {
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
 
 	if (addr->ss_family == AF_INET6) {
-		/* If AF_INET6 avoid  */
-		setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &(int){0}, sizeof(int));
+		/* If AF_INET6, listen in IPv6 only */
+		setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &(int){1}, sizeof(int));
 	}
 
 	int binded = bind(fd, (struct sockaddr *) addr, sizeof(*addr));
 
 	CHECK_FOR_ERROR(binded);
 
+	struct sctp_initmsg initMsg;
 	memset(&initMsg, 0, sizeof(initMsg));
 
 	initMsg.sinit_num_ostreams  = STREAM_QUANTITY;

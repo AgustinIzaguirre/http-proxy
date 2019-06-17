@@ -45,34 +45,71 @@ int main(const int argc, const char **argv) {
 	signal(SIGINT, sigtermHandler);  /* Handling SIGINT */
 
 	close(0); /* Nothing to read from stdin */
-	unsigned proxyPort		   = getHttpPort(getConfiguration());
-	unsigned managementPort	= getManagementPort(getConfiguration());
-	char *httpInterfaces	   = getHttpInterfaces(getConfiguration());
-	char *managementInterfaces = getManagementInterfaces(getConfiguration());
-	selector_status ss		   = SELECTOR_SUCCESS;
-	fd_selector selector	   = NULL;
-	const int serverSocket	 = prepareTCPSocket(proxyPort, httpInterfaces);
+	unsigned proxyPort		  = getHttpPort(getConfiguration());
+	unsigned managementPort   = getManagementPort(getConfiguration());
+	char *httpInterface		  = getHttpInterfaces(getConfiguration());
+	char *managementInterface = getManagementInterfaces(getConfiguration());
+	selector_status ss		  = SELECTOR_SUCCESS;
+	fd_selector selector	  = NULL;
 
-	if (serverSocket == ERROR) {
-		goto finally;
+	int httpSocketQty;
+	int httpSockets[2];
+	int managementSocketQty;
+	char *managementInterfaces[2];
+	int managementSockets[2];
+
+	if (httpInterface == NULL) {
+		httpSocketQty = 2;
+		httpSockets[0] =
+			prepareTCPSocket(proxyPort, DEFAULT_PROXY_IPV4_INTERFACE);
+		httpSockets[1] =
+			prepareTCPSocket(proxyPort, DEFAULT_PROXY_IPV6_INTERFACE);
+	}
+	else {
+		httpSocketQty  = 1;
+		httpSockets[0] = prepareTCPSocket(proxyPort, httpInterface);
 	}
 
-	/* Set management socket */
-	const int managementSocket = bindAndGetServerSocket(
-		managementPort, managementInterfaces == NULL ?
-							DEFAULT_MANAGEMENT_INTERFACE :
-							managementInterfaces);
-
-	if (managementSocket < 0) {
-		goto finally;
+	for (int i = 0; i < httpSocketQty; i++) {
+		if (httpSockets[i] == ERROR) {
+			goto finally;
+		}
 	}
 
-	if (listenManagementSocket(managementSocket, BACKLOG_QTY) < 0) {
-		errorMessage = getManagementErrorMessage();
-		goto finally;
+	if (managementInterface == NULL) {
+		managementSocketQty		= 2;
+		managementInterfaces[0] = DEFAULT_MANAGEMENT_IPV4_INTERFACE;
+		managementInterfaces[1] = DEFAULT_MANAGEMENT_IPV6_INTERFACE;
+		managementSockets[0] =
+			bindAndGetServerSocket(managementPort, managementInterfaces[0]);
+		managementSockets[1] =
+			bindAndGetServerSocket(managementPort, managementInterfaces[1]);
+	}
+	else {
+		managementSocketQty		= 1;
+		managementInterfaces[0] = managementInterface;
+		managementSockets[0] =
+			bindAndGetServerSocket(managementPort, managementInterface);
 	}
 
-	fprintf(stdout, "Management: Listening on SCTP port %d\n", managementPort);
+	for (int i = 0; i < managementSocketQty; i++) {
+		if (managementSockets[i] < 0) {
+			goto finally;
+		}
+	}
+
+	for (int i = 0; i < managementSocketQty; i++) {
+		if (listenManagementSocket(managementSockets[i], BACKLOG_QTY) < 0) {
+			errorMessage = getManagementErrorMessage();
+			goto finally;
+		}
+
+		fprintf(stdout,
+				"Management: Listening on SCTP interface = %s port %d\n",
+				managementInterfaces[i], managementPort);
+	}
+
+	initializeTimeTags();
 
 	const struct selector_init conf = {
 		.signal = SIGALRM,
@@ -100,10 +137,13 @@ int main(const int argc, const char **argv) {
 									.handle_close = NULL, /* nothing to free */
 									.handle_block = NULL};
 
-	ss = selector_register(selector, serverSocket, &http, OP_READ, NULL);
-	if (ss != SELECTOR_SUCCESS) {
-		errorMessage = "Registering fd";
-		goto finally;
+	for (int i = 0; i < httpSocketQty; i++) {
+		ss = selector_register(selector, httpSockets[i], &http, OP_READ, NULL);
+
+		if (ss != SELECTOR_SUCCESS) {
+			errorMessage = "Registering fd";
+			goto finally;
+		}
 	}
 
 	const struct fd_handler management = {
@@ -112,11 +152,14 @@ int main(const int argc, const char **argv) {
 		.handle_close = NULL, /* nothing to free */
 		.handle_block = NULL};
 
-	ss = selector_register(selector, managementSocket, &management, OP_READ,
-						   NULL);
-	if (ss != SELECTOR_SUCCESS) {
-		errorMessage = "Registering fd";
-		goto finally;
+	for (int i = 0; i < managementSocketQty; i++) {
+		ss = selector_register(selector, managementSockets[i], &management,
+							   OP_READ, NULL);
+
+		if (ss != SELECTOR_SUCCESS) {
+			errorMessage = "Registering fd";
+			goto finally;
+		}
 	}
 
 	while (!done) {
@@ -153,18 +196,16 @@ finally:
 	selector_close();
 	httpPoolDestroy();
 
-	if (serverSocket >= 0) {
-		close(serverSocket);
+	for (int i = 0; i < httpSocketQty; i++) {
+		if (httpSockets[i] >= 0) {
+			close(httpSockets[i]);
+		}
 	}
 
 	return ret;
 }
 
-const int prepareTCPSocket(unsigned port, char *interface) {
-	char *filterInterface =
-		interface == NULL ? DEFAULT_PROXY_INTERFACE : interface;
-	int onlyIPv6 = interface == NULL ? 0 : 1;
-
+const int prepareTCPSocket(unsigned port, char *filterInterface) {
 	struct sockaddr_storage *addr = calloc(1, sizeof(struct sockaddr_storage));
 
 	if (inet_pton(AF_INET, filterInterface,
@@ -194,13 +235,12 @@ const int prepareTCPSocket(unsigned port, char *interface) {
 		return ERROR;
 	}
 
-	fprintf(stdout, "HTTP Proxy: Listening on TCP interface = %s%s port = %d\n",
-			filterInterface, onlyIPv6 ? "" : " (IPv4 & IPv6)", port);
+	fprintf(stdout, "HTTP Proxy: Listening on TCP interface = %s port = %d\n",
+			filterInterface, port);
 
 	if (addr->ss_family == AF_INET6) {
-		/* If AF_INET6 and default interface, listen in IPv6 and IPv4 */
-		/* Dual stack in one socket */
-		setsockopt(currentSocket, IPPROTO_IPV6, IPV6_V6ONLY, &onlyIPv6,
+		/* If AF_INET6, listen in IPv6 only */
+		setsockopt(currentSocket, IPPROTO_IPV6, IPV6_V6ONLY, &(int){1},
 				   sizeof(int));
 	}
 

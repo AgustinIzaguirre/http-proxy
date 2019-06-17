@@ -41,5 +41,6 @@ const char *getManagementErrorMessage();
 timeTag_t generateAndUpdateTimeTag(uint8_t id);
 int listenManagementSocket(int managementSocket, size_t backlogQuantity);
 void managementPassiveAccept(struct selector_key *key);
+void initializeTimeTags();
 
 #endif
