@@ -9,7 +9,6 @@ struct handleResponse {
 	buffer requestDataBuffer;
 	uint8_t requestData[BUFFER_SIZE];
 	uint8_t responseFinished;
-	// other info
 };
 
 /*
@@ -31,6 +30,7 @@ unsigned responseRead(struct selector_key *key);
  * Reads from client fd into requestDataBuffer
  */
 unsigned readFromClient(struct selector_key *key);
+
 /*
  * Writes from writeBuffer to clientFd
  */

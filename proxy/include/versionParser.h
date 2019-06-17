@@ -31,6 +31,11 @@ struct versionParser {
 void parseVersionInit(struct versionParser *parser);
 
 /*
+ * Destroy parser
+ */
+void parseVersionDestroy(struct versionParser *parser);
+
+/*
  * Parse a char
  * Returns true if the parse has finish and false otherwise
  */

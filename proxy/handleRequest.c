@@ -7,6 +7,9 @@
 #include <headersParser.h>
 #include <utilities.h>
 
+/*
+ * Returns buffer to read from to write on originFd
+ */
 static buffer *getCurrentBuffer(httpADT_t state);
 
 void requestInit(const unsigned state, struct selector_key *key) {
@@ -44,7 +47,6 @@ unsigned requestRead(struct selector_key *key) {
 						 begining + bytesRead);
 		}
 
-		// check if request finished TODO
 		ret = setAdecuateFdInterests(key);
 	}
 	else {
@@ -63,7 +65,8 @@ unsigned requestWrite(struct selector_key *key) {
 	ssize_t bytesRead;
 
 	if (handleRequest->requestState == FIRST_BUFFER &&
-		!buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
+		!buffer_can_read(&handleRequest->parseHeaders.valueBuffer) &&
+		handleRequest->parseHeaders.state != BODY_START) {
 		parseHeaders(&handleRequest->parseHeaders,
 					 getFinishParserBuffer(GET_DATA(key)), 0, 0);
 		if (!buffer_can_read(getFinishParserBuffer(GET_DATA(key)))) {
@@ -81,7 +84,6 @@ unsigned requestWrite(struct selector_key *key) {
 	bytesRead = send(key->fd, pointer, count, 0);
 
 	if (bytesRead > 0) {
-		// parseRead
 		buffer_read_adv(readBuffer, bytesRead);
 		increaseTransferBytes(bytesRead);
 		ret = setAdecuateFdInterests(key);
@@ -129,25 +131,16 @@ unsigned setAdecuateFdInterests(struct selector_key *key) {
 	return ret;
 }
 
-// TODO remove function deprecated
-unsigned getAdecuateResponseState(struct selector_key *key) {
-	configurationADT config = getConfiguration();
-	unsigned ret;
-	if (getIsTransformationOn(config)) {
-		ret = HANDLE_RESPONSE_WITH_TRANSFORMATION;
-	}
-	else {
-		ret = HANDLE_RESPONSE;
-	}
-
-	return ret;
-}
-
 static buffer *getCurrentBuffer(httpADT_t state) {
 	struct handleRequest *handleRequest = getHandleRequestState(state);
+
 	if (handleRequest->parseHeaders.state != BODY_START ||
 		buffer_can_read(&handleRequest->parseHeaders.valueBuffer)) {
 		return &handleRequest->parseHeaders.valueBuffer;
+	}
+	else if (handleRequest->parseHeaders.state == BODY_START &&
+			 buffer_can_read(getFinishParserBuffer(state))) {
+		return getFinishParserBuffer(state);
 	}
 	else {
 		return getReadBuffer(state);

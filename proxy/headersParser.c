@@ -20,17 +20,31 @@ void headersParserInit(struct headersParser *header, struct selector_key *key,
 	header->mimeIndex		   = 0;
 	header->censure			   = FALSE;
 	header->isMime			   = FALSE;
+	header->isTransfer		   = FALSE;
+	header->isChunked		   = FALSE;
 	header->requestLineBuffer  = getRequestLineBuffer(GET_DATA(key));
 	header->responseLineBuffer = getResponseLineBuffer(GET_DATA(key));
 	header->isRequest		   = isRequest;
 	header->transformContent   = FALSE;
 	header->mediaRangeCurrent  = 0;
 	header->mediaRange		   = getMediaRangeHTTP(GET_DATA(key));
+	header->tranferIndex	   = 0;
+	header->contentIndex	   = 0;
+	header->isEncoded		   = FALSE;
+	header->hasEncode		   = FALSE;
+	header->isChar			   = FALSE;
+	header->willTransform	  = FALSE;
+
+	header->firstLine = 0;
+
+	memset(header->mimeValue, 0, MAX_MIME_HEADER);
+	memset(header->transferValue, 0, CHUNKED_LENGTH + 1);
+	memset(header->contentValue, 0, IDENTITY_LENGTH + 1);
 
 	buffer_init(&(header->headerBuffer), MAX_HEADER_LENGTH, header->headerBuf);
 	buffer_init(&(header->valueBuffer),
 				BUFFER_SIZE + 30 + 20 + MAX_HOP_BY_HOP_HEADER_LENGTH,
-				header->valueBuf); // TODO update with configuration buffer size
+				header->valueBuf);
 }
 
 void parseHeaders(struct headersParser *header, buffer *input, int begining,
@@ -40,14 +54,11 @@ void parseHeaders(struct headersParser *header, buffer *input, int begining,
 
 	while (l) {
 		parseHeadersByChar(l, header);
-		printf("%c", l);
 		if (header->state == HEADER_DONE) {
-			printf("%s\n", header->currHeader);
 			resetHeaderParser(header);
 		}
 		else if (header->state == BODY_START) {
 			addLastHeaders(header);
-			printf("body start\n");
 			return;
 		}
 		buffer_write_ptr(&header->valueBuffer, &spaceLeft);
@@ -62,84 +73,25 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 	int state = header->state;
 	switch (state) {
 		case FIRST_LINE:
-			if (l == '\n') {
-				header->state = HEADERS_START;
-			}
-			else if (header->isRequest) {
-				buffer_write(header->requestLineBuffer, l);
-			}
-			else {
-				buffer_write(header->responseLineBuffer, l);
-			}
-			buffer_write(&header->valueBuffer, l);
+			handleFirstLine(l, header);
 			break;
+
 		case HEADERS_START:
-			if (l == '\n') {
-				header->state = BODY_START;
-			}
-			else if (l == '\r') {
-				header->state = HEADER_END;
-			}
-			else if (l == ':') {
-				header->censure = FALSE;
-				header->state   = HEADER_VALUE;
-			}
-			else {
-				header->currHeader[header->headerIndex++] = tolower(l);
-				header->state							  = HEADER_NAME;
-			}
+			handleHeadersStart(l, header);
 			break;
+
 		case HEADER_NAME:
-			if (l == ':') {
-				header->currHeader[header->headerIndex++] = 0;
-				isCensureHeader(header);
-				header->state = HEADER_VALUE;
-			}
-			else {
-				header->currHeader[header->headerIndex++] = tolower(l);
-			}
-
-			if (header->headerIndex == MAX_HOP_BY_HOP_HEADER_LENGTH) {
-				header->headerIndex++; // TODO fix better
-				copyBuffer(header);
-				header->headerIndex = 0;
-				header->state		= HEADER_VALUE;
-			}
+			handleHeadersName(l, header);
 			break;
+
 		case HEADER_VALUE:
-			if (l == '\n') {
-				header->state = HEADER_DONE;
-			}
-			else {
-				if (header->isMime && l != '\r') {
-					if (!isOWS(l) && l != ';' &&
-						header->mediaRangeCurrent != -1) {
-						header->transformContent =
-							doesMatchAt((header->mediaRangeCurrent)++, l,
-										header->mediaRange);
-					}
-					else if (header->mediaRangeCurrent != 0) {
-						header->mediaRangeCurrent = -1;
-					}
-				}
-			}
-			if (!header->censure) {
-				buffer_write(&header->valueBuffer, l);
-			}
+			handleHeaderValue(l, header);
 			break;
-		case HEADER_END:
-			if (l == '\n') {
-				header->state = BODY_START;
-			}
-			else if (l != ':') {
-				header->currHeader[header->headerIndex++] = tolower(l);
-				header->state							  = HEADER_NAME;
-			}
-			else {
-				header->state = HEADER_VALUE;
-			}
 
+		case HEADER_END:
+			handleHeaderEnd(l, header);
 			break;
+
 		case HEADER_DONE:
 		case BODY_START:
 			break;
@@ -152,11 +104,16 @@ void parseHeadersByChar(char l, struct headersParser *header) {
 }
 
 void resetHeaderParser(struct headersParser *header) {
-	header->headerIndex = 0;
-	header->mimeIndex   = 0;
-	header->state		= HEADERS_START;
-	header->censure		= FALSE;
-	header->isMime		= FALSE;
+	header->headerIndex  = 0;
+	header->tranferIndex = 0;
+	header->mimeIndex	= 0;
+	header->contentIndex = 0;
+	header->state		 = HEADERS_START;
+	header->censure		 = FALSE;
+	header->isMime		 = FALSE;
+	header->isTransfer   = FALSE;
+	header->isChar		 = FALSE;
+	header->isEncoded	= FALSE;
 }
 
 static void isCensureHeader(struct headersParser *header) {
@@ -166,8 +123,7 @@ static void isCensureHeader(struct headersParser *header) {
 	}
 	else if (strcmp(header->currHeader, "keep-alive") == 0 ||
 			 strcmp(header->currHeader, "connection") == 0 ||
-			 strcmp(header->currHeader, "upgrade") == 0 ||
-			 strcmp(header->currHeader, "expect") == 0) {
+			 strcmp(header->currHeader, "upgrade") == 0) {
 		header->censure = TRUE;
 	}
 	else if (getIsTransformationOn(getConfiguration()) &&
@@ -176,11 +132,21 @@ static void isCensureHeader(struct headersParser *header) {
 	}
 	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "transfer-encoding") == 0) {
-		header->censure = TRUE;
+		header->isTransfer = TRUE;
+		header->censure	= TRUE;
 	}
 	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
 			 strcmp(header->currHeader, "content-length") == 0) {
 		header->censure = TRUE;
+	}
+	else if (getIsTransformationOn(getConfiguration()) && !header->isRequest &&
+			 strcmp(header->currHeader, "content-encoding") == 0) {
+		header->isEncoded	 = TRUE;
+		header->hasEncode	 = TRUE;
+		header->willTransform = FALSE;
+		header->censure		  = FALSE;
+		copyBuffer(header);
+		buffer_write(&header->valueBuffer, ':');
 	}
 	else {
 		if (strcmp(header->currHeader, "content-type") == 0 &&
@@ -224,5 +190,141 @@ void copyBuffer(struct headersParser *header) {
 void resetValueBuffer(struct headersParser *header) {
 	if (!buffer_can_read(&header->valueBuffer)) {
 		header->valueIndex = 0;
+	}
+}
+
+void compareWithChunked(struct headersParser *header) {
+	if (strcmp((char *) header->transferValue, "chunked") == 0) {
+		header->isChunked = TRUE;
+	}
+}
+
+void compareWithIdentity(struct headersParser *header) {
+	if (strcmp((char *) header->contentValue, "identity") == 0) {
+		header->willTransform = TRUE;
+	}
+}
+
+uint8_t getTransformEncode(struct headersParser *header) {
+	if (!header->hasEncode || header->willTransform) {
+		return TRUE;
+	}
+	else {
+		return FALSE;
+	}
+}
+
+inline void handleFirstLine(char l, struct headersParser *header) {
+	if (l == '\n') {
+		if (header->firstLine == IS_100) {
+			header->state = FIRST_LINE;
+		}
+		else {
+			header->state = HEADERS_START;
+		}
+	}
+	else if (header->isRequest) {
+		buffer_write(header->requestLineBuffer, l);
+	}
+	else {
+		buffer_write(header->responseLineBuffer, l);
+		if (header->firstLine <= 0) {
+			header->firstLine++;
+			if ((header->firstLine == 10 && l != '1') ||
+				(header->firstLine == 11 && l != '0')) {
+				header->firstLine = IS_NOT_100;
+			}
+			else if (header->firstLine == 12 && l != '0') {
+				header->firstLine = IS_100;
+			}
+		}
+	}
+	buffer_write(&header->valueBuffer, l);
+}
+
+inline void handleHeadersStart(char l, struct headersParser *header) {
+	if (l == '\n') {
+		header->state = BODY_START;
+	}
+	else if (l == '\r') {
+		header->state = HEADER_END;
+	}
+	else if (l == ':') {
+		header->censure = FALSE;
+		header->state   = HEADER_VALUE;
+	}
+	else {
+		header->currHeader[header->headerIndex++] = tolower(l);
+		header->state							  = HEADER_NAME;
+	}
+}
+
+inline void handleHeadersName(char l, struct headersParser *header) {
+	if (l == ':') {
+		header->currHeader[header->headerIndex++] = 0;
+		isCensureHeader(header);
+		header->state = HEADER_VALUE;
+	}
+	else {
+		header->currHeader[header->headerIndex++] = tolower(l);
+	}
+
+	if (header->headerIndex == MAX_HOP_BY_HOP_HEADER_LENGTH) {
+		header->headerIndex++;
+		copyBuffer(header);
+		header->headerIndex = 0;
+		header->state		= HEADER_VALUE;
+	}
+}
+
+inline void handleHeaderValue(char l, struct headersParser *header) {
+	if (l == '\n') {
+		header->state = HEADER_DONE;
+	}
+	else {
+		if (l != '\t' && l != ' ') {
+			header->isChar = TRUE;
+		}
+		if (header->isMime && l != '\r') {
+			if (!isOWS(l) && l != ';' && header->mediaRangeCurrent != -1) {
+				header->transformContent = doesMatchAt(
+					(header->mediaRangeCurrent)++, l, header->mediaRange);
+			}
+			else if (header->mediaRangeCurrent != 0) {
+				header->mediaRangeCurrent = -1;
+			}
+		}
+		else if (header->isTransfer && l != '\r' &&
+				 header->tranferIndex <= CHUNKED_LENGTH && header->isChar) {
+			header->transferValue[header->tranferIndex++] = tolower(l);
+			if (header->tranferIndex == CHUNKED_LENGTH) {
+				header->transferValue[header->tranferIndex++] = 0;
+				compareWithChunked(header);
+			}
+		}
+		else if (header->isEncoded && l != '\r' &&
+				 header->contentIndex <= IDENTITY_LENGTH && header->isChar) {
+			header->contentValue[header->contentIndex++] = tolower(l);
+			if (header->contentIndex == IDENTITY_LENGTH) {
+				header->contentValue[header->contentIndex++] = 0;
+				compareWithIdentity(header);
+			}
+		}
+	}
+	if (!header->censure) {
+		buffer_write(&header->valueBuffer, l);
+	}
+}
+
+inline void handleHeaderEnd(char l, struct headersParser *header) {
+	if (l == '\n') {
+		header->state = BODY_START;
+	}
+	else if (l != ':') {
+		header->currHeader[header->headerIndex++] = tolower(l);
+		header->state							  = HEADER_NAME;
+	}
+	else {
+		header->state = HEADER_VALUE;
 	}
 }

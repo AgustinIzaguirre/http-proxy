@@ -46,7 +46,8 @@ void parseInit(const unsigned state, struct selector_key *key) {
 void parseDestroy(const unsigned state, struct selector_key *key) {
 	struct parseRequest *parseRequest = getParseRequestState(GET_DATA(key));
 	setRequestMethod(GET_DATA(key), getMethod(&(parseRequest->methodParser)));
-	// TODO:maybe more things
+	parseVersionDestroy(&parseRequest->versionParser);
+	parseTargetDestroy(&parseRequest->targetParser);
 }
 
 unsigned parseRead(struct selector_key *key) {
@@ -276,7 +277,7 @@ int handleExitToConnect(struct selector_key *key,
 		ret = ERROR_CLIENT;
 	}
 	else {
-		ret = blockingToResolvName(key, key->fd); // TODO
+		ret = blockingToResolvName(key, key->fd);
 	}
 	return ret;
 }

@@ -16,6 +16,7 @@ int blockingToResolvName(struct selector_key *key, int fdClient) {
 	args[1]		= malloc(sizeof(struct selector_key));
 	memcpy(args[1], key, sizeof(struct selector_key));
 	((struct selector_key *) (args[1]))->fd = fdClient;
+	setSelectorCopy(GET_DATA(key), args);
 
 	if (-1 == pthread_create(&tid, NULL,
 							 (void *(*) (void *) )(addressResolvName),
@@ -39,9 +40,10 @@ void *addressResolvName(void **data) {
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family   = PF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags |= AI_CANONNAME;
+	hints.ai_flags	= AI_CANONNAME;
 
 	errcode = getaddrinfo(host, NULL, &hints, &res);
+
 	if (errcode != 0) {
 		selector_notify_block(key->s, key->fd);
 		return (void *) -1;
@@ -140,7 +142,5 @@ int connectToOrigin(struct selector_key *key, struct addrinfo *ipEntry) {
 	}
 	incrementReferences(currentState);
 
-	increaseConcurrentConections();
-	increaseHistoricAccess();
 	return HANDLE_REQUEST;
 }

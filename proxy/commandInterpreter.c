@@ -55,7 +55,7 @@ int readOptions(const int argc, char *const *argv) {
 				break;
 
 			case 't':
-				setCommand(getConfiguration(), optarg);
+				setCommandAndTransformations(getConfiguration(), optarg);
 				params++;
 				break;
 

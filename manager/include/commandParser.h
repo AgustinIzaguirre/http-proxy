@@ -65,8 +65,6 @@ enum state_t {
 	GET_MTR_CN,
 	GET_MTR_H,
 	GET_MTR_HS,
-	GET_B,
-	GET_BF,
 	GET_C,
 	GET_CM,
 	GET_CMD,
@@ -92,28 +90,20 @@ enum state_t {
 	SET_TF_ON,
 	SET_TF_OF,
 	SET_TF_OFF,
-	SET_B,
-	SET_BF,
-	SET_BF_,
-	SET_BF_DATA,
-	SET_BF_DATA_,
 	SET_C,
 	SET_CM,
 	SET_CMD,
 	SET_CMD_,
-	SET_CMD_DATA,
-	SET_CMD_DATA_
+	SET_CMD_DATA
 };
 typedef enum state_t state_t;
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
 typedef enum returnCode_t returnCode_t;
 
-int parseCommand(operation_t *operation, resourceId_t *id, void **data,
+int parseCommand(operation_t *operation, resId_t *id, void **data,
 				 size_t *dataLength);
-
 void parseAuthenticationData(char **username, size_t *usernameLength,
 							 char **password, size_t *passwordLength);
-
 void parseIPAndPortFromArguments(const char **ip, uint16_t *port, int argc,
 								 char const *argv[]);
 

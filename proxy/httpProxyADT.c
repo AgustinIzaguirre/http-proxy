@@ -3,7 +3,6 @@
 #include <connectToOrigin.h>
 #include <handleRequest.h>
 #include <handleResponse.h>
-#include <handleResponseWithTransform.h>
 #include <headersParser.h>
 #include <transformBody.h>
 
@@ -17,8 +16,6 @@ struct http {
 
 	// Origin server address resolution
 	struct addrinfo *originResolution;
-	// Current try origin server address
-	struct addrinfo *originResolutionCurrent; // TODO: it is not use
 
 	// Origin server info
 	struct sockaddr_storage originAddr;
@@ -26,7 +23,7 @@ struct http {
 	int originDomain;
 	int originFd;
 	unsigned short originPort;
-	char *host; // TODO: check
+	char *host;
 
 	// HTTP proxy state machine
 	struct state_machine stm;
@@ -39,17 +36,13 @@ struct http {
 		struct parseRequest parseRequest;
 		struct handleRequest handleRequest;
 		struct handleResponse handleResponse;
-		struct handleResponseWithTransform
-			handleResponseWithTransform; // TODO remove deprecated
 		struct transformBody transformBody;
-		int other; // TODO REMOVE
 	} clientState;
 
 	// buffers to use: readBuffer and writeBuffer.
 	uint8_t raWRequest[MAX_FIRST_LINE_LENGTH],
 		rawResponse[MAX_FIRST_LINE_LENGTH];
-	uint8_t rawBuffA[BUFFER_SIZE],
-		rawBuffB[BUFFER_SIZE]; // TODO Buffer size should be read from config
+	uint8_t rawBuffA[BUFFER_SIZE], rawBuffB[BUFFER_SIZE];
 	buffer readBuffer, writeBuffer, requestLine, responseLine;
 
 	uint8_t finishParserData[MAX_PARSER];
@@ -62,11 +55,22 @@ struct http {
 	unsigned references;
 
 	int transformContent;
-	MediaRangePtr_t mediaRanges; // TODO:free
+	uint8_t isChunked;
+	MediaRangePtr_t mediaRanges;
+
+	void **selectorCopyForOtherThread;
 
 	// Next in pool
 	struct http *next;
 };
+
+void setSelectorCopy(struct http *s, void **selectorCopyForOtherThread) {
+	s->selectorCopyForOtherThread = selectorCopyForOtherThread;
+}
+
+void **getSelectorCopy(struct http *s) {
+	return s->selectorCopyForOtherThread;
+}
 
 struct addrinfo *getOriginResolutions(struct http *s) {
 	return s->originResolution;
@@ -110,11 +114,6 @@ struct handleRequest *getHandleRequestState(httpADT_t s) {
 
 struct handleResponse *getHandleResponseState(httpADT_t s) {
 	return &((s->clientState).handleResponse);
-}
-
-struct handleResponseWithTransform *
-getHandleResponseWithTransformState(httpADT_t s) {
-	return &((s->clientState).handleResponseWithTransform);
 }
 
 struct transformBody *getTransformBodyState(httpADT_t s) {
@@ -189,6 +188,14 @@ void setTransformContent(struct http *s, int transformContent) {
 	s->transformContent = transformContent;
 }
 
+uint8_t getIsChunked(struct http *s) {
+	return s->isChunked;
+}
+
+void setIsChunked(struct http *s, uint8_t isChunked) {
+	s->isChunked = isChunked;
+}
+
 MediaRangePtr_t getMediaRangeHTTP(struct http *s) {
 	return s->mediaRanges;
 }
@@ -214,12 +221,9 @@ static const struct state_definition clientStatbl[] = {
 		.on_departure  = parseDestroy,
 	},
 	{
-		.state = CONNECT_TO_ORIGIN,
-		// .on_arrival       = copy_init,
+		.state			= CONNECT_TO_ORIGIN,
 		.on_block_ready = addressResolvNameDone,
-		// .on_write_ready   = copy_w,
 	},
-
 	{
 		.state			= HANDLE_REQUEST,
 		.on_arrival		= requestInit,
@@ -232,12 +236,6 @@ static const struct state_definition clientStatbl[] = {
 		.on_read_ready  = responseRead,
 		.on_write_ready = responseWrite,
 		.on_departure   = responceDestroy,
-	},
-	{
-		.state			= HANDLE_RESPONSE_WITH_TRANSFORMATION,
-		.on_arrival		= responseWithTransformInit,
-		.on_read_ready  = responseWithTransformRead,
-		.on_write_ready = responseWithTransformWrite,
 	},
 	{
 		.state			= TRANSFORM_BODY,
@@ -287,8 +285,10 @@ struct http *httpNew(int clientFd) {
 	ret->clientFd		  = clientFd;
 	ret->clientAddrLen	= sizeof(ret->clientAddr);
 	ret->transformContent = FALSE;
+	ret->isChunked		  = FALSE;
 	ret->mediaRanges =
 		createMediaRangeFromListOfMediaType(getMediaRange(getConfiguration()));
+	ret->selectorCopyForOtherThread = NULL;
 
 	// setting state machine
 	ret->stm.initial   = PARSE_METHOD;
@@ -309,24 +309,20 @@ struct http *httpNew(int clientFd) {
 	ret->errorTypeFound = DEFAULT;
 
 	ret->references = 1;
+
+	increaseConcurrentConections();
+	increaseHistoricAccess();
 finally:
 	return ret;
 }
 
 void httpDestroyData(struct http *s) {
-	if (s->originResolution != NULL) {
-		freeaddrinfo(s->originResolution);
-		s->originResolution = 0;
-	}
-
-	freeMediaRange(s->mediaRanges);
 	free(s);
 }
 
 void httpDestroy(struct http *s) {
 	if (s != NULL) {
 		if (s->references == 1) {
-			decreaseConcurrentConections();
 			if (poolSize < maxPool) {
 				s->next = pool;
 				pool	= s;

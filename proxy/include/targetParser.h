@@ -37,6 +37,11 @@ struct targetParser {
 void parseTargetInit(struct targetParser *parser);
 
 /*
+ * Destroy parser
+ */
+void parseTargetDestroy(struct targetParser *parser);
+
+/*
  * Parse a char
  * Returns true if the parse has finish and false otherwise
  */

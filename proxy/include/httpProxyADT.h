@@ -20,8 +20,8 @@
 
 #define SIZE_OF_ARRAY(x) (sizeof(x) / sizeof((x)[0]))
 #define MAX_POOL_SIZE 50
-#define BUFFER_SIZE 20
-#define MAX_PARSER 1000 // TODO: chech that number
+#define BUFFER_SIZE 4000
+#define MAX_PARSER 1000
 #define MAX_FIRST_LINE_LENGTH 2048
 
 typedef struct http *httpADT_t;
@@ -32,35 +32,151 @@ enum httpState {
 	 * If the host is not in the first line it continue to analyse the headers
 	 *
 	 * Interests:
-	 *   ClientFd
+	 *
+	 *   ClientFd:
+	 *
 	 *      - OP_READ       Until client sends end of line and has found host.
 	 *
 	 * Transitions:
-	 *   - REQUEST_CONNECT  If is a valid method and host.
 	 *
-	 *   - ERROR            If method not supported.
+	 *   - CONNECT_TO_ORIGIN    If is a valid method and host.
+	 *
+	 *   - ERROR_CLIENT         If any error to be send to the client
+	 *
+	 *   - ERROR                Any other error.
 	 *
 	 */
 	PARSE,
+
 	/*
 	 * Resolves address and connects to origin
+	 *
+	 * Transitions:
+	 *
+	 *  - HANDLE_REQUEST        If it can connecto correctly to origin
+	 *                          server.
+	 *
+	 *  - ERROR_CLIENT          If there is any problem in address resolution
+	 *                          or in connecting to origin.
+	 *
+	 *  - ERROR                 If any other error occurs.
 	 */
 	CONNECT_TO_ORIGIN,
 
 	/**
-	 * Copia bytes entre client_fd y origin_fd.
+	 * Parse requests headers, filters some of them and modify its value and
+	 * send them to origin.
+	 * On this state request headers are read from a buffer and parsed request
+	 * headers are stored on another buffer.
+	 * If request includes body it will be transfered as it is read.
 	 *
-	 * Intereses: (tanto para client_fd y origin_fd)
-	 *   - OP_READ  si hay espacio para escribir en el buffer de lectura
-	 *   - OP_WRITE si hay bytes para leer en el buffer de escritura
+	 * Interests:
 	 *
-	 * Transicion:
-	 *   - DONE     cuando no queda nada mas por copiar.
+	 *  ClientFd:
+	 *      - OP_READ           If it can read from client.
+	 *
+	 *  ServerFd
+	 *      - OP_READ           Always waiting for server response.
+	 *
+	 *      - OP_WRITE          If there is something to send to origin.
+	 *
+	 * Transitions:
+	 *
+	 *   - HANDLE_RESPONSE      If something has been read from server.
+	 *
+	 *   - ERROR                If an error occurs.
 	 */
 	HANDLE_REQUEST,
+
+	/**
+	 * Parse response headers, filters some of them and modify its value and
+	 * send them to origin.
+	 * If transformation is disabled would also transfer body as it is received.
+	 * This state use one buffer to read response headers and another buffer to
+	 * store parsed response headers. Response body would be transferred as it
+	 * is received. It uses also a third buffer to read extra info sent from
+	 * client to origin.
+	 *
+	 * Interests:
+	 *
+	 *  ClientFd:
+	 *      - OP_READ           If it can read from client.
+	 *
+	 *      - OP_WRITE          If it has something to write to client
+	 *
+	 *  ServerFd:
+	 *      - OP_READ           If it has space to read response and origin
+	 *                          has not closed connection.
+	 *
+	 *      - OP_WRITE          If there is something to write to client.
+	 *
+	 * Transitions:
+	 *
+	 *   - TRANSFORM_BODY       If transformations are enabled and all response
+	 *                          headers has been read.
+	 *
+	 *   - DONE                 If it has finished sending response from
+	 *                          origin to client and transformations are
+	 *                          disabled.
+	 *
+	 *   - ERROR                If an error occurs.
+	 */
 	HANDLE_RESPONSE,
-	HANDLE_RESPONSE_WITH_TRANSFORMATION,
+
+	/**
+	 * This state is called when all headers are read from response and
+	 * transformations are enabled. It has three different modes of working 1-
+	 * When transformations are enabled and mime types does not match filter, or
+	 * when they match but program fails. In this mode it will send body
+	 *     received body chunked.
+	 *  2- When mime types match filter and command is executed correctly. In
+	 *     this mode response read from origin will be sent to the transformer
+	 *     command and its response will be chunked and sent to client.
+	 *  3- When mime type does not match filter and response is sent chunked
+	 * from origin or when content-encoding is set and value differs from
+	 * identity. In this mode bytes will be sent as they are read from origin.
+	 *
+	 * Interests:
+	 *
+	 *  ClientFd:
+	 *      - OP_WRITE          If it has something to write to client.
+	 *
+	 *  ServerFd:
+	 *      - OP_READ           If it has space to read response and origin
+	 *                          has not closed connection.
+	 *  WriteToTransformFd:
+	 *      - OP_WRITE          If it has something to write to transform
+	 * command.
+	 *
+	 *  ReadFromTransformFd:
+	 *      - OP_READ           If it has space to read transform command
+	 * response.
+	 *
+	 *
+	 * Transitions:
+	 *
+	 *   - DONE                 When it finishes sendind response to client.
+	 *
+	 *   - ERROR                If an error occurs.
+	 */
 	TRANSFORM_BODY,
+
+	/**
+	 * Send the error message that corespond to the erro code set in the http
+	 * structure.
+	 *
+	 * Interests:
+	 *
+	 *   ClientFd:
+	 *
+	 *      - OP_WRITE          Until it sends all the error.
+	 *
+	 * Transitions:
+	 *
+	 *   - ERROR                Any error or finish correctly (because it is
+	 *							suppose that a other error happend in a previous
+	 *							state).
+	 */
 	ERROR_CLIENT,
 
 	// final states
@@ -177,12 +293,6 @@ struct handleRequest *getHandleRequestState(httpADT_t s);
 struct handleResponse *getHandleResponseState(httpADT_t s);
 
 /*
- * Returns http handle response with transform structure
- */
-struct handleResponseWithTransform *
-getHandleResponseWithTransformState(httpADT_t s);
-
-/*
  * Returns transform body structure
  */
 
@@ -243,11 +353,50 @@ void setErrorType(struct http *s, int errorTypeFound);
  */
 int getErrorType(struct http *s);
 
-// TODO
+/*
+ * Returns isChunked from http structure
+ */
+uint8_t getIsChunked(struct http *s);
+
+/*
+ *  Sets isChunked with received value
+ */
+void setIsChunked(struct http *s, uint8_t isChunked);
+
+/*
+ *	Returns the set of resolutions of the origin found in the DNS query or null
+ */
 struct addrinfo *getOriginResolutions(struct http *s);
+
+/*
+ *	Sets the oring host resolutions
+ */
 void setOriginResolutions(struct http *s, struct addrinfo *originResolution);
+
+/*
+ * Returns 1 if there must be transformation or 0 otherwise
+ */
 int getTransformContent(struct http *s);
+
+/*
+ * Set whenever must be transformation
+ */
 void setTransformContent(struct http *s, int transformContent);
+
+/*
+ * Return the media range that is compare with the content length in
+ * order to determine if there is transformations
+ */
 MediaRangePtr_t getMediaRangeHTTP(struct http *s);
+
+/*
+ * Set selector copy that is given to the child process in order to free it
+ */
+void setSelectorCopy(struct http *s, void **selectorCopyForOtherThread);
+
+/*
+ * Get selector copy
+ */
+void **getSelectorCopy(struct http *s);
 
 #endif

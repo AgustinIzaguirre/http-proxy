@@ -8,6 +8,9 @@
 #include <configuration.h>
 #include <utilities.h>
 
+/*
+ * Returns buffer to read from to write on clientFd
+ */
 static buffer *getCurrentResponseBuffer(httpADT_t state);
 
 void responseInit(const unsigned state, struct selector_key *key) {
@@ -23,7 +26,13 @@ void responceDestroy(const unsigned state, struct selector_key *key) {
 	struct handleResponse *handleResponse =
 		getHandleResponseState(GET_DATA(key));
 	int aux = getTransformContentParser(&(handleResponse->parseHeaders));
-	setTransformContent(GET_DATA(key), aux);
+	if (getTransformEncode(&handleResponse->parseHeaders)) {
+		setTransformContent(GET_DATA(key), aux);
+	}
+	else {
+		setTransformContent(GET_DATA(key), FALSE);
+	}
+	setIsChunked(GET_DATA(key), handleResponse->parseHeaders.isChunked);
 }
 
 unsigned responseRead(struct selector_key *key) {
@@ -64,6 +73,7 @@ unsigned responseRead(struct selector_key *key) {
 	else if (bytesRead == 0) {
 		handleResponse->responseFinished = TRUE;
 		if (!buffer_can_read(writeBuffer)) {
+			setErrorDoneFd(key);
 			ret = DONE;
 		}
 		else {
@@ -100,10 +110,11 @@ unsigned readFromClient(struct selector_key *key) {
 		ret = setResponseFdInterests(key);
 	}
 	else if (bytesRead == 0) {
-		// if response is not chunked or is last chunk
-		ret = DONE; // should send what is left on buffer TODO
+		setErrorDoneFd(key);
+		ret = DONE;
 	}
 	else {
+		setErrorDoneFd(key);
 		ret = ERROR;
 	}
 
@@ -146,9 +157,11 @@ unsigned responseWrite(struct selector_key *key) {
 	}
 	else if (handleResponse->responseFinished == TRUE &&
 			 !buffer_can_read(writeBuffer)) {
+		setErrorDoneFd(key);
 		return DONE;
 	}
 	else {
+		setErrorDoneFd(key);
 		ret = ERROR;
 	}
 
@@ -179,6 +192,7 @@ unsigned writeToOrigin(struct selector_key *key) {
 		ret = setResponseFdInterests(key);
 	}
 	else {
+		setErrorDoneFd(key);
 		ret = ERROR;
 	}
 

@@ -25,6 +25,12 @@ void parseTargetInit(struct targetParser *parser) {
 	parser->port		   = PORT_DEFAULT;
 }
 
+void parseTargetDestroy(struct targetParser *parser) {
+	if (parser->target != NULL) {
+		free(parser->target);
+	}
+}
+
 int parseTargetChar(struct targetParser *parser, char l) {
 	parser->charactersRead++;
 	int flag = 1;
