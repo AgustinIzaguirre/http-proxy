@@ -10,8 +10,6 @@ int parseCommand(operation_t *operation, resId_t *id, void **data,
 	*dataLength = 0;
 	*id			= NO_ID;
 
-	// TODO: remember to use htons to transform to network-bytes
-
 	do {
 		currentChar = getchar();
 
