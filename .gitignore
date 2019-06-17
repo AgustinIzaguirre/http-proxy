@@ -1,6 +1,7 @@
 # Custom http-proxy project executables
 /manager/httpdctl
 /proxy/httpd
+/proxy/logs
 
 # Prerequisites
 *.d
