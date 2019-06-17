@@ -27,4 +27,15 @@ void writeNumber(buffer *chunkBuffer, int bytesRead);
  */
 int getDigits(int number, int base);
 
+/*
+ * Given an hexa char return its value or -1 if it isn't an hexa value
+ */
+int getHexaValue(char l);
+
+/*
+ * Given an hexa string in data and the position of it last char returns its
+ * decimal value
+ */
+unsigned long long hexaToULLong(char *data, int lastPosition);
+
 #endif
