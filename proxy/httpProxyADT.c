@@ -235,7 +235,7 @@ static const struct state_definition clientStatbl[] = {
 		.on_arrival		= responseInit,
 		.on_read_ready  = responseRead,
 		.on_write_ready = responseWrite,
-		.on_departure   = responceDestroy,
+		.on_departure   = responseDestroy,
 	},
 	{
 		.state			= TRANSFORM_BODY,

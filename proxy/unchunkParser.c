@@ -64,14 +64,13 @@ void parseChunkedInfoByChar(uint8_t l, struct unchunkParser *unchunkParser) {
 		case CHUNK_DATA:
 			if (unchunkParser->bytes > 0) {
 				buffer_write(&unchunkParser->unchunkedBuffer, l);
+				unchunkParser->bytes--;
 			}
 			else if (l == '\n') {
 				unchunkParser->chunkedBytesIndex = 0;
 				unchunkParser->state			 = CHUNKED_SIZE;
 			}
-			if (unchunkParser->bytes > 0) {
-				unchunkParser->bytes--;
-			}
+
 			break;
 	}
 }

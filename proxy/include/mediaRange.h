@@ -52,6 +52,4 @@ void freeMediaRange(MediaRangePtr_t mrp);
  */
 char *getMediaRangeAsString(MediaRangePtr_t mrp);
 
-void printMediaRange(MediaRangePtr_t mediaRange);
-
 #endif
