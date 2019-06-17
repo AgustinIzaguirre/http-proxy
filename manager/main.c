@@ -327,7 +327,7 @@ static void printResponseHeader() {
 }
 
 static void printDottedSeparator() {
-	printf("\n---------------------------------\n");
+	printf("---------------------------------\n");
 }
 
 static void printContinuousSeparator() {
@@ -396,25 +396,25 @@ static void manageAndPrintGetResponse(response_t response) {
 	/* Print values */
 	switch (response.id) {
 		case MIME_ID:
-			printf("MIME Media-types = %s\n", (char *) storedData[response.id]);
+			printf("Media range = %s\n\n", (char *) storedData[response.id]);
 			break;
 		case CMD_ID:
-			printf("Command = %s\n", (char *) storedData[response.id]);
+			printf("Command = %s\n\n", (char *) storedData[response.id]);
 			break;
 		case MTR_CN_ID:
-			printf("Concurrent connections = %ld\n",
+			printf("Concurrent connections = %ld\n\n",
 				   *((uint64_t *) storedData[response.id]));
 			break;
 		case MTR_HS_ID:
-			printf("Historic connections = %ld\n",
+			printf("Historic connections = %ld\n\n",
 				   *((uint64_t *) storedData[response.id]));
 			break;
 		case MTR_BT_ID:
-			printf("Bytes transfered = %ld\n",
+			printf("Bytes transfered = %ld\n\n",
 				   *((uint64_t *) storedData[response.id]));
 			break;
 		case TF_ID:
-			printf("Transformations state = %s\n",
+			printf("Transformations state = %s\n\n",
 				   *((uint8_t *) storedData[response.id]) ? "on" : "off");
 			break;
 		default:
@@ -425,7 +425,8 @@ static void manageAndPrintGetResponse(response_t response) {
 static void manageAndPrintSetResponse(response_t response) {
 	if (response.status.timeTagStatus == OK_STATUS) {
 		setPrintStyle(GREEN);
-		printf("[Good timeTag. You override the resource!]\n");
+		printf("Operation successfully performed. You overrided the "
+			   "resource!\n\n");
 		resetPrintStyle();
 
 		timeTags[response.id] = response.timeTag;
@@ -458,8 +459,8 @@ static void manageAndPrintSetResponse(response_t response) {
 		storedData[response.id] = response.data;
 	}
 	else {
-		setPrintStyle(RED);
-		printf("[You aren't up to date, you need to get the resource first]\n");
+		setPrintStyle(YELLOW);
+		printf("You aren't up to date, you need to get the resource first\n\n");
 		resetPrintStyle();
 	}
 }
