@@ -54,7 +54,7 @@ MediaRangePtr_t createMediaRange(char const *string) {
 void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 	if (((mrp->length) % BLOCK) == 0) {
 		mrp->listMediaTypes = realloc(mrp->listMediaTypes,
-									  ((mrp->length) + BLOCK) * sizeof(char));
+									  ((mrp->length) + BLOCK) * sizeof(char *));
 	}
 	int i = 0, j = 0;
 	while (string[i] != '\0') {
@@ -62,7 +62,7 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 			if (((mrp->length) % BLOCK) == 0) {
 				mrp->listMediaTypes =
 					realloc(mrp->listMediaTypes,
-							((mrp->length) + BLOCK) * sizeof(char));
+							((mrp->length) + BLOCK) * sizeof(char *));
 			}
 			mrp->listMediaTypes[mrp->length][j] = '\0';
 			(mrp->length)++;
@@ -78,6 +78,9 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 		}
 		else {
 			if ((j % BLOCK) == 0) {
+				if (j == 0) {
+					mrp->listMediaTypes[mrp->length] = NULL;
+				}
 				mrp->listMediaTypes[mrp->length] =
 					realloc(mrp->listMediaTypes[mrp->length],
 							(j + BLOCK) * sizeof(char));
@@ -93,6 +96,7 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 
 	mrp->listMediaTypes[mrp->length][j] = '\0';
 	(mrp->length)++;
+
 	generateAndUpdateTimeTag(MIME_ID);
 }
 
