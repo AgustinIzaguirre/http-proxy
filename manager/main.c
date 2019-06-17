@@ -394,6 +394,7 @@ static void manageAndPrintGetResponse(response_t response) {
 		   ctime((const time_t *) &timeTags[response.id]));
 
 	/* Print values */
+	/* be64toh for changing the 64-bits integer from big-endian to host-bytes */
 	switch (response.id) {
 		case MIME_ID:
 			printf("Media range = %s\n\n", (char *) storedData[response.id]);
@@ -403,15 +404,15 @@ static void manageAndPrintGetResponse(response_t response) {
 			break;
 		case MTR_CN_ID:
 			printf("Concurrent connections = %ld\n\n",
-				   *((uint64_t *) storedData[response.id]));
+				   be64toh(*((uint64_t *) storedData[response.id])));
 			break;
 		case MTR_HS_ID:
 			printf("Historic connections = %ld\n\n",
-				   *((uint64_t *) storedData[response.id]));
+				   be64toh(*((uint64_t *) storedData[response.id])));
 			break;
 		case MTR_BT_ID:
 			printf("Bytes transfered = %ld\n\n",
-				   *((uint64_t *) storedData[response.id]));
+				   be64toh(*((uint64_t *) storedData[response.id])));
 			break;
 		case TF_ID:
 			printf("Transformations state = %s\n\n",

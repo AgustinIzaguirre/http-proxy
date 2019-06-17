@@ -243,6 +243,8 @@ static void manageGetMetricRequest(resId_t id, response_t *response) {
 			break;
 	}
 
+	/* Change the 64-bits integer from host-bytes to big-endian */
+	*metric				 = htobe64(*metric);
 	response->data		 = (void *) metric;
 	response->dataLength = sizeof(uint64_t);
 }
