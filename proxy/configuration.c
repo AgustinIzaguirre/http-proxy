@@ -13,25 +13,19 @@ struct configuration {
 	char *command;
 	uint8_t isTransformationOn;
 	int commandStderrFd;
-	char *filterHttp;
-	char *filterAdmin;
 	char *commandStderrPath;
-	char *filterManagement;
 };
 
 static struct configuration config = {
 	.httpPort			  = DEFAULT_PROXY_HTTP_PORT,
 	.managementPort		  = DEFAULT_MANAGEMENT_PORT,
-	.httpInterfaces		  = "0.0.0.0",
-	.managementInterfaces = "127.0.0.1", /* Default: only localhost */
+	.httpInterfaces		  = NULL,
+	.managementInterfaces = NULL,
 	.mediaRange			  = NULL,
 	.command			  = NULL,
 	.commandStderrFd	  = INVALID_FD,
 	.commandStderrPath	= "/dev/null",
 	.isTransformationOn   = FALSE,
-	.filterHttp			  = NULL,
-	.filterAdmin		  = NULL,
-	.filterManagement	 = NULL,
 };
 
 void initializeConfigBaseValues(configurationADT config) {

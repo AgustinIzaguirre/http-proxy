@@ -9,6 +9,7 @@
 #include <wait.h>
 #include <stdio.h>
 #include <errno.h>
+#include <logger.h>
 
 static int getLength(buffer *buffer);
 
@@ -44,7 +45,7 @@ unsigned transformBodyRead(struct selector_key *key) {
 
 	if (transformBody->chunkedData == NULL) {
 		setErrorDoneFd(key);
-		printf("Cannot allocate memory"); // TODO lucas logger de error
+		logError("Cannot allocate memory", CUSTOM_ERROR);
 		ret = ERROR;
 	}
 	else if (!getTransformContent(state) ||
@@ -65,8 +66,7 @@ unsigned transformBodyRead(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("unsupported file descriptor error\n"); // TODO lucas logger de
-													   // error
+		logError("Invalid file descriptor error", CUSTOM_ERROR);
 		ret = ERROR;
 	}
 	return ret;
@@ -79,7 +79,7 @@ unsigned transformBodyWrite(struct selector_key *key) {
 
 	if (transformBody->chunkedData == NULL) {
 		setErrorDoneFd(key);
-		printf("Cannot allocate memory"); // TODO lucas logger de error
+		logError("Cannot allocate memory", CUSTOM_ERROR);
 		ret = ERROR;
 	}
 	else if (!getTransformContent(state) ||
@@ -103,8 +103,7 @@ unsigned transformBodyWrite(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("Unsupported file descriptor error\n"); // TODO lucas logger de
-													   // error
+		logError("Invalid file descriptor error", CUSTOM_ERROR);
 		ret = ERROR;
 	}
 	return ret;
@@ -123,7 +122,7 @@ unsigned standardOriginRead(struct selector_key *key) {
 		prepareChunkedBuffer(chunkBuffer, inBuffer);
 		return setStandardFdInterests(key);
 	}
-	// if there is no space to read should write what i already read
+	// If there is no space to read, it should write what it already read
 	else if (!buffer_can_write(inBuffer)) {
 		return setStandardFdInterests(key);
 	}
@@ -149,7 +148,7 @@ unsigned standardOriginRead(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error6:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 
@@ -164,7 +163,7 @@ unsigned standardOriginReadWithoutChunked(struct selector_key *key) {
 	ssize_t bytesRead;
 	unsigned ret;
 
-	// if there is no space to read should write what i already read
+	// If there is no space to read, it should write what it already read
 	if (!buffer_can_write(inBuffer)) {
 		return setStandardFdInterestsWithoutChunked(key);
 	}
@@ -182,7 +181,7 @@ unsigned standardOriginReadWithoutChunked(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error6:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 
@@ -198,7 +197,7 @@ unsigned readFromTransform(struct selector_key *key) {
 	ssize_t bytesRead;
 	unsigned ret;
 
-	// if there is no space to read should write what i already read
+	// If there is no space to read, it should write what it already read
 	if (!buffer_can_write(inbuffer)) {
 		return setFdInterestsWithTransformerCommand(key);
 	}
@@ -217,7 +216,7 @@ unsigned readFromTransform(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error5:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 
@@ -240,7 +239,7 @@ unsigned readFromOrigin(struct selector_key *key) {
 	ssize_t bytesRead;
 	unsigned ret;
 
-	// if there is no space to read should write what i already read
+	// If there is no space to read, it should write what it already read
 	if (!buffer_can_write(writeBuffer)) {
 		return setFdInterestsWithTransformerCommand(key);
 	}
@@ -261,7 +260,7 @@ unsigned readFromOrigin(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error4:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 
@@ -276,7 +275,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 
-	// if everything is read on buffer
+	// If everything is read on buffer
 	if (!buffer_can_read(writeBuffer)) {
 		return setStandardFdInterests(key);
 	}
@@ -296,7 +295,7 @@ unsigned standardClientWrite(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error3:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 
@@ -331,7 +330,7 @@ unsigned standardClientWriteWithoutChunked(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error3:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 
@@ -352,7 +351,7 @@ unsigned writeToTransform(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 
-	// if everything is read on buffer
+	// If everything is read on buffer
 	if (!buffer_can_read(inbuffer)) {
 		return setFdInterestsWithTransformerCommand(key);
 	}
@@ -383,7 +382,7 @@ unsigned writeToTransform(struct selector_key *key) {
 	}
 
 	if (transformBody->responseFinished && !buffer_can_read(inbuffer)) {
-		// closing pipe so that transform command finishes
+		// Closing pipe so that transform command finishes
 		close(transformBody->writeToTransformFd);
 	}
 
@@ -421,7 +420,7 @@ unsigned writeToTransformChunked(struct selector_key *key) {
 	}
 	else if (transformBody->transformCommandExecuted == TRUE) {
 		setErrorDoneFd(key);
-		printf("error2:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 	else {
@@ -446,7 +445,7 @@ unsigned writeToClient(struct selector_key *key) {
 	size_t count;
 	ssize_t bytesRead;
 
-	// if everything is read on buffer
+	// If everything is read on buffer
 	if (!buffer_can_read(buffer)) {
 		return setFdInterestsWithTransformerCommand(key);
 	}
@@ -461,8 +460,7 @@ unsigned writeToClient(struct selector_key *key) {
 	}
 	else {
 		setErrorDoneFd(key);
-		printf("error1:\n%s\n", strerror(errno)); // TODO lucas logger de error
-
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 
@@ -668,11 +666,11 @@ int executeTransformCommand(struct selector_key *key) {
 		return FORK_ERROR;
 	}
 	else if (commandPid == 0) {
-		dup2(inputPipe[0], 0);  // setting pipe as stdin
-		dup2(outputPipe[1], 1); // setting pipe as stdout
-		dup2(errorFd, 2);		// setting errorFd as stderr
-		close(inputPipe[1]);	// closing write end of input pipe
-		close(outputPipe[0]);   // closing read end of output pipe
+		dup2(inputPipe[0], 0);  // Setting pipe as stdin
+		dup2(outputPipe[1], 1); // Setting pipe as stdout
+		dup2(errorFd, 2);		// Setting errorFd as stderr
+		close(inputPipe[1]);	// Closing write end of input pipe
+		close(outputPipe[0]);   // Closing read end of output pipe
 
 		putenv("HTTPD_VERSION=1.0.0");
 		if (execl("/bin/sh", "sh", "-c", commandPath, (char *) 0) == -1) {

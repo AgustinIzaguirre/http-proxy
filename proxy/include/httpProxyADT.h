@@ -243,6 +243,11 @@ void setOriginFd(struct http *s, int originFd);
 struct sockaddr_storage *getClientAddress(httpADT_t s);
 
 /*
+ * Returns origin address
+ */
+struct sockaddr_storage *getOriginAddress(httpADT_t s);
+
+/*
  * Returns client address Length
  */
 socklen_t getClientAddressLength(httpADT_t s);
