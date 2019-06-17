@@ -100,7 +100,7 @@ typedef enum state_t state_t;
 enum returnCode_t { IGNORE, INVALID, NEW, SEND };
 typedef enum returnCode_t returnCode_t;
 
-int parseCommand(operation_t *operation, id_t *id, void **data,
+int parseCommand(operation_t *operation, resId_t *id, void **data,
 				 size_t *dataLength);
 void parseAuthenticationData(char **username, size_t *usernameLength,
 							 char **password, size_t *passwordLength);

@@ -14,7 +14,7 @@ void *storedData[ID_QUANTITY] = {0};
 typedef struct {
 	returnCode_t code;
 	operation_t operation;
-	id_t id;
+	resId_t id;
 	void *data;
 	uint16_t streamNumber;
 } responseToRecv_t;
@@ -25,7 +25,7 @@ linkedListADT_t recvFromGetStream = NULL;
 
 static int authenticate(int server);
 static int parseAndSendRequests(int server, uint8_t *byeRead);
-static int newCommandHandler(int server, operation_t operation, id_t id,
+static int newCommandHandler(int server, operation_t operation, resId_t id,
 							 void *data, size_t dataLength, uint8_t *byeRead);
 static void invalidCommandHandler();
 static int recvAndPrintResponses(int server);
@@ -159,7 +159,7 @@ static int authenticate(int server) {
 
 static int parseAndSendRequests(int server, uint8_t *byeRead) {
 	operation_t operation;
-	id_t id;
+	resId_t id;
 	void *data;
 	size_t dataLength;
 	int sent;
@@ -192,7 +192,7 @@ static int parseAndSendRequests(int server, uint8_t *byeRead) {
 	return sent;
 }
 
-static int newCommandHandler(int server, operation_t operation, id_t id,
+static int newCommandHandler(int server, operation_t operation, resId_t id,
 							 void *data, size_t dataLength, uint8_t *byeRead) {
 	uint16_t streamNumber;
 	int sent;

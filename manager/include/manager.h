@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include <protocol.h>
 
-enum id_t { NO_ID, MIME_ID, CMD_ID, MTR_CN_ID, MTR_HS_ID, MTR_BT_ID, TF_ID };
-typedef enum id_t id_t;
+enum resId_t { NO_ID, MIME_ID, CMD_ID, MTR_CN_ID, MTR_HS_ID, MTR_BT_ID, TF_ID };
+typedef enum resId_t resId_t;
 
 #define ON 0x01
 #define OFF 0x00

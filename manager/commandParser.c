@@ -1,7 +1,7 @@
 #include <commandParser.h>
 #include <colors.h>
 
-int parseCommand(operation_t *operation, id_t *id, void **data,
+int parseCommand(operation_t *operation, resId_t *id, void **data,
 				 size_t *dataLength) {
 	returnCode_t returnCode = IGNORE;
 	state_t currentState	= NOTHING;
