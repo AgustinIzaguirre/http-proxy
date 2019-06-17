@@ -18,10 +18,19 @@ void unchunkParserInit(struct unchunkParser *unchunkParser,
 }
 
 void parseChunkedInfo(struct unchunkParser *unchunkParser, buffer *input) {
+	if (!buffer_can_write(&unchunkParser->unchunkedBuffer)) {
+		return;
+	}
+
 	uint8_t l = buffer_read(input);
 
 	while (l) {
 		parseChunkedInfoByChar(l, unchunkParser);
+
+		if (!buffer_can_write(&unchunkParser->unchunkedBuffer)) {
+			return;
+		}
+
 		l = buffer_read(input);
 	}
 }
@@ -46,7 +55,8 @@ void parseChunkedInfoByChar(uint8_t l, struct unchunkParser *unchunkParser) {
 					unchunkParser->bytesFinished = TRUE;
 				}
 				if (l == '\n') {
-					unchunkParser->state = CHUNK_DATA;
+					unchunkParser->bytesFinished = FALSE;
+					unchunkParser->state		 = CHUNK_DATA;
 				}
 			}
 			break;
@@ -56,7 +66,8 @@ void parseChunkedInfoByChar(uint8_t l, struct unchunkParser *unchunkParser) {
 				buffer_write(&unchunkParser->unchunkedBuffer, l);
 			}
 			else if (l == '\n') {
-				unchunkParser->state = CHUNKED_SIZE;
+				unchunkParser->chunkedBytesIndex = 0;
+				unchunkParser->state			 = CHUNKED_SIZE;
 			}
 			if (unchunkParser->bytes > 0) {
 				unchunkParser->bytes--;
