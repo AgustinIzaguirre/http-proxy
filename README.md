@@ -1,5 +1,9 @@
 # http-proxy
 
-## How to setup
+## Setup
 
-Clone the repository and just run the `setup` script!
+Clone the repository and run the `setup` script.
+
+## Run proxy
+
+Set yourself in the `proxy` folder and run `./httpd` to start the proxy.
