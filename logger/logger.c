@@ -1,3 +1,7 @@
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <arpa/inet.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -301,10 +305,17 @@ char *getFirstLine(httpADT_t s, communication_t action) {
 	return ret;
 }
 
-int getIpAddresses(struct sockaddr_storage *clientAddr, char *client,
-				   char *host) {
-	return getnameinfo((struct sockaddr *) clientAddr, sizeof(struct sockaddr),
-					   client, MAX_ADDR_SIZE, host, MAX_ADDR_SIZE, NI_NAMEREQD);
+char *getIpAddress(struct sockaddr_in *addr, char *buff) {
+	int bytesWritten =
+		snprintf(buff, MAX_ADDR_SIZE, "%s", inet_ntoa(addr->sin_addr));
+
+	if (bytesWritten >= MAX_ADDR_SIZE) {
+		fprintf(stderr, "[LOG] Error: failed attempting to get the client "
+						"and host addresses\n");
+		return NULL;
+	}
+
+	return buff;
 }
 
 int setClientAndHost(httpADT_t s, communication_t action) {
@@ -317,13 +328,16 @@ int setClientAndHost(httpADT_t s, communication_t action) {
 	}
 
 	if (action == REQ) {
-		if (getIpAddresses(getClientAddress(s), client, NULL) != 0) {
-			fprintf(stderr, "[LOG] Error: failed attempting to get the client "
-							"and host addresses\n");
+		if ((client = getIpAddress((struct sockaddr_in *) getClientAddress(s),
+								   client)) == NULL) {
 			return FAILED;
 		}
 
-		host = getOriginHost(s);
+		struct sockaddr *originIP = getOriginResolutions(s)->ai_addr;
+		if ((host = getIpAddress((struct sockaddr_in *) originIP, host)) ==
+			NULL) {
+			return FAILED;
+		}
 	}
 
 	return OK;
