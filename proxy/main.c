@@ -58,8 +58,10 @@ int main(const int argc, const char **argv) {
 	}
 
 	/* Set management socket */
-	const int managementSocket =
-		bindAndGetServerSocket(managementPort, managementInterfaces);
+	const int managementSocket = bindAndGetServerSocket(
+		managementPort, managementInterfaces == NULL ?
+							DEFAULT_MANAGEMENT_INTERFACE :
+							managementInterfaces);
 
 	if (managementSocket < 0) {
 		goto finally;
@@ -70,7 +72,7 @@ int main(const int argc, const char **argv) {
 		goto finally;
 	}
 
-	fprintf(stdout, "Listening on STCP port %d\n", managementPort);
+	fprintf(stdout, "Management: Listening on SCTP port %d\n", managementPort);
 
 	const struct selector_init conf = {
 		.signal = SIGALRM,
@@ -158,46 +160,28 @@ finally:
 	return ret;
 }
 
-const int prepareTCPSocket(unsigned port, char *filterInterface) {
-	struct addrinfo hint;
-	struct addrinfo *res = NULL;
-	int ret;
-
-	memset(&hint, 0, sizeof(hint));
-
-	hint.ai_family = PF_UNSPEC;
-	hint.ai_flags  = AI_NUMERICHOST;
-
-	ret = getaddrinfo(filterInterface, NULL, &hint, &res);
-
-	if (ret != 0) {
-		errorMessage = "Can't get interface address info";
-		return -1;
-	}
+const int prepareTCPSocket(unsigned port, char *interface) {
+	char *filterInterface =
+		interface == NULL ? DEFAULT_PROXY_INTERFACE : interface;
+	int onlyIPv6 = interface == NULL ? 0 : 1;
 
 	struct sockaddr_storage *addr = calloc(1, sizeof(struct sockaddr_storage));
-	int convert;
 
-	switch (res->ai_family) {
-		case AF_INET:
-			addr->ss_family							  = AF_INET;
-			((struct sockaddr_in *) addr)->sin_family = AF_INET;
-			((struct sockaddr_in *) addr)->sin_port   = htons(port);
-			convert =
-				inet_pton(addr->ss_family, filterInterface,
-						  &(((struct sockaddr_in *) addr)->sin_addr.s_addr));
-			break;
-		case AF_INET6:
-			addr->ss_family								= AF_INET6;
-			((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
-			((struct sockaddr_in6 *) addr)->sin6_port   = htons(port);
-			convert =
-				inet_pton(addr->ss_family, filterInterface,
-						  &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr));
-			break;
+	if (inet_pton(AF_INET, filterInterface,
+				  &(((struct sockaddr_in *) addr)->sin_addr.s_addr)) == 1) {
+		addr->ss_family							  = AF_INET;
+		((struct sockaddr_in *) addr)->sin_family = AF_INET;
+		((struct sockaddr_in *) addr)->sin_port   = htons(port);
 	}
-
-	if (convert <= 0) {
+	else if (inet_pton(AF_INET6, filterInterface,
+					   &(((struct sockaddr_in6 *) addr)->sin6_addr.s6_addr)) ==
+			 1) {
+		addr->ss_family								= AF_INET6;
+		((struct sockaddr_in6 *) addr)->sin6_family = AF_INET6;
+		((struct sockaddr_in6 *) addr)->sin6_port   = htons(port);
+	}
+	else {
+		free(addr);
 		errorMessage = "Invalid IP interface, fails to convert it";
 		return -1;
 	}
@@ -205,15 +189,18 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 	const int currentSocket = socket(addr->ss_family, SOCK_STREAM, IPPROTO_TCP);
 
 	if (currentSocket < 0) {
+		free(addr);
 		errorMessage = "Unable to create socket";
 		return ERROR;
 	}
 
-	fprintf(stdout, "Listening on TCP  port %d\n", port);
+	fprintf(stdout, "HTTP Proxy: Listening on TCP interface = %s%s port = %d\n",
+			filterInterface, onlyIPv6 ? "" : " (IPv4 & IPv6)", port);
 
 	if (addr->ss_family == AF_INET6) {
-		/* If AF_INET6 avoid  */
-		setsockopt(currentSocket, IPPROTO_IPV6, IPV6_V6ONLY, &(int){0},
+		/* If AF_INET6 and default interface, listen in IPv6 and IPv4 */
+		/* Dual stack in one socket */
+		setsockopt(currentSocket, IPPROTO_IPV6, IPV6_V6ONLY, &onlyIPv6,
 				   sizeof(int));
 	}
 

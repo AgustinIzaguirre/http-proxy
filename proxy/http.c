@@ -41,13 +41,6 @@ void httpPassiveAccept(struct selector_key *key) {
 	const int client =
 		accept(key->fd, (struct sockaddr *) &clientAddr, &clientAddrLen);
 
-	if (clientAddr.ss_family == AF_INET) {
-		printf("AF_INET CLIENT\n"); // TODO
-	}
-	else if (clientAddr.ss_family == AF_INET6) {
-		printf("AF_INET6 CLIENT\n"); // TODO
-	}
-
 	if (client == -1) {
 		goto fail;
 	}
