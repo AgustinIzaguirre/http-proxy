@@ -16,17 +16,6 @@
 #define MAX_ADDR_SIZE 128
 #define MAX_PATH_SIZE 256
 
-// TODO: Is the accessLogElems enum even necessary?
-enum accessLogElems {
-	REMOTE_ADDR,
-	TIME,
-	REQUEST,
-	STATUS,
-	// TODO: BODY_BYTES_SENT,
-	HTTP_REFERER,
-	HTTP_USER_AGENT
-};
-
 char **logFilesPaths = NULL;
 char *client		 = NULL;
 char *host			 = NULL;
