@@ -26,13 +26,12 @@ enum accessLogElems {
 char **logFilesPaths = NULL;
 char *client		 = NULL;
 char *host			 = NULL;
-char *dir			 = "./logs/";
+char *dir			 = "./../logger/logs/";
 
 int checkLogFileExistence(log_t type);
 char *createAccessLogEntry(httpADT_t s, communication_t action);
 char *createErrorLogEntry(const char *errorMsg, logError_t errorType);
 char *createDebugLogEntry(const char *debugMsg);
-int writeToLog(log_t type, const char *logEntry);
 int existsLogFilesArray();
 void createLogFilesArray();
 int existsLogFile(log_t logType);
@@ -46,48 +45,48 @@ char *writeClientAndHost(char *curr, const char *end, char *client, char *host,
 						 communication_t action);
 char *writeLogElemToLogEntry(char *curr, const char *end, const char *format,
 							 const char *data);
-// TODO: Handle FAILED returns
+void writeToLog(log_t type, const char *logEntry);
 
-int logAccess(httpADT_t http, communication_t action) {
+void logAccess(httpADT_t http, communication_t action) {
 	char *logEntry = NULL;
 
 	if (checkLogFileExistence(ACCESS_LOG) == FAILED) {
-		return FAILED;
+		return;
 	}
 
 	if ((logEntry = createAccessLogEntry(http, action)) == NULL) {
-		return FAILED;
+		return;
 	}
 
-	return writeToLog(ACCESS_LOG, logEntry);
+	writeToLog(ACCESS_LOG, logEntry);
 }
 
-int logError(const char *errorMsg, logError_t errorType) {
+void logError(const char *errorMsg, logError_t errorType) {
 	char *logEntry = NULL;
 
 	if (checkLogFileExistence(ERROR_LOG) == FAILED) {
-		return FAILED;
+		return;
 	}
 
 	if ((logEntry = createErrorLogEntry(errorMsg, errorType)) == NULL) {
-		return FAILED;
+		return;
 	}
 
-	return writeToLog(ERROR_LOG, logEntry);
+	writeToLog(ERROR_LOG, logEntry);
 }
 
-int logDebug(const char *debugMsg) {
+void logDebug(const char *debugMsg) {
 	char *logEntry = NULL;
 
 	if (checkLogFileExistence(DEBUG_LOG) == FAILED) {
-		return FAILED;
+		return;
 	}
 
 	if ((logEntry = createDebugLogEntry(debugMsg)) == NULL) {
-		return FAILED;
+		return;
 	}
 
-	return writeToLog(DEBUG_LOG, logEntry);
+	writeToLog(DEBUG_LOG, logEntry);
 }
 
 int checkLogFileExistence(log_t type) {
@@ -110,14 +109,16 @@ char *createAccessLogEntry(httpADT_t s, communication_t action) {
 	const char *end = curr + MAX_ENTRY_SIZE;
 	char *firstLine = NULL;
 
-	setClientAndHost(s, action);
+	if (setClientAndHost(s, action) == FAILED) {
+		return NULL;
+	}
 
 	if ((curr = writeTime(curr, end)) == NULL) {
-		return FAILED;
+		return NULL;
 	}
 
 	if ((curr = writeClientAndHost(curr, end, client, host, action)) == NULL) {
-		return FAILED;
+		return NULL;
 	}
 
 	firstLine = getFirstLine(s, action);
@@ -125,7 +126,7 @@ char *createAccessLogEntry(httpADT_t s, communication_t action) {
 	if ((curr = writeLogElemToLogEntry(curr, end, "'%s'\n", firstLine)) ==
 		NULL) {
 		free(firstLine);
-		return FAILED;
+		return NULL;
 	}
 
 	free(firstLine);
@@ -209,6 +210,8 @@ int createLogFile(log_t type) {
 
 	if (open(newLogFilePath, (O_RDWR | O_CREAT | O_APPEND | O_NONBLOCK),
 			 0777) == -1) {
+		fprintf(stderr,
+				"[LOG] Error: failed attempting to create the log file\n");
 		return FAILED;
 	}
 
@@ -222,6 +225,9 @@ int createDir(const char *dir) {
 
 	if (stat(dir, &st) == -1) {
 		if (mkdir(dir, 0777) == -1) {
+			fprintf(stderr,
+					"[LOG] Error: failed attempting to create the missing \
+				logs directory\n");
 			return FAILED;
 		}
 	}
@@ -244,6 +250,8 @@ char *createPath(char *dir, log_t type) {
 
 	if (bytesWritten >= MAX_PATH_SIZE) {
 		free(newLogFilePath);
+		fprintf(stderr, "[LOG] Error: failed attempting to create the path to \
+			open//create the log file\n");
 		return NULL;
 	}
 
@@ -251,6 +259,9 @@ char *createPath(char *dir, log_t type) {
 							MAX_PATH_SIZE - strlen(dir), "%s", log);
 
 	if (bytesWritten >= (MAX_PATH_SIZE - strlen(dir))) {
+		perror(
+			"[LOG] Error: failed attempting to create the path to open//create \
+			the log file\n");
 		free(newLogFilePath);
 		return NULL;
 	}
@@ -309,6 +320,9 @@ int setClientAndHost(httpADT_t s, communication_t action) {
 
 	if (action == REQ) {
 		if (getIpAddresses(getClientAddress(s), client, NULL) != 0) {
+			fprintf(stderr,
+					"[LOG] Error: failed attempting to get the client and \
+				host addresses\n");
 			return FAILED;
 		}
 
@@ -345,6 +359,9 @@ char *writeLogElemToLogEntry(char *curr, const char *end, const char *format,
 	int bytesWritten = snprintf(curr, end - curr, format, data);
 
 	if (bytesWritten >= (end - curr)) {
+		fprintf(stderr,
+				"[LOG] Error: failed attempting to create the log entry, \
+			the buffer ran out of space for the string\n");
 		return NULL;
 	}
 
@@ -353,20 +370,25 @@ char *writeLogElemToLogEntry(char *curr, const char *end, const char *format,
 	return curr;
 }
 
-int writeToLog(log_t type, const char *logEntry) {
-	int logFileFd		 = 0;
-	int couldWriteToFile = 0;
+void writeToLog(log_t type, const char *logEntry) {
+	int logFileFd = 0;
 
 	if ((logFileFd = open(logFilesPaths[type], (O_RDWR | O_APPEND | O_NONBLOCK),
 						  0666)) == -1) {
-		return FAILED;
+		fprintf(stderr,
+				"[LOG] Error: failed attempting to open the log file in \
+			order to write to it\n");
+		return;
 	}
 
-	couldWriteToFile = (write(logFileFd, logEntry, strlen(logEntry)) >= 0);
+	if (write(logFileFd, logEntry, strlen(logEntry)) < 0) {
+		fprintf(stderr,
+				"[LOG] Error: failed attempting to write a new entry to \
+			the log file\n");
+	}
 
 	if (close(logFileFd) == -1) {
-		return FAILED;
+		fprintf(stderr,
+				"[LOG] Error: failed attempting to close the log file\n");
 	}
-
-	return couldWriteToFile;
 }

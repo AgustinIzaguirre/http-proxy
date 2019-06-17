@@ -21,12 +21,12 @@ typedef enum errorOptions logError_t;
 // TODO: What to do with the return values
 
 /* Add a new entry (line) to an access log file called access.log */
-int logAccess(httpADT_t http, communication_t action);
+void logAccess(httpADT_t http, communication_t action);
 
 /* Add a new entry (line) to an error log file called error.log */
-int logError(const char *errorMsg, logError_t errorType);
+void logError(const char *errorMsg, logError_t errorType);
 
 /* Add a new entry (line) to a debug log file called debug.log */
-int logDebug(const char *debugMsg);
+void logDebug(const char *debugMsg);
 
 #endif
