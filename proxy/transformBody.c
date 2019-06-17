@@ -141,7 +141,6 @@ unsigned standardOriginRead(struct selector_key *key) {
 
 		if (!buffer_can_read(inBuffer)) {
 			sentLastChunked(chunkBuffer);
-			close(transformBody->writeToTransformFd);
 		}
 		else {
 			prepareChunkedBuffer(chunkBuffer, inBuffer);
