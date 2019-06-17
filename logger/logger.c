@@ -31,6 +31,7 @@ char *dir			 = "./logs/";
 int checkLogFileExistence(log_t type);
 char *createAccessLogEntry(httpADT_t s, communication_t action);
 char *createErrorLogEntry(const char *errorMsg, logError_t errorType);
+char *createDebugLogEntry(const char *debugMsg);
 int writeToLog(log_t type, const char *logEntry);
 int existsLogFilesArray();
 void createLogFilesArray();
@@ -73,6 +74,20 @@ int logError(const char *errorMsg, logError_t errorType) {
 	}
 
 	return writeToLog(ERROR_LOG, logEntry);
+}
+
+int logDebug(const char *debugMsg) {
+	char *logEntry = NULL;
+
+	if (checkLogFileExistence(DEBUG_LOG) == FAILED) {
+		return FAILED;
+	}
+
+	if ((logEntry = createDebugLogEntry(debugMsg)) == NULL) {
+		return FAILED;
+	}
+
+	return writeToLog(DEBUG_LOG, logEntry);
 }
 
 int checkLogFileExistence(log_t type) {
@@ -149,6 +164,22 @@ char *createErrorLogEntry(const char *errorMsg, logError_t errorType) {
 	return curr < end ? beginning : NULL;
 }
 
+char *createDebugLogEntry(const char *debugMsg) {
+	char *beginning = malloc(MAX_ENTRY_SIZE);
+	char *curr		= beginning;
+	char *end		= beginning + MAX_ENTRY_SIZE;
+
+	if ((curr = writeTime(curr, end)) == NULL) {
+		return NULL;
+	}
+
+	if ((curr = writeLogElemToLogEntry(curr, end, "%s\n", debugMsg)) == NULL) {
+		return NULL;
+	}
+
+	return curr < end ? beginning : NULL;
+}
+
 int existsLogFilesArray() {
 	return logFilesPaths != NULL;
 }
@@ -200,8 +231,10 @@ int createDir(const char *dir) {
 
 char *createPath(char *dir, log_t type) {
 	char *newLogFilePath = calloc(MAX_PATH_SIZE, sizeof(char *));
-	const char *log		 = (type == ACCESS_LOG ? "access.log" : "error.log");
-	size_t bytesWritten  = 0;
+	const char *log =
+		(type == ACCESS_LOG ? "access.log" :
+							  (type == DEBUG_LOG ? "debug.log" : "error.log"));
+	size_t bytesWritten = 0;
 
 	if (dir == NULL) {
 		dir = "./";

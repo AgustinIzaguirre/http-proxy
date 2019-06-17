@@ -7,9 +7,9 @@
 #define FAILED 0
 #define OK 1
 
-#define LOG_TYPES 2
+#define LOG_TYPES 3
 
-enum logTypes { ACCESS_LOG, ERROR_LOG };
+enum logTypes { ACCESS_LOG, DEBUG_LOG, ERROR_LOG };
 typedef enum logTypes log_t;
 
 enum communicationTypes { REQ, RESP };
@@ -25,5 +25,8 @@ int logAccess(httpADT_t http, communication_t action);
 
 /* Add a new entry (line) to an error log file called error.log */
 int logError(const char *errorMsg, logError_t errorType);
+
+/* Add a new entry (line) to a debug log file called debug.log */
+int logDebug(const char *debugMsg);
 
 #endif
