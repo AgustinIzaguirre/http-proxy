@@ -363,16 +363,20 @@ static void manageAndPrintResponse(response_t response) {
 
 static void manageAndPrintGetResponse(response_t response) {
 	if (response.status.timeTagStatus == OK_STATUS) {
-		printf("[You already had the last version]\n");
+		setPrintStyle(YELLOW);
+		printf("You already had the last version of this resource\n\n");
+		resetPrintStyle();
 	}
 	else {
-		printf("[New version gotten]\n");
+		setPrintStyle(GREEN);
+		printf("A new version of this resource has been gotten\n");
+		resetPrintStyle();
 
 		if (timeTags[response.id] == 0) {
-			printf("[Resource gotten for first time]\n");
+			printf("Resource gotten for first time\n\n");
 		}
 		else {
-			printf("You previous 'Last modified date' was: %s\n",
+			printf("You previous 'Last modified' for this resource was: %s\n",
 				   ctime((const time_t *) &timeTags[response.id]));
 		}
 
@@ -390,37 +394,55 @@ static void manageAndPrintGetResponse(response_t response) {
 		timeTags[response.id]   = response.timeTag;
 	}
 
-	printf("Last modified at: %s\n",
-		   ctime((const time_t *) &timeTags[response.id]));
-
 	/* Print values */
 	/* be64toh for changing the 64-bits integer from big-endian to host-bytes */
 	switch (response.id) {
 		case MIME_ID:
-			printf("Media range = %s\n\n", (char *) storedData[response.id]);
+			printf("Media range = ");
+			setPrintStyle(BOLD_BLUE);
+			printf("%s\n\n", (char *) storedData[response.id]);
+			resetPrintStyle();
 			break;
 		case CMD_ID:
-			printf("Command = %s\n\n", (char *) storedData[response.id]);
+			printf("Command = ");
+			setPrintStyle(BOLD_BLUE);
+			printf("%s\n\n", (char *) storedData[response.id]);
+			resetPrintStyle();
 			break;
 		case MTR_CN_ID:
-			printf("Concurrent connections = %ld\n\n",
-				   be64toh(*((uint64_t *) storedData[response.id])));
+			printf("Concurrent connections = ");
+			setPrintStyle(BOLD_BLUE);
+			printf("%ld\n\n", be64toh(*((uint64_t *) storedData[response.id])));
+			resetPrintStyle();
 			break;
 		case MTR_HS_ID:
-			printf("Historic connections = %ld\n\n",
-				   be64toh(*((uint64_t *) storedData[response.id])));
+			printf("Historic connections = ");
+			setPrintStyle(BOLD_BLUE);
+			printf("%ld\n\n", be64toh(*((uint64_t *) storedData[response.id])));
+			resetPrintStyle();
 			break;
 		case MTR_BT_ID:
-			printf("Bytes transfered = %ld\n\n",
-				   be64toh(*((uint64_t *) storedData[response.id])));
+			printf("Bytes transfered = ");
+			setPrintStyle(BOLD_BLUE);
+			printf("%ld\n\n", be64toh(*((uint64_t *) storedData[response.id])));
+			resetPrintStyle();
 			break;
 		case TF_ID:
-			printf("Transformations state = %s\n\n",
+			printf("Transformations state = ");
+			setPrintStyle(BOLD_BLUE);
+			printf("%s\n\n",
 				   *((uint8_t *) storedData[response.id]) ? "on" : "off");
+			resetPrintStyle();
 			break;
 		default:
 			break;
 	}
+
+	setPrintStyle(ITALIC);
+	printf("Last modified: ");
+	setPrintStyle(BOLD);
+	printf("%s\n", ctime((const time_t *) &timeTags[response.id]));
+	resetPrintStyle();
 }
 
 static void manageAndPrintSetResponse(response_t response) {
@@ -461,7 +483,9 @@ static void manageAndPrintSetResponse(response_t response) {
 	}
 	else {
 		setPrintStyle(YELLOW);
-		printf("You aren't up to date, you need to get the resource first\n\n");
+		printf("Your resource is not up to date\n");
+		printf("You need to get the last version of the resource to be allowed "
+			   "to modify it\n\n");
 		resetPrintStyle();
 	}
 }

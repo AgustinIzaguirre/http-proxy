@@ -15,7 +15,7 @@
 #define ON 1
 #define OFF 0
 
-#define USERNAME "admin"
+#define USERNAME "manager"
 #define PASSWORD "pdc69"
 
 enum resourceId_t {
