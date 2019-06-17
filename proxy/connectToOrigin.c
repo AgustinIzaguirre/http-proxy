@@ -38,9 +38,9 @@ void *addressResolvName(void **data) {
 	char *host = getOriginHost(currentState);
 
 	memset(&hints, 0, sizeof(hints));
-	hints.ai_family   = PF_UNSPEC;
+	hints.ai_family   = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_flags	= AI_CANONNAME;
+	hints.ai_flags	= AI_PASSIVE;
 
 	errcode = getaddrinfo(host, NULL, &hints, &res);
 
