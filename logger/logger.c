@@ -200,7 +200,7 @@ int createLogFile(log_t type) {
 	}
 
 	int couldCreateFile = snprintf(logFilesPaths[type], MAX_PATH_SIZE, "%s",
-								   newLogFilePath) >= MAX_PATH_SIZE;
+								   newLogFilePath) < MAX_PATH_SIZE;
 	free(newLogFilePath);
 
 	return couldCreateFile;
@@ -250,11 +250,16 @@ int createPath(char *newLogFilePath, log_t type) {
 }
 
 int getTime(char *buffer) {
-	time_t now = time(0);
+	time_t now		 = time(0);
+	int bytesWritten = snprintf(buffer, MAX_TIME_SIZE, "%s", ctime(&now));
 
-	return (snprintf(buffer, MAX_TIME_SIZE, "%s", ctime(&now)) < MAX_TIME_SIZE ?
-				OK :
-				FAILED);
+	if (bytesWritten >= MAX_TIME_SIZE) {
+		return FAILED;
+	}
+
+	int len			= strlen(buffer);
+	buffer[len - 1] = '\0';
+	return OK;
 }
 
 int writeTime(char **curr, const char *end) {
@@ -403,7 +408,7 @@ int writeSystemError(char **curr, const char *beginning, logError_t errorType) {
 
 int writeLogElemToLogEntry(char **curr, const char *end, const char *format,
 						   const char *data) {
-	if (*curr == NULL) {
+	if (curr == NULL) {
 		fprintf(stderr,
 				"[LOG] Error: failed attempting to create the log "
 				"entry, could not reserve space (malloc) for the log entry "

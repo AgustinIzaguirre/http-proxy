@@ -94,7 +94,6 @@ int main(int argc, char const *argv[]) {
 	} while (!byeRead);
 
 	close(server);
-	// TODO: read all bytes in socket to clean its buffer? close it?
 
 	return 0;
 }
@@ -382,12 +381,6 @@ static void manageAndPrintGetResponse(response_t response) {
 			printf("You previous 'Last modified' for this resource was: %s\n",
 				   ctime((const time_t *) &timeTags[response.id]));
 		}
-
-		// printf("[manager/main.c][manageAndPrintGetResponse] response.data =
-		// "); // TODO LOGGER for (int i = 0; i < response.dataLength; i++) {
-		// 	printf(" 0x%02X ", ((uint8_t *) response.data)[i]);
-		// }
-		// printf("\n\n");
 
 		if (storedData[response.id] != NULL) {
 			free(storedData[response.id]);

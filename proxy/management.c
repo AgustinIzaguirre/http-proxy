@@ -83,8 +83,6 @@ void managementPassiveAccept(struct selector_key *key) {
 		goto fail;
 	}
 
-	// "Management connection accepted\n" TODO: logger?
-
 	manager_t *client = newManager();
 
 	selector_status selectorStatus =
@@ -163,7 +161,6 @@ static int handleAuthenticatedRead(struct selector_key *key) {
 
 	switch (client->request.operation) {
 		case BYE_OP:
-			// TODO: manage BYE
 			break;
 		case GET_OP:
 			manageGetRequest(client);
