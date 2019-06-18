@@ -42,15 +42,15 @@ It support pipe-linning, the syntaxis is:
   .
 
   .
-  
+
   .
-  
+
   cmd
-  
+
   .
-  
+
   ````
-  
+
 Note the it finish with the '.' character and cmd is one of the following commands:
 
 * Gets the transformation command
@@ -100,7 +100,7 @@ Note the it finish with the '.' character and cmd is one of the following comman
 
 ## Documentation
 
-The report and presentation will be located under documentation folder
+The report, protocol ABNF and presentation will be located under documentation folder
 
 ## Code use from course
 

@@ -1,0 +1,72 @@
+;For v0 of the protocol
+
+;authentication-request and authentication-response structure can't be modified along versions,
+
+authentication-request = version username password
+
+version = version-representation-bit-qty separator version-value [fill-to-octet-multiple]
+
+version-representation-bit-qty 	= "1"
+separator 						= "0"
+version-value 					= "0"
+fill-to-octet-multiple			= 1*BIT
+;in v0 or v1, fill-to-octet-multiple cab be any combination of 5 bits
+
+username = 1*CHAR %x00
+password = 1*CHAR %x00
+
+request = opcode resource-id [time-tag] [data]
+;get operator does not use data
+;bye operator does not use data nor time-tag
+
+get-request = get resource-id time-tag
+set-request = set resource-id time-tag data
+bye-request = bye 6BIT
+
+opcode 	= bye / get / set
+bye 	= "00"
+get 	= "01"
+set 	= "10"
+
+resource-id = buffer-size-id / media-types-id / command-id / cn-metric-id / hs-metric-id / bt-metric-id / all-metrics-id
+;in bye operation the resource-id does not matter, is ignored
+
+;mime-id 	= "000001"
+;cmd-id		= "000010"
+;mtr-cn-id 	= "000011"
+;mtr-hs-id 	= "000100"
+;mtr-by-id 	= "000101"
+;tf-id 		= "000110"
+
+time-tag = 64BIT
+
+authentication-response = general-status version-status authentication-status [version / 5BIT]
+; version if version-status is 1, fill with any five bits otherwise
+
+general-status 			= ok / error
+version-status 			= ok / error
+authentication-status 	= ok / error
+
+ok 		= "0"
+error 	= "1"
+
+response = general-status opcode-status id-status time-tag-status 4BIT [time-tag] [data]
+; get: time-tag only if you get a new version of the resource, time-tag-status is error = 1
+; get: data only if you get a new version of the resource, time-tag-status is error = 1
+; set: time-tag only if you override the resource, time-tag-status is ok = 0
+; set: no data in response
+
+opcode-status 	= ok / error
+id-status 		= ok / error
+time-tag-status = ok / error
+
+data = *common-data-block final-data-block
+
+final-data-block 		= is-final-byte [fill-to-k-bytes-of-data] start-data-byte 1*(k - n)concret-data
+common-data-block 		= %x00 [fill-to-k-bytes-of-data] start-data-byte 1*(k - n)concret-data
+start-data-byte			= %x80
+fill-to-k-bytes-of-data = 1*%x00
+is-final-byte			= %x10
+concret-data			= OCTET
+;k is the number of bytes per block, without counting first byte and start-data-byte
+;so, if the block will have (k - n) concret data, we put n bytes to fill the block
