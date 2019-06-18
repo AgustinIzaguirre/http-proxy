@@ -25,7 +25,78 @@ For more information see ./httpd.8
 
 ``./httpdctl [ip port]``
 
-Ip and port are optionals and it must be both of them or neither of them
+Ip and port are optionals and it must be both of them or neither of them.
+
+The username is "manager" and the password is "pdc69"
+
+## Command of manager
+
+It support pipe-linning, the syntaxis is:
+
+````
+
+  cmd
+
+  cmd
+
+  .
+
+  .
+  
+  .
+  
+  cmd
+  
+  .
+  
+  ````
+  
+Note the it finish with the '.' character and cmd is one of the following commands:
+
+* Gets the transformation command
+
+``get cmd``
+
+* Gets the list of media range
+
+``get mime``
+
+* Gets the estate of the transformations
+
+``get tf``
+
+* Gets the quantity of concurrents connections
+
+``get mtr cn``
+
+* Gets the quantity of historics connections
+
+``get mtr hs``
+
+* Gets the quantity of transfer bytes
+
+``get mtr bt``
+
+* Change the transformation command for th command parameter
+
+``set cmd command``
+
+* Adds the media-range parameter to the list of media-ranges from the proxy
+
+``set mime media-range``
+
+* Resets the list of media-ranges from the proxy
+
+``set mime``
+
+* Turn on or off the tranfomations
+
+``set tf on/off``
+
+* Sends a request Bye to the server
+
+``bye``
+
 
 ## Documentation
 
