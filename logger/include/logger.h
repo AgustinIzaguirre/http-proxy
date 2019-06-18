@@ -18,8 +18,6 @@ typedef enum communicationTypes communication_t;
 enum errorOptions { SYS_ERROR, CUSTOM_ERROR };
 typedef enum errorOptions logError_t;
 
-// TODO: What to do with the return values
-
 /* Add a new entry (line) to an access log file called access.log */
 void logAccess(httpADT_t http, communication_t action);
 

@@ -297,12 +297,6 @@ static void *formatData(void *data, size_t dataLength,
 		dataIndex += bytesToCopy;
 	}
 
-	// printf("[protocol.c][formatData] FORMATTED-DATA = "); // TODO LOGGER
-	// for (int i = 0; i < *formattedDataLength; i++) {
-	// 	printf(" 0x%02X ", formattedData[i]);
-	// }
-	// printf("\n\n");
-
 	return (void *) formattedData;
 }
 
@@ -447,12 +441,6 @@ int sendGetRequest(int server, uint8_t id, timeTag_t timeTag) {
 
 	int sent = sendSCTPMsg(server, (void *) getRequest, length, GET_STREAM);
 
-	// printf("[protocol.c][sendGetRequest] GET-REQUEST = "); // TODO LOGGER
-	// for (int i = 0; i < length; i++) {
-	// 	printf(" 0x%02X ", getRequest[i]);
-	// }
-	// printf("\n\n");
-
 	free(getRequest);
 
 	return sent;
@@ -472,12 +460,6 @@ int sendSetRequest(int server, uint8_t id, timeTag_t timeTag, void *data,
 		   formattedDataLength);
 
 	int sent = sendSCTPMsg(server, (void *) setRequest, length, SET_STREAM);
-
-	// printf("[protocol.c][sendSetRequest] SET-REQUEST = "); // TODO LOGGER
-	// for (int i = 0; i < length; i++) {
-	// 	printf(" 0x%02X ", setRequest[i]);
-	// }
-	// printf("\n\n");
 
 	free(formattedData);
 	free(setRequest);
@@ -547,12 +529,6 @@ static int recvGetResponse(int server, response_t *response) {
 
 	read = getConcretData(server, (uint8_t **) &response->data,
 						  &response->dataLength);
-
-	// printf("[protocol.c][recvGetResponse] GET-RESPONSE-DATA = "); // TODO
-	// LOGGER for (int i = 0; i < response->dataLength; i++) { 	printf(" 0x%02X
-	// ", ((uint8_t *) response->data)[i]);
-	// }
-	// printf("\n\n");
 
 	if (read < 0) {
 		return read;
@@ -709,13 +685,6 @@ static int recvSetRequest(int client, request_t *request) {
 
 	read = getConcretData(client, (uint8_t **) &request->data,
 						  &request->dataLength);
-
-	// printf("[protocol.c][recvSetRequest] SET-REQUEST-RECV-C-DATA = "); //TODO
-	// LOGGER for (int i = 0; i < request->dataLength; i++) { 	printf("0x%02X
-	// ",
-	// ((uint8_t *) request->data)[i]);
-	// }
-	// printf("\n\n");
 
 	if (read < 0) {
 		return read;
@@ -908,12 +877,6 @@ int sendResponse(int client, response_t response) {
 
 		free(formattedData);
 	}
-
-	// printf("[protocol.c][sendResponse] RESPONSE = "); // TODO LOGGER
-	// for (int i = 0; i < length; i++) {
-	// 	printf(" 0x%02X ", msg[i]);
-	// }
-	// printf("\n\n");
 
 	int sent = sendSCTPMsg(client, (void *) msg, length, response.streamNumber);
 

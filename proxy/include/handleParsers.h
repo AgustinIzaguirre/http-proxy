@@ -3,7 +3,6 @@
 
 #include <selector.h>
 #include <httpProxyADT.h>
-#include <stdio.h> //TODO: remove
 
 #define GET_DATA(key) ((httpADT_t)(key)->data)
 
