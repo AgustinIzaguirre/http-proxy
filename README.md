@@ -25,7 +25,9 @@ For more information see ./httpd.8
 
 ``./httpdctl [ip port]``
 
-Ip and port are optionals and it must be both of them or neither of them
+Ip and port are optionals and it must be both of them or neither of them.
+
+The username is "manager" and the password is "pdc69"
 
 ## Command of manager
 
