@@ -259,11 +259,7 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 		return ERROR;
 	}
 
-<<<<<<< HEAD
-	if (selector_fd_set_nio(currentSocket) < 0) {
-=======
 	if (selector_fd_set_nio(currentSocket) == -1) {
->>>>>>> Fixed TODO's
 		errorMessage = "Getting server socket flags";
 		free(addr);
 		return ERROR;
