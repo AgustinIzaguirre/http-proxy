@@ -15,6 +15,8 @@ The manager client is in the root folder with the name httpdclt.
 
 ## Run proxy
 
+On root directory
+
 ```./httpd```
 
 For more information see ./httpd.8
@@ -36,6 +38,12 @@ The following files has been copied from socks5 course proyect
     smt.c
     smt.h
     buffer.c
-    buffer.h
+    buffer.h    
     selector.c
     selector.h
+
+## Logs
+
+Logs will create a folder logs under the directory that you run the
+httpd binary. In this folder it will create a file for each level of
+log (access, debug, error).

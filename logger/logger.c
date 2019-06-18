@@ -20,7 +20,7 @@
 char **logFilesPaths = NULL;
 char *client		 = NULL;
 char *host			 = NULL;
-char *dir			 = "./../logger/logs/";
+char *dir			 = "./logs/";
 
 int checkLogFileExistence(log_t type);
 int createAccessLogEntry(char *beginning, httpADT_t s, communication_t action);
