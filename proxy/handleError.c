@@ -8,18 +8,18 @@ Content-Type: text/html; charset=UTF-8\n\
 <html lang=en>\n\
   <meta charset=utf-8>\n\
   <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n\
-  <title>Error 400 (Bad Request)!!1</title>\n\
+  <title>Error 400 (Bad Request)!!!</title>\n\
   <p><b>400.</b> <ins>That is the error.</ins>\n\
   <p>Your client has issued a malformed or illegal request.  <ins>That’s all we know.</ins>\n",
 
-						 "HTTP/1.0 405 Method Not Allow\n\
+						 "HTTP/1.0 405 Method Not Allowed\n\
 Content-Type: text/html; charset=UTF-8\n\
 \n\
 <!DOCTYPE html>\n\
 <html lang=en>\n\
   <meta charset=utf-8>\n\
   <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n\
-  <title>Error 405 (Method Not Allow)!!1</title>\n\
+  <title>Error 405 (Method Not Allowed)!!!</title>\n\
   <p><b>405.</b> <ins>That is the error.</ins>\n\
   <p>The request method is inappropriate.  <ins>That’s all we know.</ins>\n",
 
@@ -30,7 +30,7 @@ Content-Type: text/html; charset=UTF-8\n\
 <html lang=en>\n\
   <meta charset=utf-8>\n\
   <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n\
-  <title>Error 505 (HTTP Version Not Supported)!!1</title>\n\
+  <title>Error 505 (HTTP Version Not Supported)!!!</title>\n\
   <p><b>505.</b> <ins>That is the error.</ins>\n\
   <p>The request version of HTTP is not supported by the server.  <ins>That’s all we know.</ins>\n",
 
@@ -41,7 +41,7 @@ Content-Type: text/html; charset=UTF-8\n\
   <html lang=en>\n\
   <meta charset=utf-8>\n\
   <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n\
-  <title>Error 400 (Bad Request)!!1</title>\n\
+  <title>Error 400 (Bad Request)!!!</title>\n\
   <p><b>400.</b> <ins>That is the error.</ins>\n\
   <p>Your client has issued a malformed host or the host header was not the first header from the request.  <ins>That’s all we know.</ins>\n",
 
@@ -52,7 +52,7 @@ Content-Type: text/html; charset=UTF-8\n\
     <html lang=en>\n\
     <meta charset=utf-8>\n\
     <meta name=viewport content=\"initial-scale=1, minimum-scale=1, width=device-width\">\n\
-    <title>Error 502 (Bad Gateway)!!1</title>\n\
+    <title>Error 502 (Bad Gateway)!!!</title>\n\
     <p><b>502.</b> <ins>That is the error.</ins>\n\
     <p>Invalid host or port <ins>That’s all we know.</ins>\n"};
 
