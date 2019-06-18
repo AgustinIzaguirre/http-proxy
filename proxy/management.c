@@ -48,7 +48,7 @@ int listenManagementSocket(int managementSocket, size_t backlogQuantity) {
 		return -1;
 	}
 
-	if (selector_fd_set_nio(managementSocket) == -1) { // TODO: maybe < 0?
+	if (selector_fd_set_nio(managementSocket) == -1) {
 		errorMessage = "Getting server socket flags";
 		return -1;
 	}

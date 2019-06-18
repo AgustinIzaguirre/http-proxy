@@ -11,7 +11,7 @@ int blockingToResolvName(struct selector_key *key, int fdClient) {
 	}
 	httpADT_t currentState = GET_DATA(key);
 	pthread_t tid;
-	void **args = malloc(2 * sizeof(void *)); // TODO malloc
+	void **args = malloc(2 * sizeof(void *));
 	args[0]		= currentState;
 	args[1]		= malloc(sizeof(struct selector_key));
 	memcpy(args[1], key, sizeof(struct selector_key));

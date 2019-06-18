@@ -372,7 +372,7 @@ unsigned writeToTransform(struct selector_key *key) {
 	else if (transformBody->transformCommandExecuted == TRUE) {
 		setErrorDoneFd(key);
 		sentLastChunked(chunkBuffer);
-		printf("error2:\n%s\n", strerror(errno)); // TODO lucas logger de error
+		logError("", SYS_ERROR);
 		ret = ERROR;
 	}
 	else {

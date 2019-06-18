@@ -4,6 +4,8 @@
 
 #define isOWS(a) (a == ' ' || a == '\t')
 
+enum matchResultOption { CAN, CANT };
+
 typedef struct MediaRanges {
 	char **listMediaTypes;
 	int *canBeMatch;
@@ -85,11 +87,8 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 					realloc(mrp->listMediaTypes[mrp->length],
 							(j + BLOCK) * sizeof(char));
 			}
-			// if(!isOWS(string[i]) || j == 0 || TODO: parameters
-			//    !isOWS(mrp->listMediaTypes[mrp->length][j-1])) {
 			mrp->listMediaTypes[mrp->length][j] = string[i];
 			j++;
-			//}
 		}
 		i++;
 	}
@@ -104,7 +103,7 @@ enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,
 							 MediaRangePtr_t mediaRange) {
 	enum matchResult ans = NO;
 	for (int i = 0; i < mediaRange->length; i++) {
-		if (mediaRange->canBeMatch[i] == 0) { // TODO: define can
+		if (mediaRange->canBeMatch[i] == CAN) {
 			if (mediaRange->listMediaTypes[i][n] == mediaTypeCharAtN) {
 				ans = YES;
 			}
@@ -113,7 +112,7 @@ enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,
 				return ans;
 			}
 			else {
-				mediaRange->canBeMatch[i] = 1; // TODO: define not can
+				mediaRange->canBeMatch[i] = CANT;
 			}
 		}
 	}
@@ -123,7 +122,7 @@ enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,
 void resetMediaRange(MediaRangePtr_t mediaRange) {
 	int i = 0;
 	while (i < mediaRange->length) {
-		mediaRange->canBeMatch[i] = 0; // TODO: define can
+		mediaRange->canBeMatch[i] = CAN;
 		i++;
 	}
 
