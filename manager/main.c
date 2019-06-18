@@ -181,6 +181,9 @@ static int parseAndSendRequests(int server, uint8_t *byeRead) {
 					break;
 				case INVALID:
 					invalidCommandHandler();
+					if (data != NULL) {
+						free(data);
+					}
 					break;
 				default:
 					/* Nothing to do here */

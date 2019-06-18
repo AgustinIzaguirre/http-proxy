@@ -57,6 +57,9 @@ static int receiveSCTPMsg(int fd, void **buffer, int maxLengthToRead,
 				realloc(*((uint8_t **) buffer),
 						(bytesRead + RECV_BYTES) * sizeof(uint8_t));
 
+			memset(*((uint8_t **) buffer) + bytesRead, 0,
+				   (RECV_BYTES) * sizeof(uint8_t));
+
 			read =
 				sctp_recvmsg(fd, (*(uint8_t **) buffer) + bytesRead, RECV_BYTES,
 							 (struct sockaddr *) NULL, 0, sndRcvInfo, flags);
@@ -98,7 +101,11 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort) {
 
 	int server = socket(addr->ss_family, SOCK_STREAM, IPPROTO_SCTP);
 
-	CHECK_FOR_ERROR(server);
+	if (server < 0) {
+		free(addr);
+		errorMessage = strerror(errno);
+		return server;
+	}
 
 	struct sctp_initmsg initMsg;
 	memset(&initMsg, 0, sizeof(initMsg));
@@ -111,7 +118,11 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort) {
 
 	int connection = connect(server, (struct sockaddr *) addr, sizeof(*addr));
 
-	CHECK_FOR_ERROR(connection);
+	if (connection < 0) {
+		free(addr);
+		errorMessage = strerror(errno);
+		return connection;
+	}
 
 	struct sctp_event_subscribe events;
 	memset((void *) &events, 0, sizeof(events));
@@ -122,6 +133,8 @@ static int prepareSCTPSocket(const char *serverIP, uint16_t serverPort) {
 	events.sctp_data_io_event = 1;
 	setsockopt(server, SOL_SCTP, SCTP_EVENTS, (const void *) &events,
 			   sizeof(events));
+
+	free(addr);
 
 	return server;
 }
@@ -154,7 +167,11 @@ static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter) {
 
 	int fd = socket(addr->ss_family, SOCK_STREAM, IPPROTO_SCTP);
 
-	CHECK_FOR_ERROR(fd);
+	if (fd < 0) {
+		free(addr);
+		errorMessage = strerror(errno);
+		return fd;
+	}
 
 	/* If server fails doesn't have to wait to reuse address */
 	setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &(int){1}, sizeof(int));
@@ -166,7 +183,11 @@ static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter) {
 
 	int binded = bind(fd, (struct sockaddr *) addr, sizeof(*addr));
 
-	CHECK_FOR_ERROR(binded);
+	if (binded < 0) {
+		free(addr);
+		errorMessage = strerror(errno);
+		return binded;
+	}
 
 	struct sctp_initmsg initMsg;
 	memset(&initMsg, 0, sizeof(initMsg));
@@ -187,6 +208,8 @@ static int prepareAndBindSCTPSocket(uint16_t port, char *ipFilter) {
 	events.sctp_data_io_event = 1;
 	setsockopt(fd, SOL_SCTP, SCTP_EVENTS, (const void *) &events,
 			   sizeof(events));
+
+	free(addr);
 
 	return fd;
 }
@@ -328,7 +351,6 @@ static int getConcretData(int fd, uint8_t **data, size_t *dataLength) {
 
 	if (buffer != NULL) {
 		free(buffer);
-		buffer = NULL;
 	}
 
 	return totalRead;
@@ -883,6 +905,8 @@ int sendResponse(int client, response_t response) {
 	if (formattedData != NULL) {
 		memcpy(msg + sizeof(headByte) + (needsTimeTag ? sizeof(timeTag_t) : 0),
 			   formattedData, formattedDataLength);
+
+		free(formattedData);
 	}
 
 	// printf("[protocol.c][sendResponse] RESPONSE = "); // TODO LOGGER
@@ -891,7 +915,13 @@ int sendResponse(int client, response_t response) {
 	// }
 	// printf("\n\n");
 
-	return sendSCTPMsg(client, (void *) msg, length, response.streamNumber);
+	int sent = sendSCTPMsg(client, (void *) msg, length, response.streamNumber);
+
+	if (msg != NULL) {
+		free(msg);
+	}
+
+	return sent;
 }
 
 static uint8_t getResponseHeadByte(responseStatus_t status) {

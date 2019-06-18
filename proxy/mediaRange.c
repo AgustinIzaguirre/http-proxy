@@ -97,7 +97,7 @@ void addMediaRange(MediaRangePtr_t mrp, char const *string) {
 	mrp->listMediaTypes[mrp->length][j] = '\0';
 	(mrp->length)++;
 
-	//	generateAndUpdateTimeTag(MIME_ID);
+	generateAndUpdateTimeTag(MIME_ID);
 }
 
 enum matchResult doesMatchAt(int n, char mediaTypeCharAtN,

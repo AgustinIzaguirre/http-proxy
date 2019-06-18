@@ -2,7 +2,6 @@
 
 static void handleRead(struct selector_key *key);
 static void handleWrite(struct selector_key *key);
-static void handleClose(struct selector_key *key);
 static manager_t *newManager();
 static int handleAuthenticatedRead(struct selector_key *key);
 static int handleNonAuthenticatedRead(struct selector_key *key);
@@ -22,7 +21,7 @@ timeTag_t timeTags[ID_QUANTITY];
 
 static const struct fd_handler managementHandler = {.handle_read  = handleRead,
 													.handle_write = handleWrite,
-													.handle_close = handleClose,
+													.handle_close = NULL,
 													.handle_block = NULL};
 
 timeTag_t generateAndUpdateTimeTag(uint8_t id) {
@@ -103,7 +102,9 @@ fail:
 }
 
 static void handleRead(struct selector_key *key) {
-	manager_t *client = (manager_t *) key->data;
+	manager_t *client			= (manager_t *) key->data;
+	client->response.data		= NULL;
+	client->response.dataLength = 0;
 	int read;
 
 	if (client->isAuthenticated) {
@@ -114,8 +115,12 @@ static void handleRead(struct selector_key *key) {
 	}
 
 	if (read <= 0) {
-		// TODO: destroy?
+		if (key->data != NULL) {
+			free(key->data);
+			key->data = NULL;
+		}
 		selector_unregister_fd(key->s, key->fd);
+		close(key->fd);
 	}
 	else {
 		selector_set_interest(key->s, key->fd, OP_WRITE);
@@ -125,13 +130,23 @@ static void handleRead(struct selector_key *key) {
 static int handleAuthenticatedRead(struct selector_key *key) {
 	manager_t *client = (manager_t *) key->data;
 
+	client->request.data	   = NULL;
+	client->request.dataLength = 0;
+
 	int read = recvRequest(key->fd, &client->request);
 
 	if (read <= 0) {
 		errorMessage = getProtocolErrorMessage();
-		// TODO: destroy?
+
+		if (client->request.data != NULL) {
+			free(client->request.data);
+		}
+
 		return read;
 	}
+
+	client->response.data		= NULL;
+	client->response.dataLength = 0;
 
 	client->response.streamNumber = client->request.streamNumber;
 
@@ -155,6 +170,10 @@ static int handleAuthenticatedRead(struct selector_key *key) {
 			/* Invalid OPERATION */
 			client->response.status.generalStatus   = ERROR_STATUS;
 			client->response.status.operationStatus = ERROR_STATUS;
+	}
+
+	if (client->request.data != NULL) {
+		free(client->request.data);
 	}
 
 	return read;
@@ -224,7 +243,7 @@ static void manageGetCommandRequest(response_t *response) {
 }
 
 static void manageGetMetricRequest(resId_t id, response_t *response) {
-	uint64_t *metric = malloc(sizeof(uint64_t));
+	uint64_t *metric = malloc(sizeof(*metric));
 
 	switch (id) {
 		case MTR_CN_ID:
@@ -243,7 +262,7 @@ static void manageGetMetricRequest(resId_t id, response_t *response) {
 	/* Change the 64-bits integer from host-bytes to big-endian */
 	*metric				 = htobe64(*metric);
 	response->data		 = (void *) metric;
-	response->dataLength = sizeof(uint64_t);
+	response->dataLength = sizeof(*metric);
 }
 
 static uint8_t isValidGetId(resId_t id) {
@@ -302,16 +321,23 @@ static void manageSetRequest(manager_t *client) {
 
 static int handleNonAuthenticatedRead(struct selector_key *key) {
 	manager_t *client = (manager_t *) key->data;
-	char *username;
-	char *password;
+	char *username	= NULL;
+	char *password	= NULL;
 	uint8_t hasSameVersion;
 
 	int read = recvAuthenticationRequest(key->fd, &username, &password,
 										 &hasSameVersion);
 
 	if (read <= 0) {
+		if (username != NULL) {
+			free(username);
+		}
+
+		if (password != NULL) {
+			free(password);
+		}
+
 		errorMessage = getProtocolErrorMessage();
-		// TODO: destroy?
 		return read;
 	}
 
@@ -319,7 +345,7 @@ static int handleNonAuthenticatedRead(struct selector_key *key) {
 		client->authResponse.status.generalStatus = OK_STATUS;
 		client->authResponse.status.versionStatus = OK_STATUS;
 
-		if (authenticate(username, password)) {
+		if (authenticate(username, password) == TRUE) {
 			client->isAuthenticated							 = TRUE;
 			client->authResponse.status.authenticationStatus = OK_STATUS;
 		}
@@ -332,6 +358,14 @@ static int handleNonAuthenticatedRead(struct selector_key *key) {
 	else {
 		client->authResponse.status.generalStatus = ERROR_STATUS;
 		client->authResponse.status.versionStatus = ERROR_STATUS;
+	}
+
+	if (username != NULL) {
+		free(username);
+	}
+
+	if (password != NULL) {
+		free(password);
 	}
 
 	return read;
@@ -351,6 +385,13 @@ static void handleWrite(struct selector_key *key) {
 
 	if (client->isAuthenticated && client->authResponseSent) {
 		sent = sendResponse(key->fd, client->response);
+
+		if ((client->response.id == MTR_BT_ID ||
+			 client->response.id == MTR_CN_ID ||
+			 client->response.id == MTR_HS_ID) ||
+			(client->response.id == MIME_ID)) {
+			free(client->response.data);
+		}
 	}
 	else {
 		sent = sendAuthenticationResponse(key->fd, client->authResponse);
@@ -358,7 +399,12 @@ static void handleWrite(struct selector_key *key) {
 
 	if (sent < 0) {
 		errorMessage = getProtocolErrorMessage();
-		// TODO: destroy?
+		if (key->data != NULL) {
+			free(key->data);
+			key->data = NULL;
+		}
+		selector_unregister_fd(key->s, key->fd);
+		close(key->fd);
 	}
 
 	if (client->isAuthenticated && !client->authResponseSent) {
@@ -366,8 +412,4 @@ static void handleWrite(struct selector_key *key) {
 	}
 
 	selector_set_interest(key->s, key->fd, OP_READ);
-}
-
-static void handleClose(struct selector_key *key) {
-	// TODO: hmmm? what we need to do here?
 }

@@ -38,6 +38,7 @@ configurationADT getConfiguration() {
 }
 
 void resetMediaRangeList(configurationADT config) {
+	freeMediaRange(config->mediaRange);
 	config->mediaRange = createMediaRange(";");
 
 	generateAndUpdateTimeTag(MIME_ID);
@@ -93,8 +94,12 @@ void setManagementInterfaces(configurationADT config,
 }
 
 void setCommandAndTransformations(configurationADT config, char *command) {
-	if (strlen(command) > 0) {
-		config->command			   = command;
+	int strLength = strlen(command);
+
+	if (strLength > 0) {
+		char *newCommand = malloc(strLength + 1);
+		memcpy(newCommand, command, strLength + 1);
+		config->command			   = newCommand;
 		config->isTransformationOn = TRUE;
 	}
 	else {
@@ -113,6 +118,10 @@ uint8_t getIsTransformationOn(configurationADT config) {
 }
 
 void setCommand(configurationADT config, char *command) {
+	if (config->command != NULL) {
+		free(config->command);
+	}
+
 	config->command = command;
 
 	generateAndUpdateTimeTag(CMD_ID);

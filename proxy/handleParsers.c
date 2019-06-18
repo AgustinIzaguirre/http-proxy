@@ -61,7 +61,7 @@ unsigned parseRead(struct selector_key *key) {
 		pointer   = buffer_write_ptr(readBuffer, &count);
 		bytesRead = recv(key->fd, pointer, count, 0);
 
-		if (bytesRead >= 0) {
+		if (bytesRead > 0) {
 			buffer_write_adv(readBuffer, bytesRead);
 			ret = parseProcess(key, readBuffer, bytesRead);
 		}
