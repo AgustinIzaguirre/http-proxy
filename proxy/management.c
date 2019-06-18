@@ -1,4 +1,5 @@
 #include <management.h>
+#include <metric.h>
 
 static void handleRead(struct selector_key *key);
 static void handleWrite(struct selector_key *key);
@@ -93,6 +94,9 @@ void managementPassiveAccept(struct selector_key *key) {
 		goto fail;
 	}
 
+	increaseConcurrentConections();
+	increaseHistoricAccess();
+
 	return;
 
 fail:
@@ -119,6 +123,7 @@ static void handleRead(struct selector_key *key) {
 			free(key->data);
 			key->data = NULL;
 		}
+		decreaseConcurrentConections();
 		selector_unregister_fd(key->s, key->fd);
 		close(key->fd);
 	}
@@ -403,6 +408,7 @@ static void handleWrite(struct selector_key *key) {
 			free(key->data);
 			key->data = NULL;
 		}
+		decreaseConcurrentConections();
 		selector_unregister_fd(key->s, key->fd);
 		close(key->fd);
 	}
