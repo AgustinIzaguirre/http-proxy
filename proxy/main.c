@@ -249,18 +249,23 @@ const int prepareTCPSocket(unsigned port, char *filterInterface) {
 
 	if (bind(currentSocket, (struct sockaddr *) addr, sizeof(*addr)) < 0) {
 		errorMessage = "Unable to bind socket";
+		free(addr);
 		return ERROR;
 	}
 
 	if (listen(currentSocket, BACKLOG_QTY) < 0) {
 		errorMessage = "Unable to listen";
+		free(addr);
 		return ERROR;
 	}
 
 	if (selector_fd_set_nio(currentSocket) < 0) {
 		errorMessage = "Getting server socket flags";
+		free(addr);
 		return ERROR;
 	}
+
+	free(addr);
 
 	return currentSocket;
 }
