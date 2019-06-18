@@ -24,7 +24,7 @@ typedef enum errorOptions logError_t;
 void logAccess(httpADT_t http, communication_t action);
 
 /* Add a new entry (line) to an error log file called error.log */
-void logError(const char *errorMsg, logError_t errorType);
+void logError(char *errorMsg, logError_t errorType);
 
 /* Add a new entry (line) to a debug log file called debug.log */
 void logDebug(const char *debugMsg);
