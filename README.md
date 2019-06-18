@@ -31,7 +31,9 @@ Ip and port are optionals and it must be both of them or neither of them
 
 It support pipe-linning, the syntaxis is:
 
-``cmd
+``
+
+  cmd
 
   cmd
 
@@ -44,7 +46,9 @@ It support pipe-linning, the syntaxis is:
   cmd
   
   .
+  
   ``
+  
 Note the it finish with the '.' character and cmd is one of the following commands:
 
 * Gets the transformation command
